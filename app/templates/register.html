@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="POST">
+    {{ form.hidden_tag() }} 
+    <div class="container-fluid py-2">
+        <h2>Register</h2>
+        <p>Fill in the details below to register.</p>
+        <div class="card mb-3" style="width: 300px;">
+            <div class="card-body">
+<!--                 
+                {{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}
+                {% for error in form.email.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+                {{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}
+                {% for error in form.password.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+                {{ form.confirm_password.label(class="form-label") }}{{ form.confirm_password(class="form-control") }}
+                {% for error in form.confirm_password.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+                <div class="py-2">{{ form.submit(class="btn btn-primary") }}</div>
+-->
+                <div class="alert alert-warning" role="alert">
+                    Registration is currently disabled. If you need an account, please contact the site administrator.
+                </div> 
+               
+            </div>
+        </div>
+        <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a>.</p>
+    </div>
+</form>
+{% endblock %}

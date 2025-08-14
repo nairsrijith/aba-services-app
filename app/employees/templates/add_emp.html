@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="p-2 mb-4 rounded-3">
+        <div class="container-fluid py-2">
+            <h2>Add Employee Record</h2>
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                Use this page to add a new record.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="row mb-3">
+                    <div>{{ form.firstname.label(class="col-form-label") }}{{ form.firstname(size=51, class="form-control", placeholder="First Name") }}</div>
+                    <div>{{ form.lastname.label(class="col-form-label") }}{{ form.lastname(size=51, class="form-control", placeholder="Last Name") }}</div>
+                    <div>{{ form.position.label(class="col-form-label") }}{{ form.position(class="form-select", placeholder="Designation") }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div>
+                        {{ form.email.label(class="col-form-label") }}
+                        {{ form.email(size=51, class="form-control", placeholder="your@email.com") }}
+                        {% for error in form.email.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div>{{ form.cell.label(class="col-form-label") }}{{ form.cell(class="form-control", placeholder="1234567890") }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div>{{ form.address1.label(class="col-form-label") }}{{ form.address1(class="form-control", placeholder="123 King St.") }}</div>
+                    <div>{{ form.address2.label(class="col-form-label") }}{{ form.address2(class="form-control", placeholder="Apt/Suite") }}</div>
+                    <div>{{ form.city.label(class="col-form-label") }}{{ form.city(class="form-control", placeholder="City") }}</div>
+                    <div>{{ form.state.label(class="col-form-label") }}{{ form.state(class="form-select") }}</div>
+                    <div>{{ form.zipcode.label(class="col-form-label") }}{{ form.zipcode(size=6, class="form-control", placeholder="Zip Code") }}</div>
+                </div>
+                {{ form.submit(class="btn btn-outline-primary") }} <a href="{{ url_for('employees.list_employees') }}" class="btn btn-secondary ms-2">Cancel</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

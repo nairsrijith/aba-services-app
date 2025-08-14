@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; }
+    .container { margin: 0 auto; width: 100%; }
+    .text-center { text-align: center; }
+    .row { display: flex; }
+    .col-md-6 { width: 50%; }
+    .invoice-details { text-align: left; }  /* <-- Add this line */
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #333; padding: 6px; text-align: center; }
+    th { background: #eee; }
+    h3 { margin-bottom: 0; }
+    hr { margin: 10px 0; }
+    /* Add this for compact invoice details */
+    .invoice-details p, .invoice-details h4 {
+        margin: 4px 0;
+        line-height: 1.2;
+        text-align: right;  /* <-- Add this line for extra safety */
+    }
+    .billing-info p, .billing-info h4 {
+        margin: 4px 0;
+        line-height: 1.2;
+        text-align: left;  /* <-- Add this line for extra safety */
+    }
+</style>
+<div class="container mt-4">
+    <h2>Invoice Preview</h2>
+    <div class="container mt-4">
+        <h3 class="text-center">{{ org_name }}</h3>
+        <hr>
+        <div class="row">
+            <div class="col-md-6 billing-info">
+                <h4><strong>Billed to:</strong></h4>
+                <p>{{ client.parentname }}</p>
+                <p>
+                    {{ client.address1 }}{% if client.address2 %}, {{ client.address2 }}{% endif %}<br>
+                    {{ client.city }}, {{ client.state }} {{ client.zipcode }}
+                </p>
+                <br>
+                <p><strong>Client:</strong> {{ client.firstname }} {{ client.lastname }}</p>
+            </div>
+            <div class="col-md-6 invoice-details">
+                <h4><strong>Invoice Details:</strong></h4>
+                <p><strong>{{ invoice_number }}</strong></p>
+                <p>Invoice Date: {{ invoice_date }}</p>
+                <p>Pay By: {{ payby_date }}</p>
+                <p>Service Period: {{ date_from }}</p>
+                <p>to {{ date_to }}</p>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Details</th>
+                    <th>Duration</th>
+                    <th>Rate/Hr</th>
+                    <th>Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(total=0) %}
+                {% for i in interventions %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td style="text-align: left;"><strong>{{ i.intervention_type }}</strong> conducted by <strong><em>{{ i.employee.firstname }} {{ i.employee.lastname }}</em></strong><br>
+                        <small>{{ i.date }} ({{ i.start_time }}-{{ i.end_time }})</small>
+                    </td>
+                    <td style="text-align: right;">{{ "%.2f" % i.duration }}</td>
+                    <td style="text-align: right;">{{ "%.2f" % i.rate }}</td>
+                    <td style="text-align: right;">{{ "%.2f" % i.cost }}</td>
+                </tr>
+                {% set ns.total = ns.total + i.cost %}
+                {% endfor %}
+            </tbody>
+            <tbody>
+                <tr>
+                    <td colspan="4" style="text-align: right;"><strong>Total:</strong></td>
+                    <td style="text-align: right;"><strong>{{ "%.2f" % ns.total }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        {% if not total_cost %}
+            <form method="POST" class="py-4">
+                <button type="submit" class="btn btn-success">Confirm and Save Invoice</button>
+                <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
+            </form>
+        {% else %}
+            <div class="py-4">
+                <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

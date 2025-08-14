@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-2 mb-4 rounded-3">
+    <div class="container-fluid py-2">
+        <h2>Add Intervention Record</h2>
+        
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            Use this page to add a new record.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row mb-3">
+                <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select") }}</div>
+                <div>{{ form.employee_id.label(class="col-form-label") }}{{ form.employee_id(class="form-select") }}</div>
+            </div>
+            <div class="row mb-3">
+                <div>{{ form.intervention_type.label(class="col-form-label") }}{{ form.intervention_type(class="form-select") }}</div>
+                <div>{{ form.date.label(class="col-form-label") }}{{ form.date(class="form-control", placeholder="YYYY-MM-DD", type="date") }}</div>
+                <div>{{ form.start_time.label(class="col-form-label") }}{{ form.start_time(class="form-control", placeholder="Start Time", id="start_time", type="time") }}</div>
+                <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", placeholder="End Time", id="end_time", type="time") }}</div>
+                <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", placeholder="0.0", id="duration", readonly=True) }}</div>
+            </div>
+            <div class="py-4">
+                {{ form.submit(class="btn btn-outline-primary") }}
+                <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/duration.js') }}"></script>
+<script>
+    setupDurationCalculation('start_time', 'end_time', 'duration');
+</script>
+{% endblock %}

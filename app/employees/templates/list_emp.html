@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-2 mb-4 rounded-3">
+    <div class="container-fluid py-2">
+        <h2>Employees
+            <a href="{{ url_for('employees.add_employee') }}" class="btn btn-outline-success mb-3" title="Add New Employee">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person-badge" viewBox="0 0 16 16">
+                    <path d="M6.5 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1zM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                    <path d="M4.5 0A2.5 2.5 0 0 0 2 2.5V14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2.5A2.5 2.5 0 0 0 11.5 0zM3 2.5A1.5 1.5 0 0 1 4.5 1h7A1.5 1.5 0 0 1 13 2.5v10.795a4.2 4.2 0 0 0-.776-.492C11.392 12.387 10.063 12 8 12s-3.392.387-4.224.803a4.2 4.2 0 0 0-.776.492z"/>
+                </svg>
+            </a>
+        </h2>
+
+        <form method="get" class="mb-3 d-flex align-items-center">
+            <label for="per_page" class="me-2">Rows per page:</label>
+            <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
+                <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+            </select>
+            <input type="hidden" name="page" value="{{ pagination.page }}">
+        </form>
+        <table class="table table-hover">
+            <tbody>
+                <tr>
+                    <th>Employee's Name</th>
+                    <th>Designation</th>
+                    <th>City</th>
+                    <th>State</th>
+                    <th>Actions</th>
+                </tr>
+                {% if not employees %}
+                    <tr>
+                        <td colspan="5" class="text-center">No employees found.</td>
+                    </tr>
+                {% else %}
+                    {% for employee in employees %}
+                        <tr>
+                            <td>{{ employee.firstname }} {{ employee.lastname }}</td>
+                            <td>{{ employee.position }}</td>
+                            <td>{{ employee.city }}</td>
+                            <td>{{ employee.state }}</td>
+                            <td>
+                                <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill" viewBox="0 0 16 16">
+                                        <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"/>
+                                    </svg>
+                                </a>
+                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                                        <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+        <nav>
+            <ul class="pagination justify-content-end">
+                {# Previous #}
+                {% set prev_args = request.args.to_dict() %}
+                {% set _ = prev_args.update({'page': pagination.prev_num, 'per_page': per_page}) %}
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('employees.list_employees', **prev_args) }}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                {# Page numbers #}
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        {% set page_args = request.args.to_dict() %}
+                        {% set _ = page_args.update({'page': p, 'per_page': per_page}) %}
+                        {% if p == pagination.page %}
+                            <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('employees.list_employees', **page_args) }}">{{ p }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {# Next #}
+                {% set next_args = request.args.to_dict() %}
+                {% set _ = next_args.update({'page': pagination.next_num, 'per_page': per_page}) %}
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('employees.list_employees', **next_args) }}">Next</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deleteForm" method="POST">
+                <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                Are you sure you want to delete the record of <strong><span id="employeeName"></span></strong>?
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var employeeId = button.getAttribute('data-employee-id');
+        var employeeName = button.getAttribute('data-employee-name');
+        var form = document.getElementById('deleteForm');
+        form.action = '/employees/delete/' + employeeId;
+        document.getElementById('employeeName').textContent = employeeName;
+    });
+});
+</script>
+{% endblock %}
