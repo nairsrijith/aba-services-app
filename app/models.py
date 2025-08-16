@@ -14,6 +14,8 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, index=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
+    locked = db.Column(db.Boolean, default=False)
+    activation_key = db.Column(db.String(15), nullable=True)
 
     def set_password(self, email, password):
         self.email = email
