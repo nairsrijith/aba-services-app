@@ -8,7 +8,12 @@ import io
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    return redirect(url_for('login'))
+
+
+@app.route('/admin')
+def admin():
+    return render_template('welcome.html')
 
 
 @app.route('/logout')
@@ -22,7 +27,7 @@ def logout():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('admin'))
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -32,7 +37,7 @@ def login():
             next_page = request.args.get('next')
             flash('Login successful!', 'success')
             if next_page == None or not next_page.startswith('/'):
-                next_page = url_for('home')
+                next_page = url_for('admin')
             return redirect(next_page)
         else:
             flash('Invalid email or password.', 'danger')
