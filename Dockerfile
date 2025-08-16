@@ -8,6 +8,8 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+RUN python init_db.py
+
 EXPOSE 8080
 
 CMD ["python", "app.py"]
