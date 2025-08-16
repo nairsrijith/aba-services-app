@@ -12,7 +12,7 @@ def initialize_database():
         if not admin_user:
             # Create admin user
             hashed_password = generate_password_hash('Admin123$%^')
-            new_admin = User(email='admin@admin.com', password_hash=hashed_password, is_admin=True, locked=False, activation_key="")
+            new_admin = User(email='admin@admin.com', password_hash=hashed_password, user_type="super", locked=False, activation_key="")
             db.session.add(new_admin)
             db.session.commit()
 

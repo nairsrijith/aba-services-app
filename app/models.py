@@ -14,12 +14,11 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, index=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    user_type = db.Column(db.String(51), default=None, nullable=False)
     locked = db.Column(db.Boolean, default=False, nullable=False)
     activation_key = db.Column(db.String(15), nullable=True, default=None)
 
-    def set_password(self, email, password):
-        self.email = email
+    def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):

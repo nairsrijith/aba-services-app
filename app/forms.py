@@ -17,6 +17,7 @@ class LoginForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
+    activation_key = StringField('Activation key', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired(), length(min=6, message='Password must be at least 6 characters long')])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
     submit = SubmitField('Register')
@@ -24,6 +25,8 @@ class RegistrationForm(FlaskForm):
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user:
-            raise ValidationError('Email already registered. Please use a different email.')
+            if user.activation_key == "":
+                raise ValidationError('Email already registered. Please use a different email or contact Administrator.')
+        
         
 

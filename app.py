@@ -16,6 +16,11 @@ def user():
     return render_template('user.html')
 
 
+@app.route('/admin')
+def admin():
+    return render_template('admin.html')
+
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -33,12 +38,25 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.check_password(form.password.data):
-            login_user(user)
-            next_page = request.args.get('next')
-            flash('Login successful!', 'success')
-            if next_page == None or not next_page.startswith('/'):
-                next_page = url_for('user')
-            return redirect(next_page)
+            if user.locked:
+                flash('You account is locked. Contact Administrator.', 'danger')
+            else:
+                login_user(user)
+                next_page = request.args.get('next')
+                flash('Login successful!', 'success')
+                match user.user_type:
+                    case "super":
+                        if next_page == None or not next_page.startswith('/'):
+                            next_page = url_for('admin')
+                        return redirect(next_page)
+                    case "admin":
+                        if next_page == None or not next_page.startswith('/'):
+                            next_page = url_for('admin')
+                        return redirect(next_page)
+                    case "user":
+                        if next_page == None or not next_page.startswith('/'):
+                            next_page = url_for('user')
+                        return redirect(next_page)
         else:
             flash('Invalid email or password.', 'danger')
     return render_template('login.html', form=form)
@@ -50,12 +68,22 @@ def register():
         return redirect(url_for('home'))
     
     form = RegistrationForm()
-    if form.validate_on_submit():
-        user = User(email=form.email.data)
-        user.set_password(form.email.data, form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and not user.locked and user.email == form.email.data:
+            if user.activation_key == form.activation_key.data: 
+                user.email = form.email.data
+                user.set_password(form.password.data)
+                user.activation_key = ""
+                db.session.commit()
+                return redirect(url_for('login'))
+            else:
+                flash('Incorrect activation key. Contact Administrator', 'danger')
+                return render_template('register.html', form=form)
+        else:
+            flash('This email is not allowed to be registered. Contact Administrator', 'danger')
+            return render_template('register.html', form=form)
     return render_template('register.html', form=form)
 
 
