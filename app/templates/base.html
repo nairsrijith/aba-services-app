@@ -9,7 +9,7 @@
 <body>
     <nav class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('home') }}">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-record-circle" viewBox="0 0 16 16">
                     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
                     <path d="M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
@@ -27,37 +27,48 @@
                 {% if current_user.is_authenticated %}
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="{{ url_for('home') }}">Home</a>
+                            <a class="nav-link" aria-current="page" href="{{ url_for('index') }}">Home</a>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Client</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('clients.list_clients') }}">List</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('clients.add_client') }}">Add</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Employee</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('employees.list_employees') }}">List</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('employees.add_employee') }}">Add</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Intervention</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('interventions.list_interventions') }}">List</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('interventions.add_intervention') }}">Add</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Invoice</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('invoices.list_invoices') }}">List</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('invoices.invoice_client_select') }}">Add</a></li>
-                            </ul>
-                        </li>
-                    </ul>
+                        {% if current_user.user_type == "super" or current_user.user_type == "admin" %}
+                            <li class="nav-item">
+                                <a class="nav-link" aria-current="page" href="{{ url_for('index') }}">User</a>
+                            </li>
+                        {% endif %}
+                        {% if current_user.user_type == "admin" %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Client</a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('clients.list_clients') }}">List</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('clients.add_client') }}">Add</a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Employee</a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('employees.list_employees') }}">List</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('employees.add_employee') }}">Add</a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if current_user.user_type == "admin" or current_user.user_type == "user" %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Intervention</a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('interventions.list_interventions') }}">List</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('interventions.add_intervention') }}">Add</a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if current_user.user_type == "admin" %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Invoice</a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('invoices.list_invoices') }}">List</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('invoices.invoice_client_select') }}">Add</a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                        </ul>
                 {% endif %}
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     <li class="nav-item dropdown">
@@ -87,15 +98,6 @@
     {% endblock %}
     <footer class="d-flex flex-wrap justify-content-between align-items-center border-top px-3">
         <p class="col-md-4 mb-0 text-body-secondary">© 2025, 1001256835 ONTARIO INC.</p>
-        <ul class="nav col-md-4 justify-content-end">
-            <li class="nav-item"><a href="{{ url_for('home') }}" class="nav-link px-2 text-body-secondary">Home</a></li>
-            {% if current_user.is_authenticated %}
-            <li class="nav-item"><a href="{{ url_for('clients.list_clients') }}" class="nav-link px-2 text-body-secondary">Client</a></li>
-            <li class="nav-item"><a href="{{ url_for('employees.list_employees') }}" class="nav-link px-2 text-body-secondary">Employee</a></li>
-            <li class="nav-item"><a href="{{ url_for('interventions.list_interventions') }}" class="nav-link px-2 text-body-secondary">Intervention</a></li>
-            <li class="nav-item"><a href="{{ url_for('invoices.list_invoices') }}" class="nav-link px-2 text-body-secondary">Invoice</a></li>
-            {% endif %}
-        </ul>
     </footer>
 </body>
 </html>

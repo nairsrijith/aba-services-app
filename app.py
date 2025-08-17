@@ -7,13 +7,13 @@ import io
 
 
 @app.route('/')
-def home():
+def index():
     return redirect(url_for('login'))
 
 
-@app.route('/user')
-def user():
-    return render_template('user.html')
+@app.route('/home')
+def home():
+    return render_template('home.html')
 
 
 @app.route('/admin')
@@ -26,13 +26,13 @@ def admin():
 def logout():
     logout_user()
     flash('You have been logged out.', 'success')
-    return redirect(url_for('home'))
+    return redirect(url_for('index'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('user'))
+        return redirect(url_for('home'))
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -44,19 +44,10 @@ def login():
                 login_user(user)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
-                match user.user_type:
-                    case "super":
-                        if next_page == None or not next_page.startswith('/'):
-                            next_page = url_for('admin')
-                        return redirect(next_page)
-                    case "admin":
-                        if next_page == None or not next_page.startswith('/'):
-                            next_page = url_for('admin')
-                        return redirect(next_page)
-                    case "user":
-                        if next_page == None or not next_page.startswith('/'):
-                            next_page = url_for('user')
-                        return redirect(next_page)
+
+                if next_page == None or not next_page.startswith('/'):
+                    next_page = url_for('home')
+                return redirect(next_page)
         else:
             flash('Invalid email or password.', 'danger')
     return render_template('login.html', form=form)
@@ -65,7 +56,7 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('index'))
     
     form = RegistrationForm()
 
