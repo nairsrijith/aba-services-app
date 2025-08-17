@@ -11,7 +11,7 @@ def initialize_database():
         admin_user = User.query.filter_by(email='admin@admin.com').first()
         if not admin_user:
             # Create admin user
-            hashed_password = generate_password_hash('Admin123$%^')
+            hashed_password = generate_password_hash('Admin1!')
             new_admin = User(email='admin@admin.com', password_hash=hashed_password, user_type="super", locked=False, activation_key="")
             db.session.add(new_admin)
             db.session.commit()
