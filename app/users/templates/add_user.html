@@ -12,7 +12,7 @@
             <div class="row mb-3">
                 <div>{{ form.email.label(class="col-form-label") }}{{ form.email(class="form-control", placeholder="email@example.com") }}</div>
                 <div>{{ form.user_type.label(class="col-form-label") }}{{ form.user_type(class="form-select") }}</div>
-                <div>{{ form.activation_key.label(class="col-form-label") }}{{ form.activation_key(class="form-control", placeholder="To be shared with the user, which will be used during registration.") }}</div>
+                <div>{{ form.activation_key.label(class="col-form-label") }}{{ form.activation_key(class="form-control", placeholder="To be shared with the user, which they will need during registration.") }}</div>
             </div>
             {{ form.submit(class="btn btn-outline-primary") }} <a href="{{ url_for('users.add_user') }}" class="btn btn-secondary ms-2">Cancel</a>
         </form>
