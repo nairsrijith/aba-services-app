@@ -27,3 +27,20 @@ def add_user():
         return render_template('add_user.html', form=form)
     else:
         return redirect(url_for('index'))
+
+
+@users_bp.route('/list', methods=['GET','POST'])
+@login_required
+def list_users():
+    if current_user.is_authenticated and not current_user.user_type == "user":
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        users_pagination = User.query.filter(~((User.user_type == 'super') | (User.email == current_user.email))).paginate(page=page, per_page=per_page, error_out=False)
+        return render_template(
+            'list_user.html',
+            users=users_pagination.items,
+            pagination=users_pagination,
+            per_page=per_page
+        )
+    else:
+        return redirect(url_for('index'))

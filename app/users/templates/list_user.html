@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-2 mb-4 rounded-3">
+    <div class="container-fluid py-2">
+        <h2>Users
+            <a href="{{ url_for('users.add_user') }}" class="btn btn-outline-success mb-3" title="Add New User">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person-plus" viewBox="0 0 16 16">
+                    <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
+                    <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5"/>
+                </svg>
+            </a>
+        </h2>
+        <form method="get" class="mb-3 d-flex align-items-center">
+            <label for="per_page" class="me-2">Rows per page:</label>
+            <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
+                <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+            </select>
+            <input type="hidden" name="page" value="{{ pagination.page }}">
+        </form>
+        <table class="table table-hover">
+            <tbody>
+                <tr>
+                    <th>Email</th>
+                    <th>Type</th>
+                    <th>Locked</th>
+                    <th>Activated</th>
+                </tr>
+                {% if not users %}
+                    <tr><td colspan="4" class="text-center">No users found.</td></tr>
+                {% else %}
+                    {% for user in users %}
+                        <tr>
+                            <td>{{user.email}}</td>
+                            <td>{{user.user_type}}</td>
+                            <td><input type="checkbox" disabled {% if user.locked %}checked{% endif %}></td>
+                            <td><input type="checkbox" disabled {% if not user.activation_key %}checked{% endif %}></td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+        <nav>
+            <ul class="pagination justify-content-end">
+                {# Previous #}
+                {% set prev_args = request.args.to_dict() %}
+                {% set _ = prev_args.update({'page': pagination.prev_num, 'per_page': per_page}) %}
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('clients.list_clients', **prev_args) }}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                {# Page numbers #}
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        {% set page_args = request.args.to_dict() %}
+                        {% set _ = page_args.update({'page': p, 'per_page': per_page}) %}
+                        {% if p == pagination.page %}
+                            <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('users.list_users', **page_args) }}">{{ p }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {# Next #}
+                {% set next_args = request.args.to_dict() %}
+                {% set _ = next_args.update({'page': pagination.next_num, 'per_page': per_page}) %}
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('users.list_users', **next_args) }}">Next</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}
