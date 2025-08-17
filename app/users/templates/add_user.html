@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-2 mb-4 rounded-3">
+    <div class="container-fluid py-2">
+        <h2>Add new User</h2>
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            Use this page to add a new user.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row mb-3">
+                <div>{{ form.email.label(class="col-form-label") }}{{ form.email(class="form-control", placeholder="email@example.com") }}</div>
+                <div>{{ form.user_type.label(class="col-form-label") }}{{ form.user_type(class="form-select") }}</div>
+                <div>{{ form.activation_key.label(class="col-form-label") }}{{ form.activation_key(class="form-control", placeholder="To be shared with the user, which will be used during registration.") }}</div>
+            </div>
+            {{ form.submit(class="btn btn-outline-primary") }} <a href="{{ url_for('users.add_user') }}" class="btn btn-secondary ms-2">Cancel</a>
+        </form>
+</div>
+{% endblock %}
