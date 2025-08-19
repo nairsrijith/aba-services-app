@@ -23,7 +23,7 @@ def add_user():
                             )
             db.session.add(new_user)
             db.session.commit()
-            return redirect(url_for('users.add_user'))
+            return redirect(url_for('users.list_users'))
         return render_template('add_user.html', form=form)
     else:
         return redirect(url_for('index'))

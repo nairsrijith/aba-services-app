@@ -16,6 +16,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(200), nullable=False)
     user_type = db.Column(db.String(51), default=None, nullable=False)
     locked = db.Column(db.Boolean, default=False, nullable=False)
+    failed_attempt = db.Column(db.Integer, default=0, nullable=False)
     activation_key = db.Column(db.String(15), nullable=True, default=None)
 
     def set_password(self, password):

@@ -37,10 +37,14 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        if user and user.check_password(form.password.data):
-            if user.locked:
-                flash('You account is locked. Contact Administrator.', 'danger')
-            else:
+        if not user:
+            flash('Your account is not registered. Contact Administrator.')
+        elif user.activation_key != "" :
+            flash('Your account is not activated. Contact Administrator for activation key.', 'danger')
+        elif user.locked:
+            flash('Your account is locked. Contact Administrator.', 'danger')
+        else:
+            if user.check_password(form.password.data):
                 login_user(user)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
@@ -48,8 +52,18 @@ def login():
                 if next_page == None or not next_page.startswith('/'):
                     next_page = url_for('home')
                 return redirect(next_page)
-        else:
-            flash('Invalid email or password.', 'danger')
+            elif user.user_type != "super":
+                user.failed_attempt = user.failed_attempt-1
+                if user.failed_attempt == 0:
+                    user.locked = True
+                    flash('Your account is locked. Contact Administrator', 'danger')
+                else:
+                    flash(f"Incorrect password. {user.failed_attempt} remaining attempt(s).", 'danger')    
+                db.session.commit()
+            else:
+                flash('Incorrect password. Try again.', 'danger')
+
+                
     return render_template('login.html', form=form)
 
 
@@ -66,8 +80,10 @@ def register():
             if user.activation_key == form.activation_key.data: 
                 user.email = form.email.data
                 user.set_password(form.password.data)
+                user.failed_attempt = 3
                 user.activation_key = ""
                 db.session.commit()
+                flash('Account registration complete.', 'success')
                 return redirect(url_for('login'))
             else:
                 flash('Incorrect activation key. Contact Administrator', 'danger')
