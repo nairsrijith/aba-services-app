@@ -19,6 +19,7 @@ def add_user():
                             password_hash="",
                             user_type=form.user_type.data,
                             locked=0,
+                            failed_attempt=3,
                             activation_key=form.activation_key.data
                             )
             db.session.add(new_user)
@@ -42,5 +43,43 @@ def list_users():
             pagination=users_pagination,
             per_page=per_page
         )
+    else:
+        return redirect(url_for('index'))
+    
+
+@users_bp.route('/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def delete_user(id):
+    if current_user.is_authenticated and not current_user.user_type == "user":
+        user = User.query.get_or_404(id)
+        db.session.delete(user)
+        db.session.commit()
+        return redirect(url_for('users.list_users'))
+    else:
+        return redirect(url_for('index'))
+    
+
+@users_bp.route('/lock/<int:id>', methods=['GET', 'POST'])
+@login_required
+def lock_user(id):
+    if current_user.is_authenticated and not current_user.user_type == "user":
+        user = User.query.get_or_404(id)
+        user.locked = True
+        user.failed_attempt = 0
+        db.session.commit()
+        return redirect(url_for('users.list_users'))
+    else:
+        return redirect(url_for('index'))
+
+
+@users_bp.route('/unlock/<int:id>', methods=['GET', 'POST'])
+@login_required
+def unlock_user(id):
+    if current_user.is_authenticated and not current_user.user_type == "user":
+        user = User.query.get_or_404(id)
+        user.locked = False
+        user.failed_attempt = 3
+        db.session.commit()
+        return redirect(url_for('users.list_users'))
     else:
         return redirect(url_for('index'))
