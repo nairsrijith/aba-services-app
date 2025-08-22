@@ -18,9 +18,9 @@
         </form>
         <table class="table table-hover">
             <tbody>
-                <tr style="text-align: center;">
+                <tr>
                     <th>Email</th>
-                    <th>Type</th>
+                    <th>Role</th>
                     <th>Locked</th>
                     <th>Activated</th>
                     <th>Actions</th>
@@ -29,13 +29,22 @@
                     <tr><td colspan="5" class="text-center">No users found.</td></tr>
                 {% else %}
                     {% for user in users %}
-                        <tr style="text-align: center;">
+                        <tr>
                             <td>{{user.email}}</td>
                             <td>{{user.user_type}}</td>
                             <td><input type="checkbox" disabled {% if user.locked %}checked{% endif %}></td>
-                            <td><input type="checkbox" disabled {% if not user.activation_key %}checked{% endif %}></td>
+                            <td><input type="checkbox" disabled {% if not user.activation_key %}checked{% endif %}> {{ user.activation_key }}</td>
                             <td>
                                 <div class="btn-group" role="group" aria-label="Action buttons">
+                                    {% if user.user_type == "user" %}
+                                        <button class="btn btn-primary btn-sm" title="Promote to Admin">
+                                            <i class="bi bi-arrow-bar-up"></i>
+                                        </button>
+                                    {% elif user.user_type == "admin" %}
+                                        <button class="btn btn-primary btn-sm" title="Demote to User">
+                                            <i class="bi bi-arrow-bar-down"></i>
+                                        </button>
+                                    {% endif %}
                                     {% if user.locked %}
                                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">
                                             <i class="bi bi-unlock"></i>
@@ -174,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     lockModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
         var userId = button.getAttribute('data-user-id');
-        var userEmail = button.getAttribute('data-user-email');
+        var userEmail = "button.getAttribute('data-user-email')";
         var form = document.getElementById('lockForm');
         form.action = '/users/lock/' + userId;
         document.getElementById('userEmail').textContent = userEmail;

@@ -76,10 +76,11 @@ def register():
 
     if request.method == 'POST':
         user = User.query.filter_by(email=form.email.data).first()
-        if user and not user.locked and user.email == form.email.data:
+        if user and user.email == form.email.data:
             if user.activation_key == form.activation_key.data: 
                 user.email = form.email.data
                 user.set_password(form.password.data)
+                user.locked = False
                 user.failed_attempt = 3
                 user.activation_key = ""
                 db.session.commit()
