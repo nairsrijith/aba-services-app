@@ -31,23 +31,19 @@
                     {% for user in users %}
                         <tr>
                             <td>{{user.email}}</td>
-                            <td>{{user.user_type}}</td>
+                            <td>{{user.user_type | upper}}</td>
                             <td><input type="checkbox" disabled {% if user.locked %}checked{% endif %}></td>
                             <td><input type="checkbox" disabled {% if not user.activation_key %}checked{% endif %}> {{ user.activation_key }}</td>
                             <td>
                                 <div class="btn-group" role="group" aria-label="Action buttons">
                                     {% if user.user_type == "user" %}
-                                        <form method="POST" action="{{ url_for('users.promote_user', id=user.id) }}" style="display:inline;">
-                                            <button class="btn btn-success btn-sm" title="Promote to Admin">
-                                                <i class="bi bi-graph-up-arrow"></i>
-                                            </button>
-                                        </form>
+                                        <button class="btn btn-success btn-sm" title="Promote to Admin" onclick="submitRoleForm('{{ url_for('users.promote_user', id=user.id) }}')">
+                                            <i class="bi bi-graph-up-arrow"></i>
+                                        </button>
                                     {% elif user.user_type == "admin" %}
-                                        <form method="POST" action="{{ url_for('users.demote_user', id=user.id) }}" style="display:inline;">
-                                            <button class="btn btn-danger btn-sm" title="Demote to User">
-                                                <i class="bi bi-graph-down-arrow"></i>
-                                            </button>
-                                        </form>
+                                        <button class="btn btn-danger btn-sm" title="Demote to User" onclick="submitRoleForm('{{ url_for('users.demote_user', id=user.id) }}')">
+                                            <i class="bi bi-graph-down-arrow"></i>
+                                        </button>
                                     {% endif %}
                                     {% if user.locked %}
                                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">
@@ -62,7 +58,7 @@
                                         <i class="bi bi-trash3"></i>
                                     </button>
                                 </div>
-                                
+                                <form id="roleForm-{{ user.id }}" method="POST" style="display:none;"></form>
                             </td>
                         </tr>
                     {% endfor %}
@@ -121,7 +117,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                Are you sure you want to delete the record of <strong><span id="userEmail"></span></strong>?
+                Are you sure you want to delete the record of <strong><span id="userEmailDelete"></span></strong>?
                 </div>
                 <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -141,7 +137,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                Are you sure you want to lock the user <strong><span id="userEmail"></span></strong>?
+                Are you sure you want to lock the user <strong><span id="userEmailLock"></span></strong>?
                 </div>
                 <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -161,7 +157,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                Are you sure you want to unlock the user <strong><span id="userEmail"></span></strong>?
+                Are you sure you want to unlock the user <strong><span id="userEmailUnlock"></span></strong>?
                 </div>
                 <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -181,16 +177,16 @@ document.addEventListener('DOMContentLoaded', function() {
         var userEmail = button.getAttribute('data-user-email');
         var form = document.getElementById('deleteForm');
         form.action = '/users/delete/' + userId;
-        document.getElementById('userEmail').textContent = userEmail;
+        document.getElementById('userEmailDelete').textContent = userEmail;
     });
     var lockModal = document.getElementById('lockModal');
     lockModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
         var userId = button.getAttribute('data-user-id');
-        var userEmail = "button.getAttribute('data-user-email')";
+        var userEmail = button.getAttribute('data-user-email');
         var form = document.getElementById('lockForm');
         form.action = '/users/lock/' + userId;
-        document.getElementById('userEmail').textContent = userEmail;
+        document.getElementById('userEmailLock').textContent = userEmail;
     });
     var unlockModal = document.getElementById('unlockModal');
     unlockModal.addEventListener('show.bs.modal', function (event) {
@@ -199,8 +195,17 @@ document.addEventListener('DOMContentLoaded', function() {
         var userEmail = button.getAttribute('data-user-email');
         var form = document.getElementById('unlockForm');
         form.action = '/users/unlock/' + userId;
-        document.getElementById('userEmail').textContent = userEmail;
+        document.getElementById('userEmailUnlock').textContent = userEmail;
     });
 });
+
+function submitRoleForm(actionUrl) {
+    // Create a temporary form or use the hidden one
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = actionUrl;
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 {% endblock %}
