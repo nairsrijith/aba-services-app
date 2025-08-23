@@ -9,7 +9,7 @@
                 <div>{{ form.email.label(class="col-form-label") }}{{ form.email(class="form-control", placeholder="email@example.com") }}</div>
                 <div>{{ form.user_type.label(class="col-form-label") }}{{ form.user_type(class="form-select") }}</div>
                 <div>{{ form.activation_key.label(class="col-form-label") }}
-                    <button onclick="generateActivationKey()" title="Regenerate activation key" style="background-color: transparent; border: 0cap; ">
+                    <button type="button" onclick="generateActivationKey()" title="Regenerate activation key" style="background-color: transparent; border: 0cap; ">
                         <i class="bi bi-arrow-clockwise fs-7"></i>
                     </button>
                     {{ form.activation_key(class="form-control-plaintext", placeholder="To be shared with the user, which they will need during registration.", id="activationKey", readonly=true) }}</div>

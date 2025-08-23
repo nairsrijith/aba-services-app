@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, abort, request
 from app import db
 from app.models import Client
 from app.clients.forms import AddClientForm, UpdateClientForm
@@ -38,7 +38,7 @@ def add_client():
             return redirect(url_for('clients.list_clients'))
         return render_template('add.html', form=form)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @clients_bp.route('/list', methods=['GET', 'POST'])
@@ -55,7 +55,7 @@ def list_clients():
             per_page=per_page
         )
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @clients_bp.route('/delete/<int:client_id>', methods=['GET', 'POST'])
@@ -67,7 +67,7 @@ def delete_client(client_id):
         db.session.commit()
         return redirect(url_for('clients.list_clients'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @clients_bp.route('/update/<int:client_id>', methods=['GET', 'POST'])
@@ -101,5 +101,5 @@ def update_client(client_id):
             return redirect(url_for('clients.list_clients'))
         return render_template('update.html', form=form, client=client)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 

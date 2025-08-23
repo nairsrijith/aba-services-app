@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, make_response
+from flask import Blueprint, render_template, redirect, url_for, request, flash, make_response, abort
 from app import db
 from app.models import Invoice, Intervention, Client, Activity
 from app.invoices.forms import InvoiceClientSelectionForm
@@ -24,7 +24,7 @@ def list_invoices():
         invoices = Invoice.query.order_by(Invoice.invoiced_date.desc()).all()
         return render_template('list_invoices.html', invoices=invoices)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @invoices_bp.route('/invoice_client_selection', methods=['GET', 'POST'])
@@ -41,7 +41,7 @@ def invoice_client_select():
                 dt=form.date_to.data))
         return render_template('invoice_client_select.html', form=form)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @invoices_bp.route('/invoice_preview', methods=['GET', 'POST'])
@@ -134,7 +134,7 @@ def invoice_preview():
             interventions=interventions
         )
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @invoices_bp.route('/download_invoice/<invoice_number>', methods=['GET'])
@@ -186,7 +186,7 @@ def download_invoice_pdf_by_number(invoice_number):
         response.headers['Content-Disposition'] = f'attachment; filename={invoice.invoice_number}.pdf'
         return response
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @invoices_bp.route('/preview_invoice/<invoice_number>', methods=['GET'])
@@ -229,7 +229,7 @@ def preview_invoice_by_number(invoice_number):
             total_cost=invoice.total_cost
         )
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @invoices_bp.route('/delete_invoice/<invoice_number>', methods=['POST'])
@@ -247,4 +247,4 @@ def delete_invoice(invoice_number):
         flash('Invoice and related interventions updated.', 'success')
         return redirect(url_for('invoices.list_invoices'))
     else:
-        return redirect(url_for('index'))
+        abort(403)

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, abort
 from app import db
 from app.models import Employee, Designation
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
@@ -35,7 +35,7 @@ def add_employee():
             return redirect(url_for('employees.list_employees'))
         return render_template('add_emp.html', form=form)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @employees_bp.route('/list', methods=['GET', 'POST'])
@@ -52,7 +52,7 @@ def list_employees():
             per_page=per_page
         )
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @employees_bp.route('/delete/<int:employee_id>', methods=['GET', 'POST'])
@@ -64,7 +64,7 @@ def delete_employee(employee_id):
         db.session.commit()
         return redirect(url_for('employees.list_employees'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @employees_bp.route('/update/<int:employee_id>', methods=['GET', 'POST'])
@@ -97,6 +97,6 @@ def update_employee(employee_id):
             return redirect(url_for('employees.list_employees'))
         return render_template('update_emp.html', form=form, employee=employee)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 

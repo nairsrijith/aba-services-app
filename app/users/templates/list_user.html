@@ -37,13 +37,17 @@
                             <td>
                                 <div class="btn-group" role="group" aria-label="Action buttons">
                                     {% if user.user_type == "user" %}
-                                        <button class="btn btn-primary btn-sm" title="Promote to Admin">
-                                            <i class="bi bi-arrow-bar-up"></i>
-                                        </button>
+                                        <form method="POST" action="{{ url_for('users.promote_user', id=user.id) }}" style="display:inline;">
+                                            <button class="btn btn-success btn-sm" title="Promote to Admin">
+                                                <i class="bi bi-graph-up-arrow"></i>
+                                            </button>
+                                        </form>
                                     {% elif user.user_type == "admin" %}
-                                        <button class="btn btn-primary btn-sm" title="Demote to User">
-                                            <i class="bi bi-arrow-bar-down"></i>
-                                        </button>
+                                        <form method="POST" action="{{ url_for('users.demote_user', id=user.id) }}" style="display:inline;">
+                                            <button class="btn btn-danger btn-sm" title="Demote to User">
+                                                <i class="bi bi-graph-down-arrow"></i>
+                                            </button>
+                                        </form>
                                     {% endif %}
                                     {% if user.locked %}
                                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">

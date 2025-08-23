@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, abort
 from app import db
 from app.models import Intervention, Client, Employee, Activity
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
@@ -32,7 +32,7 @@ def add_intervention():
             return redirect(url_for('interventions.list_interventions'))
         return render_template('add_int.html', form=form)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @interventions_bp.route('/list', methods=['GET'])
@@ -88,7 +88,7 @@ def list_interventions():
             activities=activities
         )
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @interventions_bp.route('/bulk_delete', methods=['POST'])
@@ -101,7 +101,7 @@ def bulk_delete():
             db.session.commit()
         return redirect(url_for('interventions.list_interventions'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @interventions_bp.route('/update/<int:intervention_id>', methods=['GET', 'POST'])
@@ -128,4 +128,4 @@ def update_intervention(intervention_id):
             return redirect(url_for('interventions.list_interventions'))
         return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all())
     else:
-        return redirect(url_for('index'))
+        abort(403)

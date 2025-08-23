@@ -34,6 +34,10 @@ app.register_blueprint(invoices_bp, url_prefix='/invoices')
 from app.users.views import users_bp
 app.register_blueprint(users_bp, url_prefix='/users')
 
+from app.error_pages.handlers import error_pages
+app.register_blueprint(error_pages)
+
+
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'my_app_super_secret_key'

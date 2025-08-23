@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from app import db
 from app.models import User
 from app.users.forms import AddUserForm
@@ -26,6 +26,7 @@ def add_user():
     if current_user.is_authenticated and not current_user.user_type == "user":
         form = AddUserForm()
         form.user_type.choices = [("admin", "Admin"), ("user", "User")]
+        form.activation_key.data = generate_activation_code(8)
         if form.validate_on_submit():
             user = User.query.filter_by(email=form.email.data).first()
             if not user:
@@ -43,7 +44,7 @@ def add_user():
                 flash('This email is already registered. Try logging in or contact Administrator', 'warning')
         return render_template('add_user.html', form=form)
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @users_bp.route('/list', methods=['GET','POST'])
@@ -60,7 +61,7 @@ def list_users():
             per_page=per_page
         )
     else:
-        return redirect(url_for('index'))
+        abort(403)
     
 
 @users_bp.route('/delete/<int:id>', methods=['GET', 'POST'])
@@ -72,7 +73,7 @@ def delete_user(id):
         db.session.commit()
         return redirect(url_for('users.list_users'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
     
 
 @users_bp.route('/lock/<int:id>', methods=['GET', 'POST'])
@@ -85,7 +86,7 @@ def lock_user(id):
         db.session.commit()
         return redirect(url_for('users.list_users'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
 @users_bp.route('/unlock/<int:id>', methods=['GET', 'POST'])
@@ -98,34 +99,30 @@ def unlock_user(id):
         db.session.commit()
         return redirect(url_for('users.list_users'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
     
 
-@users_bp.route('/deactivate/<int:id>', methods=['GET', 'POST'])
+@users_bp.route('/promote/<int:id>', methods=['GET','POST'])
 @login_required
-def deactivate_user(id):
+def promote_user(id):
     if current_user.is_authenticated and not current_user.user_type == "user":
         user = User.query.get_or_404(id)
-        user.locked = True
-        user.failed_attempt = 0
-        user.password_hash = ""
+        user.user_type = "admin"
         db.session.commit()
         return redirect(url_for('users.list_users'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
-@users_bp.route('/activate/<int:id>', methods=['GET', 'POST'])
+@users_bp.route('/demote/<int:id>', methods=['GET','POST'])
 @login_required
-def activate_user(id):
+def demote_user(id):
     if current_user.is_authenticated and not current_user.user_type == "user":
         user = User.query.get_or_404(id)
-        user.locked = False
-        user.failed_attempt = 3
-        user.activation_key = generate_activation_code(length=12)
+        user.user_type = "user"
         db.session.commit()
         return redirect(url_for('users.list_users'))
     else:
-        return redirect(url_for('index'))
+        abort(403)
 
 
