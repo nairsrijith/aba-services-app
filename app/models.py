@@ -81,10 +81,13 @@ class Client(db.Model):
     city = db.Column(db.String(51), nullable=False)
     state = db.Column(db.String(2), nullable=False)
     zipcode = db.Column(db.String(6), nullable=False)
+    supervisor_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
     cost_supervision = db.Column(db.Float, nullable=False, default=0.0)
     cost_therapy = db.Column(db.Float, nullable=False, default=0.0)
 
-    def __init__(self, firstname, lastname, dob, gender, parentname, parentemail, parentcell, address1, address2, city, state, zipcode, cost_supervision=0.0, cost_therapy=0.0):
+    supervisor = db.relationship('Employee', backref='clients')
+
+    def __init__(self, firstname, lastname, dob, gender, parentname, parentemail, parentcell, address1, address2, city, state, zipcode, supervisor_id, cost_supervision=0.0, cost_therapy=0.0):
         self.firstname = firstname
         self.lastname = lastname
         self.dob = dob
@@ -97,6 +100,7 @@ class Client(db.Model):
         self.city = city
         self.state = state
         self.zipcode = zipcode
+        self.supervisor_id = supervisor_id
         self.cost_supervision = cost_supervision
         self.cost_therapy = cost_therapy
 

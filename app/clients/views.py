@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, abort, request
 from app import db
-from app.models import Client
+from app.models import Client, Employee
 from app.clients.forms import AddClientForm, UpdateClientForm
 from flask_login import login_required, current_user
 
@@ -18,6 +18,7 @@ def add_client():
                             ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
                             ("NU", "Nunavut"), ("YT", "Yukon")]
         form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
+        form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst').all()]
         if form.validate_on_submit():
             new_client = Client(firstname=form.firstname.data.title(),
                                 lastname=form.lastname.data.title(),
@@ -31,6 +32,7 @@ def add_client():
                                 city=form.city.data.title(),
                                 state=form.state.data,
                                 zipcode=form.zipcode.data.upper(),
+                                supervisor_id=form.supervisor_id.data,
                                 cost_supervision=form.cost_supervision.data or 0.0,
                                 cost_therapy=form.cost_therapy.data or 0.0)
             db.session.add(new_client)
@@ -82,6 +84,7 @@ def update_client(client_id):
                             ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
                             ("NU", "Nunavut"), ("YT", "Yukon")]
         form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
+        form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst').all()]
         if request.method == 'POST':
             client.firstname = form.firstname.data.title()
             client.lastname = form.lastname.data.title()
@@ -95,6 +98,7 @@ def update_client(client_id):
             client.city = form.city.data
             client.state = form.state.data.title()
             client.zipcode = form.zipcode.data.upper()
+            client.supervisor_id = form.supervisor_id.data
             client.cost_supervision = form.cost_supervision.data or 0
             client.cost_therapy = form.cost_therapy.data or 0
             db.session.commit()
