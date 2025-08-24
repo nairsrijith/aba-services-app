@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, abort, request
+from flask import Blueprint, render_template, redirect, url_for, abort, flash, request
 from app import db
-from app.models import Client, Employee
+from app.models import Client, Employee, Intervention
 from app.clients.forms import AddClientForm, UpdateClientForm
 from flask_login import login_required, current_user
 
@@ -65,8 +65,13 @@ def list_clients():
 def delete_client(client_id):
     if current_user.is_authenticated and current_user.user_type == "admin":
         client = Client.query.get_or_404(client_id)
+        interventions = Intervention.query.filter_by(client_id=client.id).all()
+        if interventions:
+            flash('Cannot delete client with associated interventions. Please delete interventions first.', 'danger')
+            return redirect(url_for('clients.list_clients'))
         db.session.delete(client)
         db.session.commit()
+        flash("Client deleted successfully.", "success")
         return redirect(url_for('clients.list_clients'))
     else:
         abort(403)

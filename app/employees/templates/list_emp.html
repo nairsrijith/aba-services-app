@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="p-2 mb-4 rounded-3">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {{ messages[0] }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
+    {% endwith %}
     <div class="container-fluid py-2">
         <h2>Employees
             <a href="{{ url_for('employees.add_employee') }}" class="btn btn-outline-success mb-3" style="border: 0cap;" title="Add New Employee">

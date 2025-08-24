@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, make_response, abort
 from app import db
-from app.models import Invoice, Intervention, Client, Activity
+from app.models import Invoice, Intervention, Client, Activity, Employee
 from app.invoices.forms import InvoiceClientSelectionForm
 from datetime import date, timedelta, datetime
 from flask_login import login_required, current_user
@@ -59,6 +59,10 @@ def invoice_preview():
             Intervention.date >= date_from,
             Intervention.date <= date_to
             ).order_by(Intervention.date, Intervention.start_time).all()
+
+        # Get the superivisor's name
+        supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
+        supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
 
         # Generate invoice number and dates
         invoice_number = Invoice.generate_invoice_number()
@@ -131,6 +135,7 @@ def invoice_preview():
             payby_date=payby_date.strftime('%Y-%m-%d'),
             date_from=date_from.strftime('%Y-%m-%d'),
             date_to=date_to.strftime('%Y-%m-%d'),
+            supervisor_name=supervisor_name,
             interventions=interventions
         )
     else:
@@ -166,6 +171,10 @@ def download_invoice_pdf_by_number(invoice_number):
         parent_name = getattr(client, 'parent_name', '')
         address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
 
+        # Get the superivisor's name
+        supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
+        supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+
         html = render_template(
             'invoice_pdf.html',  # <-- use the new template!
             org_name="1001256835 ONTARIO INC.",
@@ -177,6 +186,7 @@ def download_invoice_pdf_by_number(invoice_number):
             payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
             date_from=invoice.date_from.strftime('%Y-%m-%d'),
             date_to=invoice.date_to.strftime('%Y-%m-%d'),
+            supervisor_name=supervisor_name,
             interventions=interventions
         )
 
@@ -214,6 +224,11 @@ def preview_invoice_by_number(invoice_number):
                 i.cost = 0
         parent_name = getattr(client, 'parent_name', '')
         address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
+
+        # Get the superivisor's name
+        supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
+        supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+
         return render_template(
             'invoice_preview.html',
             org_name="1001256835 ONTARIO INC.",
@@ -225,6 +240,7 @@ def preview_invoice_by_number(invoice_number):
             payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
             date_from=invoice.date_from.strftime('%Y-%m-%d'),
             date_to=invoice.date_to.strftime('%Y-%m-%d'),
+            supervisor_name=supervisor_name,
             interventions=interventions,
             total_cost=invoice.total_cost
         )

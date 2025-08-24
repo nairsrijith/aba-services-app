@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, request, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from app import db
-from app.models import Employee, Designation
+from app.models import Employee, Designation, Intervention, Client
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
 
@@ -60,6 +60,14 @@ def list_employees():
 def delete_employee(employee_id):
     if current_user.is_authenticated and current_user.user_type == "admin":
         employee = Employee.query.get_or_404(employee_id)
+        interventions = Intervention.query.filter_by(employee_id=employee.id).all()
+        if interventions:
+            flash('Cannot delete employee with associated interventions. Please reassign or delete interventions first.', 'danger')
+            return redirect(url_for('employees.list_employees'))
+        clients = Client.query.filter_by(supervisor_id=employee.id).all()
+        if clients:
+            flash('Cannot delete employee who is a supervisor for clients. Please reassign or delete clients first.', 'danger')
+            return redirect(url_for('employees.list_employees'))
         db.session.delete(employee)
         db.session.commit()
         return redirect(url_for('employees.list_employees'))
