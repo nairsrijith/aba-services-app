@@ -31,6 +31,12 @@ def list_invoices():
 @login_required
 def invoice_client_select():
     if current_user.is_authenticated and current_user.user_type == "admin":
+        
+        clients = Client.query.all()
+        if not clients:
+            flash('Please add clients before creating invoices.', 'warning')
+            return redirect(url_for('clients.list_clients'))
+        
         form = InvoiceClientSelectionForm()
         form.client_id.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.all()]
         if form.validate_on_submit():

@@ -2,38 +2,25 @@
 {% block content %}
 <div class="p-2 mb-4 rounded-3">
     <div class="container-fluid py-2">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         <h2>Add new User</h2>
         <form method="POST">
             {{ form.hidden_tag() }}
             <div class="row mb-3">
                 <div>{{ form.email.label(class="col-form-label") }}{{ form.email(class="form-control", placeholder="email@example.com") }}</div>
                 <div>{{ form.user_type.label(class="col-form-label") }}{{ form.user_type(class="form-select") }}</div>
-                <div>{{ form.activation_key.label(class="col-form-label") }}
-                    <button type="button" onclick="generateActivationKey()" title="Regenerate activation key" style="background-color: transparent; border: 0cap; ">
-                        <i class="bi bi-arrow-clockwise fs-7"></i>
-                    </button>
-                    {{ form.activation_key(class="form-control-plaintext", placeholder="To be shared with the user, which they will need during registration.", id="activationKey", readonly=true) }}</div>
             </div>
             {{ form.submit(class="btn btn-outline-primary mb-3") }} <a href="{{ url_for('users.list_users') }}" class="btn btn-secondary ms-2 mb-3">Cancel</a>
         </form>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    {{ messages[0] }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endif %}
-        {% endwith %}
     </div>
 </div>
-<script>
-    function generateActivationKey(length=8) {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            result += characters.charAt(Math.floor(Math.random() * characters.length));
-        }
-        document.getElementById('activationKey').value = result
-    }
-</script>
 {% endblock %}

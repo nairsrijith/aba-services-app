@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, abort
+from flask import Blueprint, render_template, redirect, url_for, request, abort, flash
 from app import db
 from app.models import Intervention, Client, Employee, Activity
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
@@ -14,6 +14,16 @@ interventions_bp = Blueprint('interventions', __name__, template_folder='templat
 @login_required
 def add_intervention():
     if current_user.is_authenticated and not current_user.user_type == "super":
+        employees = Employee.query.all()
+        if not employees:
+            flash('Please add employees before adding interventions.', 'warning')
+            return redirect(url_for('employees.list_employees'))
+        
+        clients = Client.query.all()
+        if not clients:
+            flash('Please add clients before adding interventions.', 'warning')
+            return redirect(url_for('clients.list_clients'))
+        
         form = AddInterventionForm()
         form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.all()]
         form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.all()]
