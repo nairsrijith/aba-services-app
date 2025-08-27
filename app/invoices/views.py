@@ -42,7 +42,7 @@ def invoice_client_select():
         print(interventions)
         if not interventions:
             flash('No uninvoiced interventions available to create an invoice.', 'warning')
-            return redirect(url_for('intervention.list_interventions'))
+            return redirect(url_for('interventions.list_interventions'))
         
         form = InvoiceClientSelectionForm()
         form.client_id.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.all()]
@@ -50,7 +50,7 @@ def invoice_client_select():
             interventions = Intervention.query.filter_by(and_(invoiced=False, client_id=form.client_id.data)).all()
             if not interventions:
                 flash('No uninvoiced interventions found for the selected client.', 'warning')
-                return redirect(url_for('intervention.list_interventions'))
+                return redirect(url_for('interventions.list_interventions'))
             
             return redirect(url_for(
                 'invoices.invoice_preview',
