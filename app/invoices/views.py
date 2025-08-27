@@ -33,18 +33,31 @@ def invoice_client_select():
     if current_user.is_authenticated and current_user.user_type == "admin":
         
         clients = Client.query.all()
+        print(clients)
         if not clients:
             flash('Please add clients before creating invoices.', 'warning')
             return redirect(url_for('clients.list_clients'))
         
+        interventions = Intervention.query.filter_by(invoiced=False).all()
+        print(interventions)
+        if not interventions:
+            flash('No uninvoiced interventions available to create an invoice.', 'warning')
+            return redirect(url_for('intervention.list_interventions'))
+        
         form = InvoiceClientSelectionForm()
         form.client_id.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.all()]
         if form.validate_on_submit():
+            interventions = Intervention.query.filter_by(and_(invoiced=False, client_id=form.client_id.data)).all()
+            if not interventions:
+                flash('No uninvoiced interventions found for the selected client.', 'warning')
+                return redirect(url_for('intervention.list_interventions'))
+            
             return redirect(url_for(
                 'invoices.invoice_preview',
                 ci=form.client_id.data,
                 df=form.date_from.data,
                 dt=form.date_to.data))
+        
         return render_template('invoice_client_select.html', form=form)
     else:
         abort(403)

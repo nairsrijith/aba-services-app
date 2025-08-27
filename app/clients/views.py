@@ -11,39 +11,40 @@ clients_bp = Blueprint('clients', __name__, template_folder='templates')
 @login_required
 def add_client():
     if current_user.is_authenticated and current_user.user_type == "admin":
+        
         supervisor = Employee.query.filter_by(position='Behaviour Analyst').first()
         if not supervisor:
             flash('Please add a Behaviour Analyst before adding clients.', 'warning')
             return redirect(url_for('employees.list_employees'))
-        else:
-            form = AddClientForm()
-            form.state.choices = [("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),
-                                ("NB", "New Brunswick"), ("NL", "Newfoundland and Labrador"),
-                                ("NS", "Nova Scotia"), ("ON", "Ontario"), ("PE", "Prince Edward Island"),
-                                ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
-                                ("NU", "Nunavut"), ("YT", "Yukon")]
-            form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
-            form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst').all()]
-            if form.validate_on_submit():
-                new_client = Client(firstname=form.firstname.data.title(),
-                                    lastname=form.lastname.data.title(),
-                                    dob=form.dob.data,
-                                    gender=form.gender.data.title(),
-                                    parentname=form.parentname.data.title(),
-                                    parentemail=form.parentemail.data,
-                                    parentcell=form.parentcell.data,
-                                    address1=form.address1.data.title(),
-                                    address2=form.address2.data.title(),
-                                    city=form.city.data.title(),
-                                    state=form.state.data,
-                                    zipcode=form.zipcode.data.upper(),
-                                    supervisor_id=form.supervisor_id.data,
-                                    cost_supervision=form.cost_supervision.data or 0.0,
-                                    cost_therapy=form.cost_therapy.data or 0.0)
-                db.session.add(new_client)
-                db.session.commit()
-                return redirect(url_for('clients.list_clients'))
-            return render_template('add.html', form=form)
+
+        form = AddClientForm()
+        form.state.choices = [("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),
+                            ("NB", "New Brunswick"), ("NL", "Newfoundland and Labrador"),
+                            ("NS", "Nova Scotia"), ("ON", "Ontario"), ("PE", "Prince Edward Island"),
+                            ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
+                            ("NU", "Nunavut"), ("YT", "Yukon")]
+        form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
+        form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst').all()]
+        if form.validate_on_submit():
+            new_client = Client(firstname=form.firstname.data.title(),
+                                lastname=form.lastname.data.title(),
+                                dob=form.dob.data,
+                                gender=form.gender.data.title(),
+                                parentname=form.parentname.data.title(),
+                                parentemail=form.parentemail.data,
+                                parentcell=form.parentcell.data,
+                                address1=form.address1.data.title(),
+                                address2=form.address2.data.title(),
+                                city=form.city.data.title(),
+                                state=form.state.data,
+                                zipcode=form.zipcode.data.upper(),
+                                supervisor_id=form.supervisor_id.data,
+                                cost_supervision=form.cost_supervision.data or 0.0,
+                                cost_therapy=form.cost_therapy.data or 0.0)
+            db.session.add(new_client)
+            db.session.commit()
+            return redirect(url_for('clients.list_clients'))
+        return render_template('add.html', form=form)
     else:
         abort(403)
 
