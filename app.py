@@ -1,5 +1,5 @@
 from app import app, db
-from app.models import User
+from app.models import User, Employee, Client, Intervention
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm
@@ -13,7 +13,11 @@ def index():
 
 @app.route('/home')
 def home():
-    return render_template('home.html')
+    total_employees = Employee.query.count()
+    total_clients = Client.query.count()
+    total_interventions = Intervention.query.count()
+    user_interventions = Intervention.query.join(Employee).filter(Employee.email == current_user.email).count()
+    return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions)
 
 
 @app.route('/admin')

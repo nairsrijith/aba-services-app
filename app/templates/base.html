@@ -10,6 +10,7 @@
     <style>
         body {
             margin: 0;
+            background-color: aliceblue;
         }
         .sidebar {
             background: #0a4a79;
@@ -240,14 +241,14 @@
         </div>
         <!-- Scrollable nav section (hidden in thin mode) -->
         <div class="sidebar-nav w-100 d-none d-md-block">
-            {% if current_user.is_authenticated %}
-                <ul class="nav nav-pills flex-column mb-auto">
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('index') }}">
-                            <i class="bi bi-house fs-4"></i>
-                            <span class="sidebar-link-text">Home</span>
-                        </a>
-                    </li>
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('home') }}">
+                        <i class="bi bi-house fs-4"></i>
+                        <span class="sidebar-link-text">Home</span>
+                    </a>
+                </li>
+                {% if current_user.is_authenticated %}
                     {% if current_user.user_type == "admin" %}
                         <li>
                             <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('employees.list_employees') }}">
@@ -278,12 +279,12 @@
                             </a>
                         </li>
                     {% endif %}
-                </ul>
-            {% endif %}
+                {% endif %}
+            </ul>
         </div>
         <!-- Add this after .sidebar-brand and before .sidebar-account -->
         <div class="sidebar-icon-nav">
-            <a href="{{ url_for('index') }}" class="text-white" title="Home">
+            <a href="{{ url_for('home') }}" class="text-white" title="Home">
                 <i class="bi bi-house fs-4"></i>
             </a>
             {% if current_user.user_type == "admin" %}
@@ -318,7 +319,7 @@
                         {% endif %}
                     </span>
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
+                <ul class="dropdown-menu" aria-labelledby="dropdownUser">
                     {% if current_user.is_authenticated %}
                         <li>
                             <a class="dropdown-item" href="{{ url_for('users.change_password') }}">
@@ -364,13 +365,13 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body d-flex flex-column">
-            {% if current_user.is_authenticated %}
-                <ul class="nav nav-pills flex-column mb-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="bi bi-house"></i> Home
-                        </a>
-                    </li>
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('home') }}">
+                        <i class="bi bi-house"></i> Home
+                    </a>
+                </li>
+                {% if current_user.is_authenticated %}
                     {% if current_user.user_type == "admin" %}
                         <li>
                             <a class="nav-link" href="{{ url_for('employees.list_employees') }}">
@@ -397,8 +398,8 @@
                             </a>
                         </li>
                     {% endif %}
-                </ul>
-            {% endif %}
+                {% endif %}
+            </ul>
             <div class="dropdown mt-auto">
                 <hr>
                 <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUserMobile" data-bs-toggle="dropdown" aria-expanded="false">

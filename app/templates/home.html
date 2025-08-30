@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-    <div class="p-2 mb-4 rounded-3">
+    <style>
+        .flex-container {
+        display: flex;
+        flex-wrap: wrap; /* Allows items to wrap to new lines */
+        justify-content: space-around; /* Distributes space around items */
+        }
+    </style>
+    <div class="p-4 mb-4 rounded-3">
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 <div class="alert alert-info alert-dismissible fade show" role="alert">
@@ -10,13 +17,56 @@
             {% endif %}
         {% endwith %}
         {% if current_user.is_authenticated %}
-            <h1>Welcome to MyApp</h1>
+            <h1>Welcome to your dashboard</h1>
+            <div class="row py-4">
+                <div class="card-group">
+                    {% if current_user.user_type == "admin" %}
+                        <div class="card">
+                            <div class="card-body">
+                            <h2 class="card-title" style="text-align: center;">Employees</h2>
+                            <div class="flex-container">
+                                <div class="flex-item" style="font-size: 4rem; text-align: left;"><i class="bi-person-badge"></i></div>
+                                <div class="flex-item" style="font-size: 4rem; text-align: right;">{{ total_employees }}</div>
+                            </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                            <h2 class="card-title" style="text-align: center;">Clients</h2>
+                            <div class="flex-container">
+                                <div class="flex-item" style="font-size: 4rem; text-align: left;"><i class="bi-person-arms-up"></i></div>
+                                <div class="flex-item" style="font-size: 4rem; text-align: right;">{{ total_clients }}</div>
+                            </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if current_user.user_type == "admin" or current_user.user_type == "user" %}
+                        <div class="card">
+                            <div class="card-body">
+                            <h2 class="card-title">Interventions</h2>
+                            <div class="flex-container" style="text-align: center;">
+                                <div class="flex-item" style="font-size: 4rem;"><i class="bi-journal-bookmark"></i></div>
+                                <div class="flex-item" style="font-size: 4rem;">{{ user_interventions }}</div>
+                                <div class="flex-item" style="font-size: 4rem;">{{ total_interventions }}</div>
+                            </div>
+                            <div class="flex-container">
+                                <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;"></div>
+                                <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;">You</div>
+                                <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;">Overall</div>
+                            </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
         {% else %}
             <div class="container-fluid py-2">
-                <h2>MICES</h2>
-                <h4>A comprehensive Business Management tool that handles Invoicing, Client relationships, Employee management, and Scheduling - quite a useful suite of features!</h4>
+                <h2>MyApp</h2>
+                <h4>A comprehensive Business Management tool for Employee management, Client relationships, Scheduling, and Invoicing</h4>
+                <p>Qutie useful suite of features!</p>
                 <div class="py-2">
-                    <p>You need to be logged in to view this page.</p>
+                    <p>You need to be logged in to use this web application.</p>
                     <p>Please <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('register') }}">register</a> to continue.</p>
                 </div>
             </div>
