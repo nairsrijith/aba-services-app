@@ -12,10 +12,18 @@ def get_date_ranges():
     # Current Month
     start_month = today.replace(day=1)
     end_month = (start_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    # Last Month
+    this_month = today.replace(day=1)
+    start_prev_month = (this_month - timedelta(days=1)).replace(day=1)
+    end_prev_month = (start_prev_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
     # Current Quarter
     quarter = (today.month - 1) // 3 + 1
     start_quarter = date(today.year, 3 * quarter - 2, 1)
     end_quarter = (start_quarter + timedelta(days=92)).replace(day=1) - timedelta(days=1)
+    # Last Quarter
+    prev_quarter = (today.month - 4) // 3 + 1
+    start_prev_quarter = date(today.year, 3 * prev_quarter - 2, 1)
+    end_prev_quarter = (start_prev_quarter + timedelta(days=92)).replace(day=1) - timedelta(days=1)
     # Current Year
     start_year = date(today.year, 1, 1)
     end_year = date(today.year, 12, 31)
@@ -27,6 +35,8 @@ def get_date_ranges():
         'month': (start_month, end_month),
         'quarter': (start_quarter, end_quarter),
         'year': (start_year, end_year),
+        'last month': (start_prev_month, end_prev_month),
+        'last quarter': (start_prev_quarter, end_prev_quarter),
         'last year': (start_prev_year, end_prev_year)
     }
 

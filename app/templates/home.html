@@ -1,16 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
     <style>
+        .flex-master {
+            box-shadow: 0 6px 10px rgba(0,0,0,.08);
+        }
         .flex-container {
-        display: flex;
-        flex-wrap: wrap; /* Allows items to wrap to new lines */
-        justify-content: space-around; /* Distributes space around items */
+            display: flex;
+            flex-wrap: wrap; /* Allows items to wrap to new lines */
+            justify-content: space-around; /* Distributes space around items */
         }
         .custom-card-shadow {
-        transition: box-shadow 0.3s ease-in-out; /* Smooth transition for the shadow */
+            box-shadow: 0 6px 10px rgba(0,0,0,.08), 0 0 6px rgba(0,0,0,.05); /* Initial shadow */
+            transition: transform 0.3s cubic-bezier(.155,1.105,.295,1.12), box-shadow 0.3s; /* Smooth transition */
+            cursor: pointer; /* Indicate interactivity */
         }
         .custom-card-shadow:hover {
-        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3); /* Custom shadow effect */
+            transform: scale(1.01); /* Scale up by 1% */
+            box-shadow: 0 10px 20px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06); /* Enhanced shadow */
         }
     </style>
     <div class="p-4 mb-4 rounded-3">
@@ -21,7 +27,7 @@
                     <div class="col-sm-4 mb-2 mb-sm-0">
                         <div class="card custom-card-shadow m-2">
                             <div class="card-body">
-                                <h2 class="card-title" style="text-align: center;">Employee(s)</h2>
+                                <h2 class="card-title" style="text-align: center;">Employee</h2>
                                 <div class="flex-container">
                                     <div class="flex-item" style="font-size: 3rem; text-align: left;"><i class="bi-person-badge"></i></div>
                                     <div class="flex-item" style="font-size: 3rem; text-align: right;">{{ total_employees }}
@@ -34,7 +40,7 @@
                     <div class="col-sm-4 mb-2 mb-sm-0">
                         <div class="card custom-card-shadow m-2">
                             <div class="card-body">
-                                <h2 class="card-title" style="text-align: center;">Client(s)</h2>
+                                <h2 class="card-title" style="text-align: center;">Client</h2>
                                 <div class="flex-container">
                                     <div class="flex-item" style="font-size: 3rem; text-align: left;"><i class="bi-person-arms-up"></i></div>
                                     <div class="flex-item" style="font-size: 3rem; text-align: right;">{{ total_clients }}
@@ -49,7 +55,7 @@
                     <div class="col-sm-4 mb-3 mb-sm-0">
                         <div class="card custom-card-shadow m-2">
                             <div class="card-body">
-                                <h2 class="card-title" style="text-align: center;">Session(s)</h2>
+                                <h2 class="card-title" style="text-align: center;">Session</h2>
                                 <div class="flex-container" style="text-align: center;">
                                     <div class="flex-item" style="font-size: 3rem;"><i class="bi-journal-bookmark"></i></div>
                                     <div class="flex-item" style="font-size: 3rem;">{{ user_interventions }}
@@ -68,24 +74,24 @@
             </div>
             {% if current_user.user_type == "admin" %}
                 <div class="row py-4 px-3">
-                    <div class="card">
-                        <div class="flex-item my-3 mb-0" style="font-size: 2rem;">
+                    <div class="card flex-master">
+                        <div class="my-3 mb-0" style="font-size: 2rem;">
                             <i class="bi-receipt"></i>
                             Earnings
                         </div>
                         <div class="row pb-3">
                         {% for period, data in totals.items() %}
-                            <div class="col-sm-3 mb-3 my-3 mb-sm-0">
+                            <div class="col-sm-4 mb-3 my-3 mb-sm-0">
                                 <div class="card custom-card-shadow">
                                     <div class="card-body">
-                                        <h2 class="card-title" style="text-align: center;">{{ period.capitalize() }}</h2>
+                                        <h2 class="card-title" style="text-align: center;">{{ period.title() }}</h2>
                                         <div class="flex-container" style="text-align: center;">
                                             <div class="flex-item" style="font-size: 1.5rem; color: green">
-                                                <small style="font-size: small;">CAD</small> ${{ "%.2f"|format(data.total_received) }}
+                                                <small style="font-size: small;">CAD</small>{{ "{:15,.2f}".format(data.total_received) }}
                                                 <p style="font-size: .75rem; color: #7e7e7e;">Received</p>
                                             </div>
                                             <div class="flex-item" style="font-size: 1.5rem; color: blue">
-                                                <small style="font-size: small;">CAD</small> ${{ "%.2f"|format(data.total_invoiced) }}
+                                                <small style="font-size: small;">CAD</small>{{ "{:15,.2f}".format(data.total_invoiced) }}
                                                 <p style="font-size: .75rem; color: #7e7e7e;">Total</p>
                                             </div>
                                         </div>
