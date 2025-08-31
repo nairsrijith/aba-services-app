@@ -21,7 +21,7 @@
         <!-- FILTERS AND PER PAGE SELECTOR -->
         <form method="GET" class="mb-3 row g-2 align-items-end">
             <div class="col-md-2">
-                <input type="text" name="client" class="form-control" placeholder="Client Name or ID" value="{{ request.args.get('client', '') }}">
+                <input type="text" name="client" class="form-control" placeholder="Client Name" value="{{ request.args.get('client', '') }}">
             </div>
             <div class="col-md-2">
                 <label for="date_from" class="form-label">From:</label>

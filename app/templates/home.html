@@ -23,43 +23,110 @@
                     {% if current_user.user_type == "admin" %}
                         <div class="card">
                             <div class="card-body">
-                            <h2 class="card-title" style="text-align: center;">Employees</h2>
-                            <div class="flex-container">
-                                <div class="flex-item" style="font-size: 4rem; text-align: left;"><i class="bi-person-badge"></i></div>
-                                <div class="flex-item" style="font-size: 4rem; text-align: right;">{{ total_employees }}</div>
-                            </div>
+                                <h2 class="card-title" style="text-align: center;">Employees</h2>
+                                <div class="flex-container">
+                                    <div class="flex-item" style="font-size: 4rem; text-align: left;"><i class="bi-person-badge"></i></div>
+                                    <div class="flex-item" style="font-size: 4rem; text-align: right;">{{ total_employees }}</div>
+                                </div>
                             </div>
                         </div>
                         <div class="card">
                             <div class="card-body">
-                            <h2 class="card-title" style="text-align: center;">Clients</h2>
-                            <div class="flex-container">
-                                <div class="flex-item" style="font-size: 4rem; text-align: left;"><i class="bi-person-arms-up"></i></div>
-                                <div class="flex-item" style="font-size: 4rem; text-align: right;">{{ total_clients }}</div>
-                            </div>
+                                <h2 class="card-title" style="text-align: center;">Clients</h2>
+                                <div class="flex-container">
+                                    <div class="flex-item" style="font-size: 4rem; text-align: left;"><i class="bi-person-arms-up"></i></div>
+                                    <div class="flex-item" style="font-size: 4rem; text-align: right;">{{ total_clients }}</div>
+                                </div>
                             </div>
                         </div>
                     {% endif %}
-                    {% if current_user.user_type == "admin" or current_user.user_type == "user" %}
+                    {% if not current_user.user_type == "super" %}
                         <div class="card">
                             <div class="card-body">
-                            <h2 class="card-title">Interventions</h2>
-                            <div class="flex-container" style="text-align: center;">
-                                <div class="flex-item" style="font-size: 4rem;"><i class="bi-journal-bookmark"></i></div>
-                                <div class="flex-item" style="font-size: 4rem;">{{ user_interventions }}</div>
-                                <div class="flex-item" style="font-size: 4rem;">{{ total_interventions }}</div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;"></div>
-                                <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;">You</div>
-                                <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;">Overall</div>
-                            </div>
+                                <h2 class="card-title" style="text-align: center;">Interventions</h2>
+                                <div class="flex-container" style="text-align: center;">
+                                    <div class="flex-item" style="font-size: 4rem;"><i class="bi-journal-bookmark"></i></div>
+                                    <div class="flex-item" style="font-size: 4rem;">{{ user_interventions }}</div>
+                                    {% if current_user.user_type == "admin" %}
+                                        <div class="flex-item" style="font-size: 4rem;">{{ total_interventions }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-container">
+                                    <div class="flex-item" style="font-size: 1rem; color: #7e7e7e00;">CARD ICON</div>
+                                    <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;">You</div>
+                                    {% if current_user.user_type == "admin" %}
+                                        <div class="flex-item" style="font-size: 1rem; color: #7e7e7e;">Overall</div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     {% endif %}
                 </div>
             </div>
-
+            <div class="row py-4">
+                <div class="card">
+                    <div class="flex-item" style="font-size: 2rem;">
+                        <i class="bi-receipt"></i>
+                        Earnings
+                    </div>
+                    <div class="card-group py-3 px-2">
+                        {% if current_user.user_type == "admin" %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <h2 class="card-title" style="text-align: center;">This Month</h2>
+                                    <div class="flex-container" style="text-align: center;">
+                                        <div class="flex-item" style="font-size: 2rem; color: blue"><small style="font-size: small;">CAD</small> 500</div>
+                                        <div class="flex-item" style="font-size: 2rem; color: green"><small style="font-size: small;">CAD</small> 200</div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Total</div>
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Received</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <h2 class="card-title" style="text-align: center;">This Quarter</h2>
+                                    <div class="flex-container" style="text-align: center;">
+                                        <div class="flex-item" style="font-size: 2rem; color: blue"><small style="font-size: small;">CAD</small> 2100</div>
+                                        <div class="flex-item" style="font-size: 2rem; color: green"><small style="font-size: small;">CAD</small> 1800</div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Total</div>
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Received</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <h2 class="card-title" style="text-align: center;">This Year</h2>
+                                    <div class="flex-container" style="text-align: center;">
+                                        <div class="flex-item" style="font-size: 2rem; color: blue"><small style="font-size: small;">CAD</small> 5500</div>
+                                        <div class="flex-item" style="font-size: 2rem; color: green"><small style="font-size: small;">CAD</small> 5200</div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Total</div>
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Received</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <h2 class="card-title" style="text-align: center;">Last Year</h2>
+                                    <div class="flex-container" style="text-align: center;">
+                                        <div class="flex-item" style="font-size: 2rem; color: blue"><small style="font-size: small;">CAD</small> 12800</div>
+                                        <div class="flex-item" style="font-size: 2rem; color: green"><small style="font-size: small;">CAD</small> 12800</div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Total</div>
+                                        <div class="flex-item" style="font-size: .75rem; color: #7e7e7e;">Received</div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         {% else %}
             <div class="container-fluid py-2">
                 <h2>MyApp</h2>

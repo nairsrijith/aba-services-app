@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, abort, flash
-from app import db
+from app import db, app
 from app.models import Intervention, Client, Employee, Activity
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
 from flask_login import login_required, current_user
@@ -52,19 +52,20 @@ def list_interventions():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
 
-        # Start with base query
-        query = Intervention.query.join(Client).join(Employee)
-
         # Apply filters BEFORE paginating
         invoiced_filter = request.args.get('invoiced')
-        query = Intervention.query
+        query = Intervention.query.join(Employee)
+
+        if current_user.user_type == "user":
+            query = query.filter(Employee.email == current_user.email)
 
         if invoiced_filter == 'yes':
             query = query.filter(Intervention.invoiced == True)
         elif invoiced_filter == 'no':
             query = query.filter(Intervention.invoiced == False)
         
-        client = request.args.get('client', '').strip()
+        client = request.args.get('client')
+        
         if client:
             query = query.filter(
                 (Client.firstname.ilike(f"%{client}%")) |
@@ -84,7 +85,8 @@ def list_interventions():
             query = query.filter(Intervention.intervention_type == intervention_type)
 
         query = query.order_by(Intervention.date.desc(), Intervention.start_time.desc(), Intervention.end_time.asc())
-
+        
+        
         # Now paginate the filtered query
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
