@@ -26,7 +26,10 @@ def add_intervention():
         
         form = AddInterventionForm()
         form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.all()]
-        form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.all()]
+        if current_user.user_type == "admin":
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.all()]
+        else:
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(email=current_user.email)]
         form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
 
         if form.validate_on_submit():
@@ -119,11 +122,14 @@ def bulk_delete():
 @interventions_bp.route('/update/<int:intervention_id>', methods=['GET', 'POST'])
 @login_required
 def update_intervention(intervention_id):
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    if current_user.is_authenticated and not current_user.user_type == "super":
         intervention = Intervention.query.get_or_404(intervention_id)
         form = UpdateInterventionForm(obj=intervention)
         form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.all()]
-        form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.all()]
+        if current_user.user_type == "admin":
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.all()]
+        else:
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(email=current_user.email)]
         form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
 
         if request.method == 'POST':

@@ -267,7 +267,7 @@
                         <li>
                             <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('interventions.list_interventions') }}">
                                 <i class="bi bi-journal-bookmark fs-4"></i>
-                                <span class="sidebar-link-text">Intervention</span>
+                                <span class="sidebar-link-text">Session</span>
                             </a>
                         </li>
                     {% endif %}
@@ -296,7 +296,7 @@
                 </a>
             {% endif %}
             {% if current_user.user_type == "admin" or current_user.user_type == "user" %}
-                <a href="{{ url_for('interventions.list_interventions') }}" class="text-white" title="Intervention">
+                <a href="{{ url_for('interventions.list_interventions') }}" class="text-white" title="Session">
                     <i class="bi bi-journal-bookmark fs-4"></i>
                 </a>
             {% endif %}
@@ -387,7 +387,7 @@
                     {% if current_user.user_type == "admin" or current_user.user_type == "user" %}
                         <li>
                             <a class="nav-link" href="{{ url_for('interventions.list_interventions') }}">
-                                <i class="bi bi-journal-bookmark"></i> Intervention
+                                <i class="bi bi-journal-bookmark"></i> Session
                             </a>
                         </li>
                     {% endif %}

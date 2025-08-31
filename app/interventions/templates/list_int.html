@@ -12,8 +12,8 @@
         {% endif %}
     {% endwith %}
     <div class="container-fluid py-2">
-        <h2>Interventions
-            <a href="{{ url_for('interventions.add_intervention') }}" class="btn btn-outline-success mb-3" style="border: 0cap;" title="Add New Intervention">
+        <h2>Sessions
+            <a href="{{ url_for('interventions.add_intervention') }}" class="btn btn-outline-success mb-3" style="border: 0cap;" title="Add New Session">
                 <i class="bi bi-patch-plus fs-2"></i>
             </a>
         </h2>
@@ -32,7 +32,7 @@
                 <input type="date" id="date_to" name="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}">
             </div>
             <div class="col-md-2">
-                <label for="intervention_type" class="form-label">Intervention Type:</label>
+                <label for="intervention_type" class="form-label">Session Type:</label>
                 <select name="intervention_type" id="intervention_type" class="form-select">
                     <option value="" {% if request.args.get('intervention_type', '') == '' %}selected{% endif %}>All</option>
                     {% for activity in activities %}
@@ -77,7 +77,7 @@
 
         <!-- BULK DELETE FORM AND TABLE -->
         <form method="POST" action="{{ url_for('interventions.bulk_delete') }}">
-            <button type="submit" class="btn btn-danger mb-2" id="bulk-delete-btn" disabled onclick="return confirm('Delete selected interventions?')" title="Delete Selected Interventions">
+            <button type="submit" class="btn btn-danger mb-2" id="bulk-delete-btn" disabled onclick="return confirm('Delete selected sessions?')" title="Delete Selected Sessions">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
                     <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/>
                 </svg>
@@ -88,7 +88,7 @@
                         <th><input type="checkbox" id="select-all"></th>
                         <th>Client Name</th>
                         <th>Employee Name</th>
-                        <th>Intervention Type</th>
+                        <th>Session Type</th>
                         <th>Date</th>
                         <th>Start Time</th>
                         <th>End Time</th>
@@ -100,7 +100,7 @@
                 <tbody>
                 {% if not interventions %}
                     <tr>
-                        <td colspan="10" class="text-center">No interventions found.</td>
+                        <td colspan="10" class="text-center">No sessions found.</td>
                     </tr>
                 {% else %}
                     {% for intervention in interventions %}
@@ -121,7 +121,7 @@
                             <td>
                                 {% if not intervention.invoiced %}
                                     <div class="btn-group" role="group" aria-label="Action buttons">
-                                        <a href="{{ url_for('interventions.update_intervention', intervention_id=intervention.id) }}" class="btn btn-primary btn-sm" title="Edit Intervention">
+                                        <a href="{{ url_for('interventions.update_intervention', intervention_id=intervention.id) }}" class="btn btn-primary btn-sm" title="Edit Session">
                                             <i class="bi bi-pen"></i>
                                         </a>
                                     </div>
