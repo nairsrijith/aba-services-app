@@ -67,9 +67,9 @@ def home():
         return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions, totals=totals)
     return render_template('home.html')
 
-@app.route('/admin')
-def admin():
-    return render_template('admin.html')
+# @app.route('/admin')
+# def admin():
+#     return render_template('admin.html')
 
 
 @app.route('/logout')
@@ -87,7 +87,7 @@ def login():
     
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.query.filter_by(email=form.email.data.lower()).first()
         if not user:
             flash('Your account is not registered. Contact Administrator.')
         elif user.activation_key != "" :
@@ -96,6 +96,8 @@ def login():
             flash('Your account is locked. Contact Administrator.', 'danger')
         else:
             if user.check_password(form.password.data):
+                user.failed_attempt = 3
+                db.session.commit()
                 login_user(user)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
