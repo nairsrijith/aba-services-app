@@ -230,6 +230,23 @@
     </style>
 </head>
 <body>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="toast align-items-center text-white bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                {{ message }}
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
     <!-- Fixed Sidebar for Desktop and Thin Sidebar for Mobile -->
     <div class="sidebar d-flex flex-column p-0">
         <!-- Brand/logo at the top -->
@@ -387,7 +404,7 @@
                     {% if current_user.user_type == "admin" or current_user.user_type == "user" %}
                         <li>
                             <a class="nav-link" href="{{ url_for('interventions.list_interventions') }}">
-                                <i class="bi bi-journal-bookmark"></i> Session
+                                <i class="bi bi-journal-bookmark"></i> Sessions
                             </a>
                         </li>
                     {% endif %}
@@ -460,68 +477,70 @@
     </div>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.querySelector('.sidebar');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    const brandToggle = document.getElementById('sidebarBrandToggle');
-    const offcanvasSidebar = document.getElementById('offcanvasSidebar');
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const brandToggle = document.getElementById('sidebarBrandToggle');
+            const offcanvasSidebar = document.getElementById('offcanvasSidebar');
 
-    function isMobile() {
-        return window.innerWidth <= 768;
-    }
-
-    // Restore sidebar state from localStorage
-    if (localStorage.getItem('sidebar-collapsed') === 'true') {
-        sidebar.classList.add('sidebar-collapsed');
-        document.body.classList.add('sidebar-collapsed-mode');
-        if (toggleBtn) {
-            const icon = toggleBtn.querySelector('i');
-            icon.classList.remove('bi-chevron-left');
-            icon.classList.add('bi-chevron-right');
-        }
-    }
-
-    // Toggle sidebar collapse on desktop
-    function toggleSidebarCollapse() {
-        const collapsed = sidebar.classList.toggle('sidebar-collapsed');
-        document.body.classList.toggle('sidebar-collapsed-mode');
-        // Change icon direction
-        if (toggleBtn) {
-            const icon = toggleBtn.querySelector('i');
-            if (sidebar.classList.contains('sidebar-collapsed')) {
-                icon.classList.remove('bi-chevron-left');
-                icon.classList.add('bi-chevron-right');
-            } else {
-                icon.classList.remove('bi-chevron-right');
-                icon.classList.add('bi-chevron-left');
+            function isMobile() {
+                return window.innerWidth <= 768;
             }
-        }
-        // Save state
-        localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('sidebar-collapsed'));
-    }
-
-    // Brand icon click: collapse/expand on desktop, open offcanvas on mobile
-    if (brandToggle) {
-        brandToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (isMobile()) {
-                // Open offcanvas sidebar
-                var bsOffcanvas = new bootstrap.Offcanvas(offcanvasSidebar);
-                bsOffcanvas.show();
-            } else {
-                toggleSidebarCollapse();
+            // Restore sidebar state from localStorage
+            if (localStorage.getItem('sidebar-collapsed') === 'true') {
+                sidebar.classList.add('sidebar-collapsed');
+                document.body.classList.add('sidebar-collapsed-mode');
+                if (toggleBtn) {
+                    const icon = toggleBtn.querySelector('i');
+                    icon.classList.remove('bi-chevron-left');
+                    icon.classList.add('bi-chevron-right');
+                }
             }
+            // Toggle sidebar collapse on desktop
+            function toggleSidebarCollapse() {
+                const collapsed = sidebar.classList.toggle('sidebar-collapsed');
+                document.body.classList.toggle('sidebar-collapsed-mode');
+                // Change icon direction
+                if (toggleBtn) {
+                    const icon = toggleBtn.querySelector('i');
+                    if (sidebar.classList.contains('sidebar-collapsed')) {
+                        icon.classList.remove('bi-chevron-left');
+                        icon.classList.add('bi-chevron-right');
+                    } else {
+                        icon.classList.remove('bi-chevron-right');
+                        icon.classList.add('bi-chevron-left');
+                    }
+                }
+                // Save state
+                localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('sidebar-collapsed'));
+            }
+            // Brand icon click: collapse/expand on desktop, open offcanvas on mobile
+            if (brandToggle) {
+                brandToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (isMobile()) {
+                        // Open offcanvas sidebar
+                        var bsOffcanvas = new bootstrap.Offcanvas(offcanvasSidebar);
+                        bsOffcanvas.show();
+                    } else {
+                        toggleSidebarCollapse();
+                    }
+                });
+            }
+            // Chevron toggle button (desktop only)
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    toggleSidebarCollapse();
+                });
+            }
+            // toast alerts
+            var toastElements = document.querySelectorAll('.toast');
+            toastElements.forEach(function(toastEl) {
+                var toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            });
         });
-    }
-
-    // Chevron toggle button (desktop only)
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function() {
-            toggleSidebarCollapse();
-        });
-    }
-});
-</script>
+    </script>
 </body>
 </html>
 

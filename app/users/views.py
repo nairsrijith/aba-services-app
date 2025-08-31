@@ -38,6 +38,7 @@ def add_user():
                                 )
                 db.session.add(new_user)
                 db.session.commit()
+                flash('User account created.', 'success')
                 return redirect(url_for('users.list_users'))
             else:
                 flash('This email is already registered.', 'warning')
@@ -70,6 +71,7 @@ def delete_user(id):
         user = User.query.get_or_404(id)
         db.session.delete(user)
         db.session.commit()
+        flash('User account deleted.', 'success')
         return redirect(url_for('users.list_users'))
     else:
         abort(403)
@@ -83,6 +85,7 @@ def lock_user(id):
         user.locked = True
         user.failed_attempt = 0
         db.session.commit()
+        flash("User account locked.", "success")
         return redirect(url_for('users.list_users'))
     else:
         abort(403)
@@ -96,6 +99,7 @@ def unlock_user(id):
         user.locked = False
         user.failed_attempt = 3
         db.session.commit()
+        flash("User account unlocked.","success")
         return redirect(url_for('users.list_users'))
     else:
         abort(403)
@@ -108,6 +112,7 @@ def promote_user(id):
         user = User.query.get_or_404(id)
         user.user_type = "admin"
         db.session.commit()
+        flash("User account promoted to Admin.", "success")
         return redirect(url_for('users.list_users'))
     else:
         abort(403)
@@ -120,6 +125,7 @@ def demote_user(id):
         user = User.query.get_or_404(id)
         user.user_type = "user"
         db.session.commit()
+        flash("User account demoted to normal User.", "success")
         return redirect(url_for('users.list_users'))
     else:
         abort(403)

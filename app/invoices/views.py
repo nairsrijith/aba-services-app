@@ -129,7 +129,10 @@ def invoice_preview():
                 date_from=date_from,
                 date_to=date_to,
                 intervention_ids=intervention_ids_str,
-                total_cost=total_cost  # <-- store here
+                total_cost=total_cost,  # <-- store here
+                status="Draft",
+                paid_date=None,
+                payment_comments=""
             )
             db.session.add(invoice)
             db.session.flush()  # To get invoice.id if needed
@@ -141,7 +144,7 @@ def invoice_preview():
                 db.session.add(intervention)
 
             db.session.commit()
-            flash('Invoice created and interventions updated.', 'success')
+            flash('Invoice created and sessions updated.', 'success')
             return redirect(url_for('invoices.list_invoices'))
 
         return render_template(
@@ -214,6 +217,7 @@ def download_invoice_pdf_by_number(invoice_number):
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'attachment; filename={invoice.invoice_number}.pdf'
+        flash("Invoice downloaded","success")
         return response
     else:
         abort(403)
