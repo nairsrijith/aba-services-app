@@ -13,12 +13,13 @@ def index():
 
 @app.route('/home')
 def home():
-    total_employees = Employee.query.count()
-    total_clients = Client.query.count()
-    total_interventions = Intervention.query.count()
-    user_interventions = Intervention.query.join(Employee).filter(Employee.email == current_user.email).count()
-    return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions)
-
+    if current_user.is_authenticated:
+        total_employees = Employee.query.count()
+        total_clients = Client.query.count()
+        total_interventions = Intervention.query.count()
+        user_interventions = Intervention.query.join(Employee).filter(Employee.email == current_user.email).count()
+        return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions)
+    return render_template('home.html')
 
 @app.route('/admin')
 def admin():
@@ -52,7 +53,6 @@ def login():
                 login_user(user)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
-
                 if next_page == None or not next_page.startswith('/'):
                     next_page = url_for('home')
                 return redirect(next_page)
@@ -66,8 +66,6 @@ def login():
                 db.session.commit()
             else:
                 flash('Incorrect password. Try again.', 'danger')
-
-                
     return render_template('login.html', form=form)
 
 

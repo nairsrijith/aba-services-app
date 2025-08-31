@@ -3,14 +3,6 @@
 <form method="POST">
     {{ form.hidden_tag() }}
     <div class="container mt-4" style="max-width: 500px;">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    {{ messages[0] }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endif %}
-        {% endwith %}
         <h2>Login</h2>
         <p>Please enter your credentials to log in.</p>
         <div class="card mb-3" style="width: 300px;">

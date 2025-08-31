@@ -3,6 +3,7 @@ from app import db
 from app.models import Invoice, Intervention, Client, Activity, Employee
 from app.invoices.forms import InvoiceClientSelectionForm
 from datetime import date, timedelta, datetime
+from sqlalchemy import and_
 from flask_login import login_required, current_user
 from weasyprint import HTML
 import io
@@ -47,7 +48,7 @@ def invoice_client_select():
         form = InvoiceClientSelectionForm()
         form.client_id.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.all()]
         if form.validate_on_submit():
-            interventions = Intervention.query.filter_by(and_(invoiced=False, client_id=form.client_id.data)).all()
+            interventions = Intervention.query.filter(and_(Intervention.invoiced == False, Intervention.client_id == form.client_id.data)).all()
             if not interventions:
                 flash('No uninvoiced interventions found for the selected client.', 'warning')
                 return redirect(url_for('interventions.list_interventions'))

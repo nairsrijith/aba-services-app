@@ -157,10 +157,13 @@ class Invoice(db.Model):
     date_to = db.Column(db.Date, nullable=False)
     intervention_ids = db.Column(db.String, nullable=True)  # Store as comma-separated IDs
     total_cost = db.Column(db.Float, nullable=False, default=0.0)  # Total cost of the invoice
+    status = db.Column(db.String(25)) # Draft, Sent, Paid
+    paid_date = db.Column(db.Date)
+    payment_comments = db.Column(db.Text)
 
     client = db.relationship('Client', backref='invoices')
 
-    def __init__(self, invoice_number, invoiced_date, payby_date, client_id, date_from, date_to, intervention_ids, total_cost):
+    def __init__(self, invoice_number, invoiced_date, payby_date, client_id, date_from, date_to, intervention_ids, total_cost, status, paid_date, payment_comments):
         self.invoice_number = invoice_number
         self.invoiced_date = invoiced_date
         self.payby_date = payby_date
@@ -169,6 +172,9 @@ class Invoice(db.Model):
         self.date_to = date_to
         self.intervention_ids = intervention_ids
         self.total_cost = total_cost  # Initialize total cost
+        self.status = status
+        self.paid_date = paid_date
+        self.payment_comments = payment_comments
 
     @staticmethod
     def generate_invoice_number():

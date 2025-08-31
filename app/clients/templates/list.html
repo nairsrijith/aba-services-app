@@ -1,14 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="p-2 mb-4 rounded-3">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-    {% endwith %}
     <div class="container-fluid py-2">
         <h2>Clients
             <a href="{{ url_for('clients.add_client') }}" class="btn btn-outline-success mb-3" style="border: 0cap;" title="Add New Client">

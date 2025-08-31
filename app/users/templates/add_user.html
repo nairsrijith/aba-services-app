@@ -2,16 +2,6 @@
 {% block content %}
 <div class="p-2 mb-4 rounded-3">
     <div class="container-fluid py-2">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
         <h2>Add new User</h2>
         <form method="POST">
             {{ form.hidden_tag() }}

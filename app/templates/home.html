@@ -8,14 +8,6 @@
         }
     </style>
     <div class="p-4 mb-4 rounded-3">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="alert alert-info alert-dismissible fade show" role="alert">
-                    {{ messages[0] }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endif %}
-        {% endwith %}
         {% if current_user.is_authenticated %}
             <h1>Welcome to your dashboard</h1>
             <div class="row py-4">
@@ -125,10 +117,6 @@
                                             <small style="font-size: small;">CAD</small> 12800
                                             <p style="font-size: .75rem; color: #7e7e7e;">Received</p>
                                         </div>
-                                    </div>
-                                    <div class="flex-container">
-                                        
-                                        
                                     </div>
                                 </div>
                             </div>
