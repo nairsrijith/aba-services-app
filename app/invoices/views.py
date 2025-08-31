@@ -217,7 +217,6 @@ def download_invoice_pdf_by_number(invoice_number):
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'attachment; filename={invoice.invoice_number}.pdf'
-        flash("Invoice downloaded","success")
         return response
     else:
         abort(403)
