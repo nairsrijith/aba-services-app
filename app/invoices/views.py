@@ -6,7 +6,6 @@ from datetime import date, timedelta, datetime
 from sqlalchemy import and_
 from flask_login import login_required, current_user
 from weasyprint import HTML
-import io
 
 
 invoices_bp = Blueprint('invoices', __name__, template_folder='templates')

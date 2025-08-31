@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, request, abort, flash
-from app import db, app
+from app import db
 from app.models import Intervention, Client, Employee, Activity
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
 from flask_login import login_required, current_user
-from sqlalchemy import or_, and_, desc
+from sqlalchemy import or_, and_, desc, asc
 
 interventions_bp = Blueprint('interventions', __name__, template_folder='templates')
 
