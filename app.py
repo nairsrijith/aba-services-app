@@ -1,9 +1,54 @@
 from app import app, db
-from app.models import User, Employee, Client, Intervention
+from app.models import User, Employee, Client, Intervention, Invoice
+from sqlalchemy import func
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm
-import io
+from datetime import date, timedelta
+
+
+def get_date_ranges():
+    today = date.today()
+    # Current Month
+    start_month = today.replace(day=1)
+    end_month = (start_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    # Current Quarter
+    quarter = (today.month - 1) // 3 + 1
+    start_quarter = date(today.year, 3 * quarter - 2, 1)
+    end_quarter = (start_quarter + timedelta(days=92)).replace(day=1) - timedelta(days=1)
+    # Current Year
+    start_year = date(today.year, 1, 1)
+    end_year = date(today.year, 12, 31)
+    # Last Year
+    start_prev_year = date(today.year - 1, 1, 1)
+    end_prev_year = date(today.year - 1, 12, 31)
+
+    return {
+        'month': (start_month, end_month),
+        'quarter': (start_quarter, end_quarter),
+        'year': (start_year, end_year),
+        'last year': (start_prev_year, end_prev_year)
+    }
+
+
+def get_totals():
+    ranges = get_date_ranges()
+    results = {}
+    for period, (start, end) in ranges.items():
+        total_invoiced = db.session.query(func.sum(Invoice.total_cost))\
+            .filter(Invoice.invoiced_date.between(start, end))\
+            .scalar() or 0.0
+
+        total_received = db.session.query(func.sum(Invoice.total_cost))\
+            .filter(Invoice.invoiced_date.between(start, end))\
+            .filter(Invoice.status == 'Paid')\
+            .scalar() or 0.0
+
+        results[period] = {
+            'total_invoiced': total_invoiced,
+            'total_received': total_received
+        }
+    return results
 
 
 @app.route('/')
@@ -18,7 +63,8 @@ def home():
         total_clients = Client.query.count()
         total_interventions = Intervention.query.count()
         user_interventions = Intervention.query.join(Employee).filter(Employee.email == current_user.email).count()
-        return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions)
+        totals = get_totals()
+        return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions, totals=totals)
     return render_template('home.html')
 
 @app.route('/admin')
