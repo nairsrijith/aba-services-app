@@ -4,7 +4,7 @@ from sqlalchemy import func
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 
 def get_date_ranges():
@@ -100,30 +100,47 @@ def login():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if not user:
             flash('Your account is not registered. Contact Administrator.')
-        elif user.activation_key != "" :
-            flash('Your account is not activated. Contact Administrator for activation key.', 'danger')
-        elif user.locked:
-            flash('Your account is locked. Contact Administrator.', 'danger')
-        else:
+        
+        if user.user_type == "super":
             if user.check_password(form.password.data):
-                user.failed_attempt = 3
-                db.session.commit()
                 login_user(user)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
                 if next_page == None or not next_page.startswith('/'):
                     next_page = url_for('home')
                 return redirect(next_page)
-            elif user.user_type != "super":
-                user.failed_attempt = user.failed_attempt-1
-                if user.failed_attempt == 0:
-                    user.locked = True
-                    flash('Your account is locked. Contact Administrator', 'danger')
-                else:
-                    flash(f"Incorrect password. {user.failed_attempt} remaining attempt(s).", 'danger')    
-                db.session.commit()
             else:
-                flash('Incorrect password. Try again.', 'danger')
+                flash('Incorrect password! Try again.', 'danger')
+
+        if user.activation_key != "" :
+            flash('Your account is not activated. Contact Administrator for activation key.', 'danger')
+
+        if user.locked_until and datetime.now() < user.locked_until:
+            remaining_time = user.locked_until - datetime.now()
+            rem_min = int(remaining_time.total_seconds() / 60)
+            rem_sec = int(remaining_time.total_seconds() % 60)
+            flash(f"You account is locked for another {rem_min}m and {rem_sec}s.", 'danger')
+            return render_template('login.html', form=form)
+
+        if user.check_password(form.password.data):
+            user.failed_attempt = 3
+            user.failed_until = None
+            db.session.commit()
+            login_user(user)
+            next_page = request.args.get('next')
+            flash('Login successful!', 'success')
+            if next_page == None or not next_page.startswith('/'):
+                next_page = url_for('home')
+            return redirect(next_page)
+        else:
+            user.failed_attempt = user.failed_attempt-1
+            if user.failed_attempt <= 0:
+                user.locked_until = datetime.now() + timedelta(minutes=15)
+                flash('Your account is locked for next 15 minutes. Contact Administrator for password reset.', 'danger')
+            else:
+                flash(f"Incorrect password! {user.failed_attempt} remaining attempt(s).", 'danger')
+            db.session.commit()
+
     return render_template('login.html', form=form)
 
 
@@ -140,7 +157,7 @@ def register():
             if user.activation_key == form.activation_key.data: 
                 user.email = form.email.data
                 user.set_password(form.password.data)
-                user.locked = False
+                user.locked_until = None
                 user.failed_attempt = 3
                 user.activation_key = ""
                 db.session.commit()

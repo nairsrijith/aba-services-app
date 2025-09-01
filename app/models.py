@@ -1,7 +1,7 @@
 from app import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from datetime import date
+# from datetime import date
 
 
 @login_manager.user_loader
@@ -16,6 +16,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(200), nullable=False)
     user_type = db.Column(db.String(51), default=None, nullable=False)
     locked = db.Column(db.Boolean, default=False, nullable=False)
+    locked_until = db.Column(db.DateTime, default=None)
     failed_attempt = db.Column(db.Integer, default=0, nullable=False)
     activation_key = db.Column(db.String(15), nullable=True, default=None)
 

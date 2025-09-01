@@ -5,6 +5,8 @@ from app.users.forms import AddUserForm, UpdatePasswordForm
 from flask_login import login_required, current_user
 import secrets
 import string
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 users_bp = Blueprint('users', __name__, template_folder='templates')
 
@@ -33,6 +35,7 @@ def add_user():
                                 password_hash="",
                                 user_type=form.user_type.data,
                                 locked=1,
+                                locked_until=None,
                                 failed_attempt=0,
                                 activation_key=generate_activation_code(8)
                                 )
@@ -82,7 +85,7 @@ def delete_user(id):
 def lock_user(id):
     if current_user.is_authenticated and not current_user.user_type == "user":
         user = User.query.get_or_404(id)
-        user.locked = True
+        user.locked_until = datetime.now() + relativedelta(years=1000)
         user.failed_attempt = 0
         db.session.commit()
         flash("User account locked.", "success")
@@ -96,7 +99,7 @@ def lock_user(id):
 def unlock_user(id):
     if current_user.is_authenticated and not current_user.user_type == "user":
         user = User.query.get_or_404(id)
-        user.locked = False
+        user.locked_until = None
         user.failed_attempt = 3
         db.session.commit()
         flash("User account unlocked.","success")
