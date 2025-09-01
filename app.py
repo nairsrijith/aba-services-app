@@ -111,35 +111,48 @@ def login():
                 return redirect(next_page)
             else:
                 flash('Incorrect password! Try again.', 'danger')
-
-        if user.activation_key != "" :
-            flash('Your account is not activated. Contact Administrator for activation key.', 'danger')
-
-        if user.locked_until and datetime.now() < user.locked_until:
-            remaining_time = user.locked_until - datetime.now()
-            rem_min = int(remaining_time.total_seconds() / 60)
-            rem_sec = int(remaining_time.total_seconds() % 60)
-            flash(f"You account is locked for another {rem_min}m and {rem_sec}s.", 'danger')
-            return render_template('login.html', form=form)
-
-        if user.check_password(form.password.data):
-            user.failed_attempt = 3
-            user.failed_until = None
-            db.session.commit()
-            login_user(user)
-            next_page = request.args.get('next')
-            flash('Login successful!', 'success')
-            if next_page == None or not next_page.startswith('/'):
-                next_page = url_for('home')
-            return redirect(next_page)
+                return render_template('login.html', form=form)
         else:
-            user.failed_attempt = user.failed_attempt-1
-            if user.failed_attempt <= 0:
-                user.locked_until = datetime.now() + timedelta(minutes=15)
-                flash('Your account is locked for next 15 minutes. Contact Administrator for password reset.', 'danger')
+            if user.activation_key != "" :
+                flash('Your account is not activated. Contact Administrator if you do not have received the activation key.', 'danger')
+                return render_template('login.html', form=form)
+
+            if user.failed_attempt == -5:
+                flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
+                return render_template('login.html', form=form)
+            
+            if user.check_password(form.password.data):
+                if user.locked_until and datetime.now() < user.locked_until:
+                    remaining_time = user.locked_until - datetime.now()
+                    rem_min = int(remaining_time.total_seconds() / 60)
+                    rem_sec = int(remaining_time.total_seconds() % 60)
+                    flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
+                    return render_template('login.html', form=form)
+
+                user.failed_attempt = 3
+                user.failed_until = None
+                db.session.commit()
+                login_user(user)
+                next_page = request.args.get('next')
+                flash('Login successful!', 'success')
+                if next_page == None or not next_page.startswith('/'):
+                    next_page = url_for('home')
+                return redirect(next_page)
             else:
-                flash(f"Incorrect password! {user.failed_attempt} remaining attempt(s).", 'danger')
-            db.session.commit()
+                user.failed_attempt = user.failed_attempt-1
+                if user.failed_attempt <= 0:
+                    if user.failed_attempt == 0:
+                        user.locked_until = datetime.now()
+                    time_to_remain_locked = -(user.failed_attempt - 1)*15
+                    user.locked_until += timedelta(minutes=time_to_remain_locked)
+                    remaining_time = user.locked_until - datetime.now()
+                    rem_min = int(remaining_time.total_seconds() / 60)
+                    rem_sec = int(remaining_time.total_seconds() % 60)
+                    flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
+                else:
+                    flash(f"Incorrect password! {user.failed_attempt} remaining attempt(s).", 'danger')
+                db.session.commit()
+                return render_template('login.html', form=form)
 
     return render_template('login.html', form=form)
 

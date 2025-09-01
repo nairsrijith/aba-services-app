@@ -86,7 +86,7 @@ def lock_user(id):
     if current_user.is_authenticated and not current_user.user_type == "user":
         user = User.query.get_or_404(id)
         user.locked_until = datetime.now() + relativedelta(years=1000)
-        user.failed_attempt = 0
+        user.failed_attempt = -5
         db.session.commit()
         flash("User account locked.", "success")
         return redirect(url_for('users.list_users'))
@@ -100,7 +100,7 @@ def unlock_user(id):
     if current_user.is_authenticated and not current_user.user_type == "user":
         user = User.query.get_or_404(id)
         user.locked_until = None
-        user.failed_attempt = 3
+        user.failed_attempt = 1
         db.session.commit()
         flash("User account unlocked.","success")
         return redirect(url_for('users.list_users'))
