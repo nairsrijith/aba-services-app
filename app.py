@@ -77,10 +77,6 @@ def home():
         return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions, totals=totals)
     return render_template('home.html')
 
-# @app.route('/admin')
-# def admin():
-#     return render_template('admin.html')
-
 
 @app.route('/logout')
 @login_required

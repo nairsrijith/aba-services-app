@@ -31,18 +31,10 @@ def list_invoices():
 @login_required
 def invoice_client_select():
     if current_user.is_authenticated and current_user.user_type == "admin":
-        
-        clients = Client.query.all()
-        print(clients)
-        if not clients:
-            flash('Please add clients before creating invoices.', 'warning')
-            return redirect(url_for('clients.list_clients'))
-        
         interventions = Intervention.query.filter_by(invoiced=False).all()
-        print(interventions)
         if not interventions:
             flash('No uninvoiced interventions available to create an invoice.', 'warning')
-            return redirect(url_for('interventions.list_interventions'))
+            return redirect(url_for('interventions.add_intervention'))
         
         form = InvoiceClientSelectionForm()
         form.client_id.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.all()]
