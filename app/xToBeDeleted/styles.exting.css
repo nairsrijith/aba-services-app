@@ -16,6 +16,7 @@ position: fixed;      /* Fix the sidebar */
 left: 0;
 top: 0;
 z-index: 1040;
+overflow: visible; /* Ensure dropdowns can overflow */
 }
 
 .main-content {
@@ -24,7 +25,8 @@ z-index: 1040;
 }
 
 .sidebar.collapsed {
-width: 60px;
+width: 70px;
+overflow: visible;
 }
 
 body.sidebar-collapsed-mode .main-content {
@@ -54,7 +56,7 @@ margin-left: 10px;
 .sidebar.collapsed .nav-links span,
 .sidebar.collapsed .username {
 display: none;
-overflow: hidden;
+overflow: visible;
 }
 
 .nav-links {
@@ -97,6 +99,8 @@ display: none;
 background: #1e1e2f;
 color: white;
 padding: 1rem;
+z-index: 1040;
+overflow: visible; /* Ensure dropdowns can overflow */
 }
 
 .mobile-navbar .brand {
@@ -109,6 +113,7 @@ cursor: pointer;
 display: none;
 flex-direction: column;
 padding: 1rem;
+overflow: visible; /* Ensure dropdowns can overflow */
 }
 
 .mobile-menu a {
@@ -147,6 +152,7 @@ display: flex;
         display: flex;
         align-items: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: visible; /* Ensure dropdowns can overflow */
     }
     .mobile-navbar .brand {
         display: flex;
@@ -167,6 +173,7 @@ display: flex;
         flex-direction: column;
         z-index: 1049;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: visible; /* Ensure dropdowns can overflow */
     }
     .mobile-menu.show {
         display: flex;
@@ -197,6 +204,8 @@ body.sidebar-collapsed-mode .main-content {
 .mobile-menu .dropdown-menu {
     background: #1e1e2f;
     color: white;
+    min-width: 200px;
+    min-height: auto;
 }
 .sidebar .dropdown-item,
 .mobile-menu .dropdown-item {
@@ -206,4 +215,13 @@ body.sidebar-collapsed-mode .main-content {
 .mobile-menu .dropdown-item:hover {
     background: #1565a5;
     color: white;
+}
+.dropdown-menu {
+    z-index: 2000 !important;
+    min-width: 200px;
+}
+
+.sidebar, .mobile-navbar, .mobile-menu {
+    z-index: 1040;
+    overflow: visible !important;
 }

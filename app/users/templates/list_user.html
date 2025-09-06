@@ -3,8 +3,8 @@
 <div class="p-2 mb-4 rounded-3">
     <div class="container-fluid py-2">
         <h2>Users
-            <a href="{{ url_for('users.add_user') }}" class="btn btn-outline-success mb-3" style="border: 0cap;" title="Add New User">
-                <i class="bi bi-patch-plus fs-2"></i>
+            <a href="{{ url_for('users.add_user') }}" title="Add New User">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>
             </a>
         </h2>
         <form method="get" class="mb-3 d-flex align-items-center">
@@ -38,24 +38,24 @@
                                 <div class="btn-group" role="group" aria-label="Action buttons">
                                     {% if user.user_type == "user" %}
                                         <button class="btn btn-success btn-sm" title="Promote to Admin" onclick="submitRoleForm('{{ url_for('users.promote_user', id=user.id) }}')">
-                                            <i class="bi bi-graph-up-arrow"></i>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="m136-240-56-56 296-298 160 160 208-206H640v-80h240v240h-80v-104L536-320 376-480 136-240Z"/></svg>
                                         </button>
                                     {% elif user.user_type == "admin" %}
                                         <button class="btn btn-danger btn-sm" title="Demote to User" onclick="submitRoleForm('{{ url_for('users.demote_user', id=user.id) }}')">
-                                            <i class="bi bi-graph-down-arrow"></i>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M640-240v-80h104L536-526 376-366 80-664l56-56 240 240 160-160 264 264v-104h80v240H640Z"/></svg>
                                         </button>
                                     {% endif %}
                                     {% if user.locked_until %}
                                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">
-                                            <i class="bi bi-unlock"></i>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M240-160h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM240-160v-400 400Zm0 80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h280v-80q0-83 58.5-141.5T720-920q83 0 141.5 58.5T920-720h-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80h120q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Z"/></svg>
                                         </button>
                                     {% else %}
                                         <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Lock User">
-                                            <i class="bi bi-lock"></i>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>
                                         </button>
                                     {% endif %}
                                     <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Delete User">
-                                        <i class="bi bi-trash3"></i>
+                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                                     </button>
                                 </div>
                                 <form id="roleForm-{{ user.id }}" method="POST" style="display:none;"></form>
