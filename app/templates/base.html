@@ -91,7 +91,7 @@
     </ul>
   </nav>
 
-  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div class="toast-container">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
