@@ -156,7 +156,6 @@ main{
 .custom-card-shadow {
     box-shadow: 0 6px 10px rgba(0,0,0,.08), 0 0 6px rgba(0,0,0,.05); /* Initial shadow */
     transition: transform 0.3s cubic-bezier(.155,1.105,.295,1.12), box-shadow 0.3s; /* Smooth transition */
-    cursor: pointer; /* Indicate interactivity */
     border: none;
 }
 .custom-card-shadow:hover {
