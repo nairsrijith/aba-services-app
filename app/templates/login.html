@@ -2,7 +2,6 @@
 {% block content %}
 <form method="POST">
     {{ form.hidden_tag() }}
-    <div class="container mt-4" style="max-width: 500px;">
         <h2>Login</h2>
         <p>Please enter your credentials to log in.</p>
         <div class="card mb-3" style="width: 300px;">
@@ -16,6 +15,5 @@
             </div>
         </div>
         <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a>.</p>
-    </div>
 </form>
 {% endblock %}

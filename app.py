@@ -61,12 +61,12 @@ def get_totals():
     return results
 
 
+# @app.route('/')
+# def index():
+#     return redirect(url_for('login'))
+
+
 @app.route('/')
-def index():
-    return redirect(url_for('login'))
-
-
-@app.route('/home')
 def home():
     if current_user.is_authenticated:
         total_employees = Employee.query.count()
@@ -83,7 +83,7 @@ def home():
 def logout():
     logout_user()
     flash('You have been logged out.', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('home'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -156,7 +156,7 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('home'))
     
     form = RegistrationForm()
 

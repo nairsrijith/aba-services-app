@@ -130,6 +130,8 @@ body{
 
 main{
   padding: min(30px, 7%);
+  background-color: var(--base-clr);
+  color: var(--text-clr);
 }
 .flex-item svg{
     vertical-align: middle;
@@ -166,6 +168,10 @@ main{
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
+.card {
+    background-color: transparent;
+    color: var(--text-clr);
+}
 @media(max-width: 800px){
   body{
     grid-template-columns: 1fr;
@@ -179,6 +185,7 @@ main{
     position: fixed;
     top: unset;
     bottom: 0;
+    z-index: 1040;
 
     > ul{
       padding: 0;
@@ -228,5 +235,8 @@ main{
         justify-content: center;
       }
     }
+  }
+  main{
+    padding-bottom: 70px;
   }
 }
