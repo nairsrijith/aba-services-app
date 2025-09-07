@@ -113,7 +113,7 @@ def login():
                 flash('Your account is not activated. Contact Administrator if you do not have received the activation key.', 'danger')
                 return render_template('login.html', form=form)
 
-            if user.failed_attempt == -5:
+            if user.failed_attempt == -2:
                 flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
                 return render_template('login.html', form=form)
             

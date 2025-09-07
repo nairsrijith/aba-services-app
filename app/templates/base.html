@@ -77,7 +77,7 @@
           <div>
             {% if current_user.is_authenticated %}
               <li class="{% if request.endpoint.startswith('users.change_password') %}active{% endif %}"><a href="{{ url_for('users.change_password') }}">Change Password</a></li>
-              {% if current_user.user_type == "admin" %}
+              {% if current_user.user_type != "user" %}
                 <li class="{% if request.endpoint.startswith('users.list_users') %}active{% endif %}"><a href="{{ url_for('users.list_users') }}">Manage Users</a></li>
               {% endif %}
               <li><a href="{{ url_for('logout') }}">Logout</a></li>
