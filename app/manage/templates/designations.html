@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid py-2">
+    <h2>Designations</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="row mb-3">
+            <div>{{ form.name.label(class="col-form-label") }}{{ form.name(class="form-control", placeholder="Designation Name") }}</div>
+        </div>
+        {{ form.submit(class="btn btn-outline-primary") }} <a href="{{ url_for('manage.designations') }}" class="btn btn-secondary ms-2">Clear</a>
+    </form>
+</div>
+</div>
+<table class="table table-dark table-hover">
+    <tbody>
+        <tr>
+            <th>Designation</th>
+            <th>Actions</th>
+        </tr>
+        {% if not designations %}
+            <tr><td colspan="2" class="text-center">No designations found.</td></tr>
+        {% else %}
+            {% for designation in designations %}
+                <tr>
+                    <td>{{ designation.designation }}</td>
+                    <td>
+                        <div class="btn-group" role="group" aria-label="Action buttons">
+                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-designation="{{ designation.designation }}" title="Delete Designation">
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deleteForm" method="POST">
+                <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                Are you sure you want to delete designation <strong><span id="designationDelete"></span></strong>?
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var activityName = button.getAttribute('data-designation');
+        var form = document.getElementById('deleteForm');
+        form.action = '/manage/delete_designation/' + activityName;
+        document.getElementById('designationDelete').textContent = activityName;
+    });
+});
+
+function submitRoleForm(actionUrl) {
+    // Create a temporary form or use the hidden one
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = actionUrl;
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+
+{% endblock %}

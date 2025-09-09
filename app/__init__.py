@@ -34,6 +34,9 @@ app.register_blueprint(invoices_bp, url_prefix='/invoices')
 from app.users.views import users_bp
 app.register_blueprint(users_bp, url_prefix='/users')
 
+from app.manage.views import manage_bp
+app.register_blueprint(manage_bp, url_prefix='/manage')
+
 from app.error_pages.handlers import error_pages
 app.register_blueprint(error_pages)
 
