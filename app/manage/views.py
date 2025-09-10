@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, abort, flash
 from app import db
-from app.models import Designation, Activity
+from app.models import Designation, Activity, Intervention, Employee
 from app.manage.forms import DesignationForm, ActivityForm
 from flask_login import login_required, current_user
 
@@ -19,7 +19,8 @@ def designations():
             flash('Designation added successfully.', 'success')
             return redirect(url_for('manage.designations'))
         designations = Designation.query.all()
-        return render_template('designations.html', form=form, designations=designations)
+        allocated_designations = [a.position for a in Employee.query.with_entities(Employee.position).distinct()] # Fetch unique designations
+        return render_template('designations.html', form=form, designations=designations, allocated_designations=allocated_designations)
     else:
         abort(403)
 
@@ -29,6 +30,7 @@ def designations():
 def activities():
     if current_user.is_authenticated and current_user.user_type != "user":
         form = ActivityForm()
+        form.category.choices = [('Therapy', 'Therapy'), ('Supervision', 'Supervision')]
         if form.validate_on_submit():
             new_activity = Activity(activity_name=form.name.data.title(), activity_category=form.category.data.title())
             db.session.add(new_activity)
@@ -36,7 +38,8 @@ def activities():
             flash('Activity added successfully.', 'success')
             return redirect(url_for('manage.activities'))
         activities = Activity.query.all()
-        return render_template('activities.html', form=form, activities=activities)
+        allocated_activities = [a.intervention_type for a in Intervention.query.with_entities(Intervention.intervention_type).distinct()] # Fetch unique intervention types
+        return render_template('activities.html', form=form, activities=activities, allocated_activities=allocated_activities)
     else:
         abort(403)
 

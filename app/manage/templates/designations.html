@@ -11,7 +11,6 @@
         {{ form.submit(class="btn btn-outline-primary") }} <a href="{{ url_for('manage.designations') }}" class="btn btn-secondary ms-2">Clear</a>
     </form>
 </div>
-</div>
 <table class="table table-dark table-hover">
     <tbody>
         <tr>
@@ -25,11 +24,17 @@
                 <tr>
                     <td>{{ designation.designation }}</td>
                     <td>
-                        <div class="btn-group" role="group" aria-label="Action buttons">
-                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-designation="{{ designation.designation }}" title="Delete Designation">
+                        {% if designation.designation in allocated_designations %}
+                            <button class="btn btn-secondary btn-sm" title="Cannot delete designation assigned to employees" disabled>
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                             </button>
-                        </div>
+                        {% else %}
+                            <div class="btn-group" role="group" aria-label="Action buttons">
+                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-designation="{{ designation.designation }}" title="Delete Designation">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+                                </button>
+                            </div>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}
@@ -62,10 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var deleteModal = document.getElementById('deleteModal');
     deleteModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
-        var activityName = button.getAttribute('data-designation');
+        var designationName = button.getAttribute('data-designation');
         var form = document.getElementById('deleteForm');
-        form.action = '/manage/delete_designation/' + activityName;
-        document.getElementById('designationDelete').textContent = activityName;
+        form.action = '/manage/delete_designation/' + designationName;
+        document.getElementById('designationDelete').textContent = designationName;
     });
 });
 
