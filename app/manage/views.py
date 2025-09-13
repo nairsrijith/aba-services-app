@@ -30,7 +30,7 @@ def designations():
 def activities():
     if current_user.is_authenticated and current_user.user_type != "user":
         form = ActivityForm()
-        form.category.choices = [('Therapy', 'Therapy'), ('Supervision', 'Supervision')]
+        form.category.choices = [("Therapy", "Therapy"), ("Supervision", "Supervision")]
         if form.validate_on_submit():
             new_activity = Activity(activity_name=form.name.data.title(), activity_category=form.category.data.title())
             db.session.add(new_activity)

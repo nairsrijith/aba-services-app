@@ -6,7 +6,7 @@
   --text-clr: #e6e6ef;
   --accent-clr: #b9bbff;
   --accent-back-clr: #272836;
-  --secondary-text-clr: #b0b3c1;
+  --secondary-text-clr: #626986;
 }
 *{
   margin: 0;
@@ -126,7 +126,20 @@ body{
 #toggle-btn:hover{
   background-color: var(--hover-clr);
 }
-
+.form-control, .form-select {
+    background-color: var(--base-clr) !important;
+    border-color: var(--line-clr) !important;
+    color: var(--text-clr) !important;
+}
+.form-control:focus, .form-select:focus {
+    background-color: var(--accent-back-clr) !important;
+    border-color: var(--accent-clr) !important;
+    color: var(--text-clr) !important;
+}
+.form-control::placeholder {
+    color: var(--secondary-text-clr) !important;
+    opacity: 1 !important; /* Ensures full opacity for better visibility */
+}
 main{
   padding: min(30px, 7%);
   background-color: var(--base-clr);
