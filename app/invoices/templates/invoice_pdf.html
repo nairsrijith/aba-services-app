@@ -46,6 +46,7 @@
         <div class="col-md-6 invoice-details">
             <h4><strong>Invoice Details:</strong></h4>
             <p><strong>{{ invoice_number }}</strong></p>
+            <p>Payment Status: <strong>{{ status }}</strong></span></p>
             <p>Invoice Date: {{ invoice_date }}</p>
             <p>Pay By: {{ payby_date }}</p>
             <p>Service Period: {{ date_from }}</p>
@@ -90,18 +91,29 @@
     <br>
     <hr>
     <div class="container mt-4 px-6">
-        Thanks for rendering services from us. We welcome your feedback and queries at v.nishanair@gmail.com.
+        Thanks for rendering services from us. We welcome your feedback and queries at <em>v.nishanair@gmail.com</em>.
     </div>
     <br>
-    <div class="container mt-4 px-6">
-        <strong>Payment is accepted via:</strong>
-        Interac e-Tranfer to <strong><em>v.nishanair@gmail.com</em></strong></p>
-    </div>
-    <br>
-    <div class="container mt-4 px-6">
-        <strong>Note:</strong>
-        <em>This is not a confirmation of payment. Payment receipt will be shared once the payment is realised.</em>
-    </div>
+    {% if status != "Paid" %}
+        <div class="container mt-4 px-6">
+            <strong>Payment is accepted via:</strong>
+            Interac e-Tranfer to <strong><em>v.nishanair@gmail.com</em></strong></p>
+        </div>
+        <br>
+        <div class="container mt-4 px-6">
+            <strong>Note:</strong>
+            <em>This is not a confirmation of payment. Payment receipt will be shared once the payment is realised.</em>
+        </div>
+    {% else %}
+        <br>
+        <div class="container mt-4 px-6">
+            <strong>Payment received. Thank you!</strong>
+            <p>Paid on: {{ paid_date }}</p>
+            {% if payment_comments %}
+                <p>Payment details: {{ payment_comments }}</p>
+            {% endif %}
+        </div>
+    {% endif %}
 </div>
 </body>
 </html>

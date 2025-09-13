@@ -37,3 +37,20 @@ document.addEventListener('DOMContentLoaded', function() {
     toast.show();
   });
 });
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('close');
+  // Save state
+  localStorage.setItem('sidebar-closed', sidebar.classList.contains('close'));
+}
+
+// Restore sidebar state on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const sidebar = document.getElementById('sidebar');
+  if (localStorage.getItem('sidebar-closed') === 'true') {
+    sidebar.classList.add('close');
+  } else {
+    sidebar.classList.remove('close');
+  }
+});

@@ -33,10 +33,10 @@ def get_date_ranges():
 
     return {
         'month': (start_month, end_month),
-        'quarter': (start_quarter, end_quarter),
-        'year': (start_year, end_year),
         'last month': (start_prev_month, end_prev_month),
+        'quarter': (start_quarter, end_quarter),
         'last quarter': (start_prev_quarter, end_prev_quarter),
+        'year': (start_year, end_year),
         'last year': (start_prev_year, end_prev_year)
     }
 

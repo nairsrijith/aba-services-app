@@ -86,6 +86,8 @@ def invoice_preview():
         address += f"{client.address2}, " if client.address2 else ""
         address += f"{client.city}, {client.state} {client.zipcode}"
 
+        status = "Pending"
+
         # Fetch all activities for quick lookup
         activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
 
@@ -149,6 +151,7 @@ def invoice_preview():
             payby_date=payby_date.strftime('%Y-%m-%d'),
             date_from=date_from.strftime('%Y-%m-%d'),
             date_to=date_to.strftime('%Y-%m-%d'),
+            status=status,
             supervisor_name=supervisor_name,
             interventions=interventions
         )
@@ -189,6 +192,8 @@ def download_invoice_pdf_by_number(invoice_number):
         supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
 
+        status = "Pending" if invoice.status != "Paid" else invoice.status
+
         html = render_template(
             'invoice_pdf.html',  # <-- use the new template!
             org_name="1001256835 ONTARIO INC.",
@@ -201,6 +206,9 @@ def download_invoice_pdf_by_number(invoice_number):
             date_from=invoice.date_from.strftime('%Y-%m-%d'),
             date_to=invoice.date_to.strftime('%Y-%m-%d'),
             supervisor_name=supervisor_name,
+            status=status,
+            paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
+            payment_comments=invoice.payment_comments,
             interventions=interventions
         )
 
@@ -243,6 +251,8 @@ def preview_invoice_by_number(invoice_number):
         supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
 
+        status = "Pending" if invoice.status != "Paid" else invoice.status
+
         return render_template(
             'invoice_preview.html',
             org_name="1001256835 ONTARIO INC.",
@@ -254,6 +264,7 @@ def preview_invoice_by_number(invoice_number):
             payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
             date_from=invoice.date_from.strftime('%Y-%m-%d'),
             date_to=invoice.date_to.strftime('%Y-%m-%d'),
+            status=status,
             supervisor_name=supervisor_name,
             interventions=interventions,
             total_cost=invoice.total_cost
@@ -275,6 +286,51 @@ def delete_invoice(invoice_number):
         db.session.delete(invoice)
         db.session.commit()
         flash('Invoice and related interventions updated.', 'success')
+        return redirect(url_for('invoices.list_invoices'))
+    else:
+        abort(403)
+
+
+@invoices_bp.route('/mark_sent/<invoice_number>', methods=['POST'])
+@login_required
+def mark_sent(invoice_number):
+    if current_user.is_authenticated and current_user.user_type == "admin":
+        invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
+        invoice.status = 'Sent'
+        db.session.commit()
+        flash('Invoice marked as Sent.', 'success')
+        return redirect(url_for('invoices.list_invoices'))
+    else:
+        abort(403)
+
+
+@invoices_bp.route('/mark_draft/<invoice_number>', methods=['POST'])
+@login_required
+def mark_draft(invoice_number):
+    if current_user.is_authenticated and current_user.user_type == "admin":
+        invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
+        invoice.status = 'Draft'
+        invoice.paid_date = None
+        invoice.payment_comments = ""
+        db.session.commit()
+        flash('Invoice sent back to Draft.', 'success')
+        return redirect(url_for('invoices.list_invoices'))
+    else:
+        abort(403)
+
+
+@invoices_bp.route('/mark_paid/<invoice_number>', methods=['POST'])
+@login_required
+def mark_paid(invoice_number):
+    if current_user.is_authenticated and current_user.user_type == "admin":
+        invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
+        paid_date = datetime.strptime(request.form.get('paid_date'), '%Y-%m-%d').date()
+        payment_comments = request.form.get('payment_comments')
+        invoice.status = 'Paid'
+        invoice.paid_date = paid_date
+        invoice.payment_comments = payment_comments
+        db.session.commit()
+        flash('Invoice marked as Paid.', 'success')
         return redirect(url_for('invoices.list_invoices'))
     else:
         abort(403)

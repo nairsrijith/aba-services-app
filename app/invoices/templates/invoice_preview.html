@@ -9,7 +9,7 @@
     .invoice-details { text-align: left; }  /* <-- Add this line */
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #333; padding: 6px; text-align: center; }
-    th { background: #eee; }
+    th { background: #1e2423; }
     h3 { margin-bottom: 0; }
     hr { margin: 10px 0; }
     /* Add this for compact invoice details */
@@ -43,6 +43,7 @@
             <div class="col-md-6 invoice-details">
                 <h4><strong>Invoice Details:</strong></h4>
                 <p><strong>{{ invoice_number }}</strong></p>
+                <p>Status: <span class="badge {% if status != "Paid" %}bg-danger{% else %}bg-success{% endif %}">{{ status }}</span></p>
                 <p>Invoice Date: {{ invoice_date }}</p>
                 <p>Pay By: {{ payby_date }}</p>
                 <p>Service Period: {{ date_from }}</p>

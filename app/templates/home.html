@@ -3,9 +3,9 @@
     <div class="p-4 mb-4 rounded-3">
         {% if current_user.is_authenticated %}
             <h1>Home</h1>
-            <div class="row py-2">
+            <div class="row g-4">
                 {% if current_user.user_type == "admin" %}
-                <div class="col-sm-4 mb-2 mb-sm-0">
+                <div class="col-12 col-lg-4">
                     <div class="card text-bg-dark custom-card-shadow m-2">
                         <div class="card-body">
                             <h2 class="card-title" style="text-align: center;">Employee</h2>
@@ -20,7 +20,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 mb-2 mb-sm-0">
+                <div class="col-12 col-lg-4">
                     <div class="card text-bg-dark custom-card-shadow m-2">
                         <div class="card-body">
                             <h2 class="card-title" style="text-align: center;">Client</h2>
@@ -37,7 +37,7 @@
                 </div>
                 {% endif %}
                 {% if not current_user.user_type == "super" %}
-                <div class="col-sm-4 mb-3 mb-sm-0">
+                <div class="col-12 col-lg-4">
                     <div class="card text-bg-dark custom-card-shadow m-2">
                         <div class="card-body">
                             <h2 class="card-title" style="text-align: center;">Session</h2>
@@ -60,16 +60,14 @@
                 {% endif %}
             </div>
             {% if current_user.user_type == "admin" %}
-            <div class="row px-3">
-                <div class="card text-bg-dark flex-master">
-                    <div class="my-3 mb-0" style="font-size: 2rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M240-80q-50 0-85-35t-35-85v-120h120v-560l60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60v680q0 50-35 85t-85 35H240Zm480-80q17 0 28.5-11.5T760-200v-560H320v440h360v120q0 17 11.5 28.5T720-160ZM360-600v-80h240v80H360Zm0 120v-80h240v80H360Zm320-120q-17 0-28.5-11.5T640-640q0-17 11.5-28.5T680-680q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600Zm0 120q-17 0-28.5-11.5T640-520q0-17 11.5-28.5T680-560q17 0 28.5 11.5T720-520q0 17-11.5 28.5T680-480ZM240-160h360v-80H200v40q0 17 11.5 28.5T240-160Zm-40 0v-80 80Z"/></svg>
-                        Earnings
-                    </div>
-                    <div class="row pb-3">
+                <div class="my-3 mb-0" style="font-size: 2rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M240-80q-50 0-85-35t-35-85v-120h120v-560l60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60v680q0 50-35 85t-85 35H240Zm480-80q17 0 28.5-11.5T760-200v-560H320v440h360v120q0 17 11.5 28.5T720-160ZM360-600v-80h240v80H360Zm0 120v-80h240v80H360Zm320-120q-17 0-28.5-11.5T640-640q0-17 11.5-28.5T680-680q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600Zm0 120q-17 0-28.5-11.5T640-520q0-17 11.5-28.5T680-560q17 0 28.5 11.5T720-520q0 17-11.5 28.5T680-480ZM240-160h360v-80H200v40q0 17 11.5 28.5T240-160Zm-40 0v-80 80Z"/></svg>
+                    Earnings
+                </div>
+                <div class="row g-4">
                     {% for period, data in totals.items() %}
-                        <div class="col-sm-4 mb-3 my-3 mb-sm-0">
-                            <div class="card text-bg-dark custom-card-shadow">
+                        <div class="col-sm-12 col-md-6">
+                            <div class="card text-bg-dark custom-card-shadow m-2">
                                 <div class="card-body">
                                     <h2 class="card-title" style="text-align: center;">{{ period.title() }}</h2>
                                     <div class="flex-container" style="text-align: center;">
@@ -86,9 +84,7 @@
                             </div>
                         </div>
                     {% endfor %}
-                    </div>
                 </div>
-            </div>
             {% endif %}
         {% else %}
             <div class="container-fluid py-2">
