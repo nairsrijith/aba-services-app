@@ -3,9 +3,11 @@ from app import db
 from app.models import Employee, Designation, Intervention, Client
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
+import os
 
 employees_bp = Blueprint('employees', __name__, template_folder='templates')
 
+org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 @employees_bp.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -33,7 +35,7 @@ def add_employee():
             db.session.add(new_employee)
             db.session.commit()
             return redirect(url_for('employees.list_employees'))
-        return render_template('add_emp.html', form=form)
+        return render_template('add_emp.html', form=form, org_name=org_name)
     else:
         abort(403)
 
@@ -49,7 +51,8 @@ def list_employees():
             'list_emp.html',
             employees=employees_pagination.items,
             pagination=employees_pagination,
-            per_page=per_page
+            per_page=per_page,
+            org_name=org_name
         )
     else:
         abort(403)
@@ -103,7 +106,7 @@ def update_employee(employee_id):
             employee.zipcode = form.zipcode.data.upper()
             db.session.commit()
             return redirect(url_for('employees.list_employees'))
-        return render_template('update_emp.html', form=form, employee=employee)
+        return render_template('update_emp.html', form=form, employee=employee, org_name=org_name)
     else:
         abort(403)
 

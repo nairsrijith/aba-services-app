@@ -3,8 +3,11 @@ from app import db
 from app.models import Designation, Activity, Intervention, Employee
 from app.manage.forms import DesignationForm, ActivityForm
 from flask_login import login_required, current_user
+import os
 
 manage_bp = Blueprint('manage', __name__, template_folder='templates')
+
+org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
 @manage_bp.route('/designations', methods=['GET', 'POST'])
@@ -20,7 +23,7 @@ def designations():
             return redirect(url_for('manage.designations'))
         designations = Designation.query.all()
         allocated_designations = [a.position for a in Employee.query.with_entities(Employee.position).distinct()] # Fetch unique designations
-        return render_template('designations.html', form=form, designations=designations, allocated_designations=allocated_designations)
+        return render_template('designations.html', form=form, designations=designations, allocated_designations=allocated_designations, org_name=org_name)
     else:
         abort(403)
 
@@ -39,7 +42,7 @@ def activities():
             return redirect(url_for('manage.activities'))
         activities = Activity.query.all()
         allocated_activities = [a.intervention_type for a in Intervention.query.with_entities(Intervention.intervention_type).distinct()] # Fetch unique intervention types
-        return render_template('activities.html', form=form, activities=activities, allocated_activities=allocated_activities)
+        return render_template('activities.html', form=form, activities=activities, allocated_activities=allocated_activities, org_name=org_name)
     else:
         abort(403)
 

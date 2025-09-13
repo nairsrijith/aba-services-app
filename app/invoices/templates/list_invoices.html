@@ -25,7 +25,7 @@
                     <td>{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ invoice.status }}</td>
                     <td>{{ invoice.client.firstname }} {{ invoice.client.lastname }}</td>
-                    <td>{{ "%.2f" % invoice.total_cost }}</td>
+                    <td>{{ "{:,.2f}".format(invoice.total_cost) }}</td>
                     <td>
                         <div class="btn-group" role="group" aria-label="Action buttons">
                             <a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-success btn-sm" title="Preview Invoice">

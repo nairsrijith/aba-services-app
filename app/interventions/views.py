@@ -4,8 +4,11 @@ from app.models import Intervention, Client, Employee, Activity
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
 from flask_login import login_required, current_user
 from sqlalchemy import or_, and_, desc, asc
+import os
 
 interventions_bp = Blueprint('interventions', __name__, template_folder='templates')
+
+org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
 # client_id is a foreign key to the Client model
@@ -38,7 +41,7 @@ def add_intervention():
             db.session.add(new_intervention)
             db.session.commit()
             return redirect(url_for('interventions.list_interventions'))
-        return render_template('add_int.html', form=form)
+        return render_template('add_int.html', form=form, org_name=org_name)
     else:
         abort(403)
 
@@ -95,7 +98,8 @@ def list_interventions():
             interventions=pagination.items,
             pagination=pagination,
             per_page=per_page,
-            activities=activities
+            activities=activities,
+            org_name=org_name
         )
     else:
         abort(403)
@@ -139,6 +143,6 @@ def update_intervention(intervention_id):
             intervention.invoice_number = form.invoice_number.data
             db.session.commit()
             return redirect(url_for('interventions.list_interventions'))
-        return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all())
+        return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=org_name)
     else:
         abort(403)

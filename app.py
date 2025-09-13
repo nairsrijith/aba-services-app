@@ -5,6 +5,10 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm
 from datetime import date, timedelta, datetime
+import os
+
+
+org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
 def get_date_ranges():
@@ -74,8 +78,8 @@ def home():
         total_interventions = Intervention.query.count()
         user_interventions = Intervention.query.join(Employee).filter(Employee.email == current_user.email).count()
         totals = get_totals()
-        return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions, totals=totals)
-    return render_template('home.html')
+        return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions, totals=totals, org_name=org_name)
+    return render_template('home.html', org_name=org_name)
 
 
 @app.route('/logout')
@@ -107,15 +111,15 @@ def login():
                 return redirect(next_page)
             else:
                 flash('Incorrect password! Try again.', 'danger')
-                return render_template('login.html', form=form)
+                return render_template('login.html', form=form, org_name=org_name)
         else:
             if user.activation_key != "" :
                 flash('Your account is not activated. Contact Administrator if you do not have received the activation key.', 'danger')
-                return render_template('login.html', form=form)
+                return render_template('login.html', form=form, org_name=org_name)
 
             if user.failed_attempt == -2:
                 flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
-                return render_template('login.html', form=form)
+                return render_template('login.html', form=form, org_name=org_name)
             
             if user.check_password(form.password.data):
                 if user.locked_until and datetime.now() < user.locked_until:
@@ -123,7 +127,7 @@ def login():
                     rem_min = int(remaining_time.total_seconds() / 60)
                     rem_sec = int(remaining_time.total_seconds() % 60)
                     flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
-                    return render_template('login.html', form=form)
+                    return render_template('login.html', form=form, org_name=org_name)
 
                 user.failed_attempt = 3
                 user.failed_until = None
@@ -148,9 +152,9 @@ def login():
                 else:
                     flash(f"Incorrect password! {user.failed_attempt} remaining attempt(s).", 'danger')
                 db.session.commit()
-                return render_template('login.html', form=form)
+                return render_template('login.html', form=form, org_name=org_name)
 
-    return render_template('login.html', form=form)
+    return render_template('login.html', form=form, org_name=org_name)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -174,11 +178,11 @@ def register():
                 return redirect(url_for('login'))
             else:
                 flash('Incorrect activation key. Contact Administrator', 'danger')
-                return render_template('register.html', form=form)
+                return render_template('register.html', form=form, org_name=org_name)
         else:
             flash('This email is not allowed to be registered. Contact Administrator', 'danger')
-            return render_template('register.html', form=form)
-    return render_template('register.html', form=form)
+            return render_template('register.html', form=form, org_name=org_name)
+    return render_template('register.html', form=form, org_name=org_name)
 
 
 if __name__ == '__main__':

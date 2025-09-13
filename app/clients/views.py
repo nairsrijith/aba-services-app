@@ -3,8 +3,12 @@ from app import db
 from app.models import Client, Employee, Intervention
 from app.clients.forms import AddClientForm, UpdateClientForm
 from flask_login import login_required, current_user
+import os
 
 clients_bp = Blueprint('clients', __name__, template_folder='templates')
+
+
+org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
 @clients_bp.route('/add', methods=['GET', 'POST'])
@@ -44,7 +48,7 @@ def add_client():
             db.session.add(new_client)
             db.session.commit()
             return redirect(url_for('clients.list_clients'))
-        return render_template('add.html', form=form)
+        return render_template('add.html', form=form, org_name=org_name)
     else:
         abort(403)
 
@@ -60,7 +64,8 @@ def list_clients():
             'list.html',
             clients=clients_pagination.items,
             pagination=clients_pagination,
-            per_page=per_page
+            per_page=per_page,
+            org_name=org_name
         )
     else:
         abort(403)
@@ -114,7 +119,7 @@ def update_client(client_id):
             client.cost_therapy = form.cost_therapy.data or 0
             db.session.commit()
             return redirect(url_for('clients.list_clients'))
-        return render_template('update.html', form=form, client=client)
+        return render_template('update.html', form=form, client=client, org_name=org_name)
     else:
         abort(403)
 

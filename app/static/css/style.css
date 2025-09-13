@@ -24,6 +24,9 @@ body{
   display: grid;
   grid-template-columns: auto 1fr;
 }
+td{
+  vertical-align: middle !important;
+}
 #sidebar{
   box-sizing: border-box;
   height: 100vh;

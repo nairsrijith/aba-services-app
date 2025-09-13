@@ -7,9 +7,12 @@ import secrets
 import string
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import os
 
 users_bp = Blueprint('users', __name__, template_folder='templates')
 
+
+org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 def generate_activation_code(length=8):
     """
@@ -45,7 +48,7 @@ def add_user():
                 return redirect(url_for('users.list_users'))
             else:
                 flash('This email is already registered.', 'warning')
-        return render_template('add_user.html', form=form)
+        return render_template('add_user.html', form=form, org_name=org_name)
     else:
         abort(403)
 
@@ -61,7 +64,8 @@ def list_users():
             'list_user.html',
             users=users_pagination.items,
             pagination=users_pagination,
-            per_page=per_page
+            per_page=per_page,
+            org_name=org_name
         )
     else:
         abort(403)
@@ -147,6 +151,6 @@ def change_password():
                 return redirect(url_for('users.change_password'))
             else:
                 flash('Current password is incorrect.', 'danger')
-        return render_template('change_password.html', form=form)
+        return render_template('change_password.html', form=form, org_name=org_name)
     else:
         abort(403)

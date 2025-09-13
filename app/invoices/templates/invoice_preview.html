@@ -46,10 +46,9 @@
                 <p>Status: <span class="badge {% if status != "Paid" %}bg-danger{% else %}bg-success{% endif %}">{{ status }}</span></p>
                 <p>Invoice Date: {{ invoice_date }}</p>
                 <p>Pay By: {{ payby_date }}</p>
-                <p>Service Period: {{ date_from }}</p>
-                <p>to {{ date_to }}</p>
             </div>
         </div>
+        <br>
         <div style="clear: both;">
             <strong>Supervisor:</strong> {{ supervisor_name }}
         </div>
@@ -71,9 +70,9 @@
                     <td style="text-align: left;"><strong>{{ i.intervention_type }}</strong> conducted by <strong><em>{{ i.employee.firstname }} {{ i.employee.lastname }}</em></strong><br>
                         <small>{{ i.date }} ({{ i.start_time }}-{{ i.end_time }})</small>
                     </td>
-                    <td style="text-align: right;">{{ "%.2f" % i.duration }}</td>
-                    <td style="text-align: right;">{{ "%.2f" % i.rate }}</td>
-                    <td style="text-align: right;">{{ "%.2f" % i.cost }}</td>
+                    <td style="text-align: right;">{{ "{:,.2f}".format(i.duration) }}</td>
+                    <td style="text-align: right;">{{ "{:,.2f}".format(i.rate) }}</td>
+                    <td style="text-align: right;">{{ "{:,.2f}".format(i.cost) }}</td>
                 </tr>
                 {% set ns.total = ns.total + i.cost %}
                 {% endfor %}
@@ -81,7 +80,7 @@
             <tbody>
                 <tr>
                     <td colspan="4" style="text-align: right;"><strong>Total:</strong></td>
-                    <td style="text-align: right;"><strong>{{ "%.2f" % ns.total }}</strong></td>
+                    <td style="text-align: right;"><strong>{{ "{:,.2f}".format(ns.total) }}</strong></td>
                 </tr>
             </tbody>
         </table>

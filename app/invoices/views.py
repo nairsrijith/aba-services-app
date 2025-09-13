@@ -6,9 +6,15 @@ from datetime import date, timedelta, datetime
 from sqlalchemy import and_
 from flask_login import login_required, current_user
 from weasyprint import HTML
-
+import os
 
 invoices_bp = Blueprint('invoices', __name__, template_folder='templates')
+
+
+org_name = os.environ.get('ORG_NAME', 'My Organization')
+org_address = os.environ.get('ORG_ADDRESS', 'Organization Address')
+org_email = os.environ.get('ORG_EMAIL', 'Org Email')
+org_phone = os.environ.get('ORG_PHONE', 'Org Phone')
 
 
 def parse_date(val):
@@ -22,7 +28,7 @@ def parse_date(val):
 def list_invoices():
     if current_user.is_authenticated and current_user.user_type == "admin":
         invoices = Invoice.query.order_by(Invoice.invoiced_date.desc()).all()
-        return render_template('list_invoices.html', invoices=invoices)
+        return render_template('list_invoices.html', invoices=invoices, org_name=org_name)
     else:
         abort(403)
 
@@ -50,7 +56,7 @@ def invoice_client_select():
                 df=form.date_from.data,
                 dt=form.date_to.data))
         
-        return render_template('invoice_client_select.html', form=form)
+        return render_template('invoice_client_select.html', form=form, org_name=org_name)
     else:
         abort(403)
 
@@ -142,7 +148,6 @@ def invoice_preview():
 
         return render_template(
             'invoice_preview.html',
-            org_name="1001256835 ONTARIO INC.",
             parent_name=parent_name,
             billing_address=address,
             client=client,
@@ -153,7 +158,8 @@ def invoice_preview():
             date_to=date_to.strftime('%Y-%m-%d'),
             status=status,
             supervisor_name=supervisor_name,
-            interventions=interventions
+            interventions=interventions,
+            org_name=org_name
         )
     else:
         abort(403)
@@ -196,7 +202,6 @@ def download_invoice_pdf_by_number(invoice_number):
 
         html = render_template(
             'invoice_pdf.html',  # <-- use the new template!
-            org_name="1001256835 ONTARIO INC.",
             parent_name=parent_name,
             billing_address=address,
             client=client,
@@ -209,7 +214,11 @@ def download_invoice_pdf_by_number(invoice_number):
             status=status,
             paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
             payment_comments=invoice.payment_comments,
-            interventions=interventions
+            interventions=interventions,
+            org_name=org_name,
+            org_address=org_address,
+            org_email=org_email,
+            org_phone=org_phone,
         )
 
         pdf = HTML(string=html).write_pdf()
@@ -255,7 +264,6 @@ def preview_invoice_by_number(invoice_number):
 
         return render_template(
             'invoice_preview.html',
-            org_name="1001256835 ONTARIO INC.",
             parent_name=parent_name,
             billing_address=address,
             client=client,
@@ -267,7 +275,8 @@ def preview_invoice_by_number(invoice_number):
             status=status,
             supervisor_name=supervisor_name,
             interventions=interventions,
-            total_cost=invoice.total_cost
+            total_cost=invoice.total_cost,
+            org_name=org_name
         )
     else:
         abort(403)
