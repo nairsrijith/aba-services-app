@@ -7,6 +7,8 @@ from app.forms import LoginForm, RegistrationForm
 from datetime import date, timedelta, datetime
 import os
 
+from gevent.pywsgi import WSGIServer
+
 
 org_name = os.environ.get('ORG_NAME', 'My Organization')
 
@@ -63,11 +65,6 @@ def get_totals():
             'total_received': total_received
         }
     return results
-
-
-# @app.route('/')
-# def index():
-#     return redirect(url_for('login'))
 
 
 @app.route('/')
@@ -186,4 +183,9 @@ def register():
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int("8080"))
+    # Development only
+    # app.run(debug=True, host='0.0.0.0', port=int("8080"))
+    
+    # Production: Use a production WSGI server
+    http_server = WSGIServer(('', 8080), app)
+    http_server.serve_forever()
