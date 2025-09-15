@@ -8,8 +8,8 @@ Following are the environment variables
 ```
 ORG_NAME=""
 ORG_ADDRESS=""
-ORG_PHONE= ""
-ORG_EMAIL= ""
+ORG_PHONE=""
+ORG_EMAIL=""
 ```
 These variables will be used to generate the Invoice.
 Also, ORG_NAME is used as the Brand Name in the Sidebar. 
