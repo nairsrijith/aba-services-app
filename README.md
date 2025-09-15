@@ -16,7 +16,7 @@ Also, ORG_NAME is used as the Brand Name in the Sidebar.
 
 ### Persistent volume for DB
 
-DB is stored in /app/data, so you can have a persisten volume created to store the DB.
+DB is stored in /app/data, so you can have a persistent volume created to store the DB.
 Currently DB is SQLite only.
 
 
