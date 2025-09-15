@@ -69,7 +69,7 @@ def delete_employee(employee_id):
             return redirect(url_for('employees.list_employees'))
         clients = Client.query.filter_by(supervisor_id=employee.id).all()
         if clients:
-            flash('Cannot delete employee who is a supervisor for clients. Please reassign or delete clients first.', 'danger')
+            flash('Cannot delete employee who is a supervisor for clients. Please reassign client to another supervisor.', 'danger')
             return redirect(url_for('employees.list_employees'))
         db.session.delete(employee)
         db.session.commit()
