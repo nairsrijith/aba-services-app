@@ -20,7 +20,7 @@ def add_intervention():
         clients = Client.query.all()
         if not clients:
             flash('Please add clients before adding interventions.', 'warning')
-            return redirect(url_for('clients.add_client'))
+            return redirect(url_for('clients.list_clients'))
         
         form = AddInterventionForm()
         form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.all()]

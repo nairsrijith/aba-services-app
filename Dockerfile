@@ -1,14 +1,12 @@
 FROM python:3.13
 
-WORKDIR /app
+WORKDIR /myapp
 
 COPY requirements.txt requirements.txt
 
 RUN pip install -r requirements.txt
 
 COPY . .
-
-RUN mkdir -p /app/app/data
 
 RUN python init_db.py
 
