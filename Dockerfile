@@ -8,7 +8,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /app/data
+RUN mkdir -p /app/app/data
 
 RUN python init_db.py
 
