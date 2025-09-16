@@ -1,0 +1,12 @@
+services:
+  my_aba_app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ORG_NAME=Creative Minds
+      - ORG_ADDRESS=123 Main St, Toronto, ON M4E 2V9
+      - ORG_PHONE=(123) 456-7890
+      - ORG_EMAIL=creative.minds@gmail.com
