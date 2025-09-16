@@ -1,4 +1,6 @@
-# My ABA App
+# Web App for ABA Services
+I have built this app to help my family member's small business where they provide ABA services to the special needs clients.\
+This Web Application is built to assist the business to manage client records, employee records, session records and invoicing.
 
 ## During container image build and container deployment
 
