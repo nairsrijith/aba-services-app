@@ -1,6 +1,6 @@
 FROM python:3.13
 
-WORKDIR /app
+WORKDIR /myapp
 
 COPY requirements.txt requirements.txt
 
@@ -8,8 +8,8 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-RUN python init_db.py
-
 EXPOSE 8080
+
+ENTRYPOINT [ "python", "init_db.py" ]
 
 CMD ["python", "app.py"]
