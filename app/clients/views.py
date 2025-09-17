@@ -19,7 +19,7 @@ def add_client():
         supervisor = Employee.query.filter_by(position='Behaviour Analyst').first()
         if not supervisor:
             flash('Please add at least one Behaviour Analyst before adding clients.', 'warning')
-            return redirect(url_for('employees.add_employee'))
+            return redirect(url_for('employees.list_employees'))
 
         form = AddClientForm()
         form.state.choices = [("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),
