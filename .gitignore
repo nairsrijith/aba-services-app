@@ -1,2 +1,3 @@
 app/data/*.sqlite
 .env
+**/__pycache__/

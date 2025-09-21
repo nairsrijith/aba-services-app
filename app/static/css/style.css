@@ -165,7 +165,7 @@ main{
 }
 .flex-container {
     display: flex;
-    flex-wrap: wrap; /* Allows items to wrap to new lines */
+    flex-wrap: nowrap; /* Allows items to wrap to new lines */
     justify-content: space-around; /* Distributes space around items */
 }
 .custom-card-shadow {

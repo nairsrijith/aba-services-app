@@ -59,10 +59,13 @@ def get_totals():
             .filter(Invoice.invoiced_date.between(start, end))\
             .filter(Invoice.status == 'Paid')\
             .scalar() or 0.0
+        
+        pending_amount = total_invoiced - total_received
 
         results[period] = {
             'total_invoiced': total_invoiced,
-            'total_received': total_received
+            'total_received': total_received,
+            'pending_amount': pending_amount
         }
     return results
 

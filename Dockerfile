@@ -10,6 +10,4 @@ COPY . .
 
 EXPOSE 8080
 
-ENTRYPOINT [ "python", "init_db.py" ]
-
-CMD ["python", "app.py"]
+CMD ["sh", "-c", "python init_db.py && python app.py"]

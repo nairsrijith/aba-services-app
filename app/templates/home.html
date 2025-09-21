@@ -71,11 +71,14 @@
                                 <div class="card-body">
                                     <h2 class="card-title" style="text-align: center;">{{ period.title() }}</h2>
                                     <div class="flex-container" style="text-align: center;">
-                                        <div class="flex-item" style="font-size: 1.5rem; color: rgb(0, 189, 0)">
+                                        <div class="flex-item" style="font-size: 1.5rem; vertical-align: bottom; color: rgba(0, 189, 0, 0.75)">
                                             <small style="font-size: small;">CAD</small>{{ "{:15,.2f}".format(data.total_received) }}
                                             <p style="font-size: .75rem; color: #adadad;">Received</p>
                                         </div>
-                                        <div class="flex-item" style="font-size: 1.5rem; color: rgb(105, 105, 255)">
+                                        <div class="flex-item" style="font-size: 2rem; vertical-align: bottom; {% if data.pending_amount < 0 %} color: rgb(255, 93, 93) {% else %} color: rgb(0, 189, 0) {% endif %};">
+                                            <small style="font-size: small;">CAD</small>{{ "{:15,.2f}".format(data.pending_amount) }}
+                                        </div>
+                                        <div class="flex-item" style="font-size: 1.5rem; vertical-align: bottom; color: rgba(105, 105, 255, 0.75)">
                                             <small style="font-size: small;">CAD</small>{{ "{:15,.2f}".format(data.total_invoiced) }}
                                             <p style="font-size: .75rem; color: #adadad;">Total</p>
                                         </div>
