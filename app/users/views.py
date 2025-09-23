@@ -37,7 +37,6 @@ def add_user():
                 new_user = User(email=form.email.data,
                                 password_hash="",
                                 user_type=form.user_type.data,
-                                locked=1,
                                 locked_until=None,
                                 failed_attempt=0,
                                 activation_key=generate_activation_code(8)
@@ -148,7 +147,7 @@ def change_password():
                 current_user.set_password(form.new_password.data)
                 db.session.commit()
                 flash('Your password has been updated.', 'success')
-                return redirect(url_for('users.change_password'))
+                return redirect(url_for('logout'))
             else:
                 flash('Current password is incorrect.', 'danger')
         return render_template('change_password.html', form=form, org_name=org_name)

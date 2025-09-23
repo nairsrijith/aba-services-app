@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, DateField, TimeField, SelectField
+from wtforms import StringField, SubmitField, DateField, TimeField, SelectField, FileField
 from wtforms.validators import DataRequired
 
 
@@ -12,6 +12,7 @@ class AddInterventionForm(FlaskForm):
     end_time = TimeField('End Time', validators=[DataRequired()])
     duration = StringField('Duration', validators=[DataRequired()])  # in hours e.g., '1.5' for 1 hour 30 minutes
     invoiced = StringField('Invoiced')  # e.g., 'Yes' or 'No'
+    file_names = FileField('File(s) to add')  # optional field for filename if a file is uploaded
     invoice_number = StringField('Invoice Number')  # optional field for invoice number if invoiced
     submit = SubmitField('Add')
 
@@ -26,5 +27,6 @@ class UpdateInterventionForm(FlaskForm):
     duration = StringField('Duration', validators=[DataRequired()])  # in hours e.g., '1.5' for 1 hour 30 minutes
     invoiced = StringField('Invoiced', validators=[DataRequired()])  # e.g., 'Yes' or 'No'
     invoice_number = StringField('Invoice Number')  # optional field for invoice number if invoiced
+    file_names = FileField('File(s) to add')  # optional field for filename if a file is uploaded
     submit = SubmitField('Update')
 

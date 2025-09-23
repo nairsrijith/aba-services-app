@@ -197,6 +197,15 @@ main{
   pointer-events: none;
 }
 
+.strikeout {
+    text-decoration: line-through;
+    color: #951f1f;
+}
+.file-row .filename.strikeout ~ .file-link {
+    text-decoration: line-through;
+    color: #951f1f !important;
+}
+
 @media(max-width: 800px){
   body{
     grid-template-columns: 1fr;

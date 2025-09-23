@@ -3,7 +3,7 @@
     <div class="p-2 mb-4 rounded-3">
         <div class="container-fluid py-2">
             <h2>Update Session Record</h2>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
                 <div class="row mb-3">
                     <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select", placeholder="Client ID", list="client_list") }}</div>
@@ -26,7 +26,24 @@
                     <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", id="end_time", type="time") }}</div>
                     <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", id="duration", readonly=True) }}</div>
                 </div>
-                {{ form.submit(class="btn btn-outline-warning") }} <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
+                <div>
+                    <label>Existing Files:</label>
+                    {% for filename in intervention.get_file_names() %}
+                        <div class="file-row">
+                            <input type="checkbox" name="remove_files" value="{{ filename }}" class="remove-file-checkbox" id="remove_{{ loop.index }}">
+                            <span class="filename"></span>
+                            <a href="{{ url_for('interventions.download_file', client_id=intervention.client_id, filename=filename) }}" class="file-link ms-2">{{ filename }}</a>
+                        </div>
+                    {% else %}
+                        <p style="color: rgb(126, 126, 126);">No files attached.</p>
+                    {% endfor %}
+                </div> 
+                <div>
+                    {{ form.file_names.label(class="col-form-label") }}{{ form.file_names(class="form-control", type="file", multiple=True ) }}
+                </div>
+                <div class="py-4">
+                    {{ form.submit(class="btn btn-outline-warning") }} <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
             </form>
         </div>
     </div>
@@ -34,5 +51,21 @@
     <script src="{{ url_for('static', filename='js/duration.js') }}"></script>
     <script>
         setupDurationCalculation('start_time', 'end_time', 'duration');
+    </script>
+    <script>
+        document.querySelectorAll('.remove-file-checkbox').forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const row = this.closest('.file-row');
+                const filenameSpan = row.querySelector('.filename');
+                const fileLink = row.querySelector('.file-link');
+                if (this.checked) {
+                    filenameSpan.classList.add('strikeout');
+                    fileLink.classList.add('strikeout');
+                } else {
+                    filenameSpan.classList.remove('strikeout');
+                    fileLink.classList.remove('strikeout');
+                }
+            });
+        });
     </script>
 {% endblock %}

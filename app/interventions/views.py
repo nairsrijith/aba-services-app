@@ -1,10 +1,14 @@
-from flask import Blueprint, render_template, redirect, url_for, request, abort, flash
-from app import db
+from flask import Blueprint, render_template, redirect, url_for, request, abort, flash, request, send_from_directory
+from app import db, app
 from app.models import Intervention, Client, Employee, Activity
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
 from flask_login import login_required, current_user
 from sqlalchemy import or_, and_, desc, asc
 import os
+import json
+from werkzeug.utils import secure_filename
+import shutil
+
 
 interventions_bp = Blueprint('interventions', __name__, template_folder='templates')
 
@@ -31,13 +35,25 @@ def add_intervention():
         form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
 
         if form.validate_on_submit():
-            new_intervention = Intervention(client_id=form.client_id.data,
-                                            employee_id=form.employee_id.data,
-                                            intervention_type=form.intervention_type.data,
-                                            date=form.date.data,
-                                            start_time=form.start_time.data,
-                                            end_time=form.end_time.data,
-                                            duration=round(float(form.duration.data), 2))
+            client_id = form.client_id.data
+            client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+            os.makedirs(client_folder, exist_ok=True)
+            filenames = []
+            for file_storage in request.files.getlist(form.file_names.name):
+                if file_storage and file_storage.filename:
+                    filename = secure_filename(file_storage.filename)
+                    file_storage.save(os.path.join(client_folder, filename))
+                    filenames.append(filename)
+            new_intervention = Intervention(
+                client_id=client_id,
+                employee_id=form.employee_id.data,
+                intervention_type=form.intervention_type.data,
+                date=form.date.data,
+                start_time=form.start_time.data,
+                end_time=form.end_time.data,
+                duration=round(float(form.duration.data), 2),
+                file_names=json.dumps(filenames)  # Save as JSON string
+            )
             db.session.add(new_intervention)
             db.session.commit()
             return redirect(url_for('interventions.list_interventions'))
@@ -105,13 +121,29 @@ def list_interventions():
         abort(403)
 
 
+import os
+import shutil
+import json
+
 @interventions_bp.route('/bulk_delete', methods=['POST'])
 @login_required
 def bulk_delete():
     if current_user.is_authenticated and not current_user.user_type == "super":
         ids = request.form.getlist('selected_ids')
         if ids:
-            Intervention.query.filter(Intervention.id.in_(ids)).delete(synchronize_session=False)
+            interventions = Intervention.query.filter(Intervention.id.in_(ids)).all()
+            for intervention in interventions:
+                client_id = intervention.client_id
+                client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+                deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
+                os.makedirs(deleted_folder, exist_ok=True)
+                filenames = intervention.get_file_names()
+                for filename in filenames:
+                    src = os.path.join(client_folder, filename)
+                    dst = os.path.join(deleted_folder, filename)
+                    if os.path.exists(src):
+                        shutil.move(src, dst)
+                db.session.delete(intervention)
             db.session.commit()
         return redirect(url_for('interventions.list_interventions'))
     else:
@@ -132,7 +164,31 @@ def update_intervention(intervention_id):
         form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
 
         if request.method == 'POST':
-            intervention.client_id = form.client_id.data
+            client_id = form.client_id.data
+            client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+            deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
+            os.makedirs(client_folder, exist_ok=True)
+            os.makedirs(deleted_folder, exist_ok=True)
+
+            filenames = intervention.get_file_names()
+            remove_files = request.form.getlist('remove_files')
+            # Move removed files to deleted folder
+            for filename in remove_files:
+                src = os.path.join(client_folder, filename)
+                dst = os.path.join(deleted_folder, filename)
+                if os.path.exists(src):
+                    shutil.move(src, dst)
+            # Remove from filenames list
+            filenames = [f for f in filenames if f not in remove_files]
+
+            # Handle new uploads
+            for file_storage in request.files.getlist(form.file_names.name):
+                if file_storage and file_storage.filename:
+                    filename = secure_filename(file_storage.filename)
+                    file_storage.save(os.path.join(client_folder, filename))
+                    filenames.append(filename)
+
+            intervention.client_id = client_id
             intervention.employee_id = form.employee_id.data
             intervention.intervention_type = form.intervention_type.data
             intervention.date = form.date.data
@@ -141,8 +197,16 @@ def update_intervention(intervention_id):
             intervention.duration = round(float(form.duration.data), 2)
             intervention.invoiced = form.invoiced.data
             intervention.invoice_number = form.invoice_number.data
+            intervention.file_names = json.dumps(filenames)
             db.session.commit()
             return redirect(url_for('interventions.list_interventions'))
-        return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=org_name)
+        return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=org_name, intervention=intervention)
     else:
         abort(403)
+
+
+@interventions_bp.route('/download/<int:client_id>/<filename>')
+@login_required
+def download_file(client_id, filename):
+    client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+    return send_from_directory(client_folder, filename, as_attachment=True)

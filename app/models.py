@@ -2,6 +2,7 @@ from app import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import date
+import json
 
 
 @login_manager.user_loader
@@ -15,7 +16,6 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, index=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     user_type = db.Column(db.String(51), default=None, nullable=False)
-    locked = db.Column(db.Boolean, default=False, nullable=False)
     locked_until = db.Column(db.DateTime, default=None)
     failed_attempt = db.Column(db.Integer, default=0, nullable=False)
     activation_key = db.Column(db.String(15), nullable=True, default=None)
@@ -116,6 +116,7 @@ class Intervention(db.Model):
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
     duration = db.Column(db.Float, nullable=False)  # Duration in hours
+    file_names = db.Column(db.Text, nullable=True)  # Comma-separated filenames if multiple files are uploaded
     invoiced = db.Column(db.Boolean, default=False)  # Indicates if the intervention has been invoiced
     invoice_number = db.Column(db.String(25), db.ForeignKey('invoices.invoice_number'), nullable=True)  # Invoice number if invoiced
 
@@ -134,8 +135,13 @@ class Intervention(db.Model):
     def duration(self, value):
         self._duration = round(float(value), 2) if value is not None else None
 
+    def get_file_names(self):
+        return json.loads(self.file_names or '[]')
+    
+    def set_file_names(self, filenames):
+        self.file_names = json.dumps(filenames)
 
-    def __init__(self, client_id, employee_id, intervention_type, date, start_time, end_time, duration, invoiced=False, invoice_number=None):
+    def __init__(self, client_id, employee_id, intervention_type, date, start_time, end_time, duration, file_names, invoiced=False, invoice_number=None):
         self.client_id = client_id
         self.employee_id = employee_id
         self.intervention_type = intervention_type
@@ -144,6 +150,7 @@ class Intervention(db.Model):
         self.end_time = end_time
         self.duration = duration
         self.invoiced = invoiced
+        self.file_names = file_names
         self.invoice_number = invoice_number
 
 
