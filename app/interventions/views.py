@@ -1,9 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, request, abort, flash, request, send_from_directory
-from app import db, app
+from flask import Blueprint, render_template, redirect, url_for, request, abort, flash, send_from_directory
+from app import db, app, allowed_file
 from app.models import Intervention, Client, Employee, Activity
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
 from flask_login import login_required, current_user
-from sqlalchemy import or_, and_, desc, asc
 import os
 import json
 from werkzeug.utils import secure_filename
@@ -40,10 +39,13 @@ def add_intervention():
             os.makedirs(client_folder, exist_ok=True)
             filenames = []
             for file_storage in request.files.getlist(form.file_names.name):
-                if file_storage and file_storage.filename:
+                if file_storage and file_storage.filename and allowed_file(file_storage.filename):
                     filename = secure_filename(file_storage.filename)
                     file_storage.save(os.path.join(client_folder, filename))
                     filenames.append(filename)
+                elif file_storage and file_storage.filename:
+                    flash(f"File type not allowed: {file_storage.filename}", "danger")
+            
             new_intervention = Intervention(
                 client_id=client_id,
                 employee_id=form.employee_id.data,
@@ -183,10 +185,13 @@ def update_intervention(intervention_id):
 
             # Handle new uploads
             for file_storage in request.files.getlist(form.file_names.name):
-                if file_storage and file_storage.filename:
+                if file_storage and file_storage.filename and allowed_file(file_storage.filename):
                     filename = secure_filename(file_storage.filename)
                     file_storage.save(os.path.join(client_folder, filename))
                     filenames.append(filename)
+                    flash(f"File added: {file_storage.filename}", "success")
+                elif file_storage and file_storage.filename:
+                    flash(f"File type not allowed: {file_storage.filename}", "danger")
 
             intervention.client_id = client_id
             intervention.employee_id = form.employee_id.data

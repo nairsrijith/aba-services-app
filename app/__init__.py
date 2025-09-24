@@ -11,6 +11,10 @@ load_dotenv()
 
 login_manager = LoginManager()
 
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx', 'doc', 'docm', 'dotx', 'dotm', 'xlsx', 'xls', 'xlsm', 'csv', 'odt', 'ods', 'odp', 'rtf', 'ppt', 'pptx', 'zip', 'rar'}
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_app_super_secret_key'
 
