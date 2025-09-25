@@ -1,11 +1,15 @@
 const toggleButton = document.getElementById('toggle-btn')
 const sidebar = document.getElementById('sidebar')
 
-function toggleSidebar(){
-  sidebar.classList.toggle('close')
-  toggleButton.classList.toggle('rotate')
 
-  closeAllSubMenus()
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const toggleButton = document.getElementById('toggle-btn');
+  sidebar.classList.toggle('close');
+  toggleButton.classList.toggle('rotated');
+  closeAllSubMenus();
+  // Save state
+  localStorage.setItem('sidebar-closed', sidebar.classList.contains('close'));
 }
 
 function toggleSubMenu(button){
@@ -38,19 +42,22 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('close');
-  // Save state
-  localStorage.setItem('sidebar-closed', sidebar.classList.contains('close'));
-}
+
 
 // Restore sidebar state on page load
 document.addEventListener('DOMContentLoaded', function() {
   const sidebar = document.getElementById('sidebar');
+  const toggleButton = document.getElementById('toggle-btn');
   if (localStorage.getItem('sidebar-closed') === 'true') {
     sidebar.classList.add('close');
+    toggleButton.classList.add('rotated');
   } else {
     sidebar.classList.remove('close');
+    toggleButton.classList.remove('rotated');
   }
+
+  // Close submenus when mouse leaves sidebar
+  sidebar.addEventListener('mouseleave', function() {
+    closeAllSubMenus();
+  });
 });

@@ -126,8 +126,15 @@ td{
     transition: rotate 150ms ease;
   }
 }
+
 #toggle-btn:hover{
   background-color: var(--hover-clr);
+}
+#toggle-btn.rotated svg {
+    transform: rotate(180deg);
+}
+#toggle-btn svg {
+    transition: transform 0.3s;
 }
 .form-control, .form-select {
     background-color: var(--base-clr) !important;
