@@ -39,7 +39,7 @@ def invoice_client_select():
     if current_user.is_authenticated and current_user.user_type == "admin":
         interventions = Intervention.query.filter_by(invoiced=False).all()
         if not interventions:
-            flash('No uninvoiced session available to create an invoice.', 'warning')
+            flash('No uninvoiced session available to create an invoice.', 'info')
             return redirect(url_for('interventions.list_interventions'))
         
         form = InvoiceClientSelectionForm()
@@ -47,7 +47,7 @@ def invoice_client_select():
         if form.validate_on_submit():
             interventions = Intervention.query.filter(and_(Intervention.invoiced == False, Intervention.client_id == form.client_id.data)).all()
             if not interventions:
-                flash('No uninvoiced interventions found for the selected client.', 'warning')
+                flash('No uninvoiced interventions found for the selected client.', 'info')
                 return redirect(url_for('interventions.list_interventions'))
             
             return redirect(url_for(

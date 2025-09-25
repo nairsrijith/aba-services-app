@@ -46,7 +46,7 @@ def add_user():
                 flash('User account created.', 'success')
                 return redirect(url_for('users.list_users'))
             else:
-                flash('This email is already registered.', 'warning')
+                flash('This email is already registered.', 'info')
         return render_template('add_user.html', form=form, org_name=org_name)
     else:
         abort(403)
