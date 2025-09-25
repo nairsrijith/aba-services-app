@@ -22,7 +22,7 @@ def add_intervention():
     if current_user.is_authenticated and not current_user.user_type == "super":
         clients = Client.query.all()
         if not clients:
-            flash('Please add clients before adding interventions.', 'info')
+            flash('Please add clients before adding interventions.', 'warning')
             return redirect(url_for('clients.list_clients'))
         
         form = AddInterventionForm()
