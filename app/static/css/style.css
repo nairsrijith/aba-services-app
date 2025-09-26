@@ -219,10 +219,10 @@ main{
   }
   #sidebar{
     height: 60px;
-    width: 100%;
+    width: 100vw !important;
     border-right: none;
     border-top: 1px solid var(--line-clr);
-    padding: 0;
+    padding: 0 !important;
     position: fixed;
     top: unset;
     bottom: 0;

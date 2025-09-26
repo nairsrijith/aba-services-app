@@ -61,3 +61,12 @@ document.addEventListener('DOMContentLoaded', function() {
     closeAllSubMenus();
   });
 });
+
+window.addEventListener('resize', function() {
+  const sidebar = document.getElementById('sidebar');
+  const toggleButton = document.getElementById('toggle-btn');
+  if (window.innerWidth <= 800) {
+    sidebar.classList.remove('close');
+    if (toggleButton) toggleButton.classList.remove('rotated');
+  }
+});
