@@ -3,6 +3,12 @@ I have built this app to help my family member's small business where they provi
 This Web Application is built to assist the business to manage client records, employee records, session records and invoicing.
 
 ## During container image build and container deployment
+Create a directory in your system from where you want to run the application and store its DB and other data files.
+1) Copy the `docker-compose.yml` file into the directory.
+2) Update the docker file for port that you want to expose the app on and environment variables.\
+   Note about the Environment Variable is below.\
+   Internally application uses port 8080, but you can customize the port for incoming connections to your computer/server.
+4) Once ready, run `docker compose up -d`.
 
 ### Environment Variables
 Following are the environment variables 
