@@ -22,7 +22,7 @@ These variables will be used to generate the Invoice.\
 Also, ORG_NAME is used as the Brand Name in the side navigation bar in the webapp. 
 
 ### Persistent volume for DB
-DB is stored in /app/data, so you can have a persistent volume created to store the DB.\
+DB is stored in /myapp/app/data, so you can have a persistent volume created to store the DB.\
 Currently DB is SQLite only.
 
 
