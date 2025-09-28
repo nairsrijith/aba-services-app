@@ -1,0 +1,17 @@
+# Docker Compose file for building and running the ABA application
+# This configuration sets up the application with necessary environment variables and volume mappings.
+# Make sure to adjust the paths and environment variables as needed for your setup.
+# Usage: docker-compose -f docker-compose-build.yml up --build
+
+services:
+  my_aba_app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/myapp/app/data
+    environment:
+      - ORG_NAME=Org Name
+      - ORG_ADDRESS=123 Main St, Toronto, ON M4E 2V9
+      - ORG_PHONE=(123) 456-7890
+      - ORG_EMAIL=support@orgname.com

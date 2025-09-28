@@ -1,13 +1,20 @@
+# Instructions to run the ABA web application using Docker Compose.
+# 1. Ensure Docker and Docker Compose are installed on your machine.
+# 2. Save this file as docker-compose.yml in your project directory.
+# 3. Open a terminal and navigate to the directory containing this file.
+# 4. Run the command: docker-compose up -d
+# 5. Access the application at http://localhost:8080 (or the port you specified).
+
 services:
   aba_app:
     image: nairsrijith/abawebapp:latest
     container_name: aba_app
     ports:
-      - "8080:8080"
+      - "8080:8080" # Update the port mapping as needed. Do not change the port number on right side of the ":".
     volumes:
-      - ./data:/myapp/app/data
+      - ./data:/myapp/app/data # You can either have a local directory for data persistence or use a named volume.
     environment:
-      - ORG_NAME=1001256835 ON INC.
-      - ORG_ADDRESS=351-3025 The Credit Woodlands, Mississauga, ON L5C 2V3
-      - ORG_PHONE=(365) 338-1818
-      - ORG_EMAIL=v.nishanair@gmail.com
+      - ORG_NAME=Org Name
+      - ORG_ADDRESS=123 Main St, Toronto, ON M4E 2V9
+      - ORG_PHONE=(123) 456-7890
+      - ORG_EMAIL=support@orgname.com
