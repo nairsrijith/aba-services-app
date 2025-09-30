@@ -26,7 +26,7 @@
                     <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", id="end_time", type="time") }}</div>
                     <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", id="duration", readonly=True) }}</div>
                 </div>
-                <div>
+                <div class="mb-3">
                     <label>Existing Files:</label>
                     {% for filename in intervention.get_file_names() %}
                         <div class="file-row">
@@ -37,12 +37,13 @@
                     {% else %}
                         <p style="color: rgb(126, 126, 126);">No files attached.</p>
                     {% endfor %}
-                </div> 
-                <div>
-                    {{ form.file_names.label(class="col-form-label") }}{{ form.file_names(class="form-control", type="file", multiple=True ) }}
                 </div>
-                <div class="py-4">
-                    {{ form.submit(class="btn btn-outline-warning") }} <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
+                <div class="mb-3">
+                    {{ form.file_names.label(class="col-form-label") }} {{ form.file_names(class="form-control", type="file", multiple=True ) }}
+                </div>
+                <div class="col-auto">
+                    {{ form.submit(class="btn btn-outline-warning") }}
+                    <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
                 </div>
             </form>
         </div>

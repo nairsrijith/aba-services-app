@@ -9,9 +9,8 @@
                 <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select") }}</div>
                 <div>{{ form.date_from.label(class="col-form-label") }}{{ form.date_from(class="form-control", type="date") }}</div>
                 <div>{{ form.date_to.label(class="col-form-label") }}{{ form.date_to(class="form-control", type="date") }}</div>
-                </div>
             </div>
-            <div class="py-4">
+            <div class="col-auto">
                 {{ form.submit(class="btn btn-outline-primary") }}
                 <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary ms-2">Cancel</a>
             </div>

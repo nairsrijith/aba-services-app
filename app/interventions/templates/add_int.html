@@ -17,7 +17,7 @@
                 <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", placeholder="0.0", id="duration", readonly=True) }}</div>
                 <div>{{ form.file_names.label(class="col-form-label") }}{{ form.file_names(class="form-control", type="file", multiple=True ) }}</div>
             </div>
-            <div class="py-4">
+            <div class="col-auto">
                 {{ form.submit(class="btn btn-outline-primary") }}
                 <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
             </div>

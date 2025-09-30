@@ -25,6 +25,7 @@ def add_employee():
             new_employee = Employee(firstname=form.firstname.data.title(),
                                     lastname=form.lastname.data.title(),
                                     position=form.position.data.title(),
+                                    rba_number=form.rba_number.data,
                                     email=form.email.data,
                                     cell=form.cell.data,
                                     address1=form.address1.data.title(),

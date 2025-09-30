@@ -44,6 +44,7 @@ class Employee(db.Model):
     firstname = db.Column(db.String(51), nullable=False)
     lastname = db.Column(db.String(51))
     position = db.Column(db.String(51), db.ForeignKey('designations.designation'), nullable=False)
+    rba_number = db.Column(db.String(25), unique=True)
     email = db.Column(db.String(120), nullable=False)
     cell = db.Column(db.String(10), nullable=False)
     address1 = db.Column(db.String(120))
@@ -54,10 +55,11 @@ class Employee(db.Model):
 
     designation = db.relationship('Designation', backref='employees')
 
-    def __init__(self, firstname, lastname, position, email, cell, address1=None, address2=None, city=None, state=None, zipcode=None):
+    def __init__(self, firstname, lastname, position, rba_number, email, cell, address1=None, address2=None, city=None, state=None, zipcode=None):
         self.firstname = firstname
         self.lastname = lastname
         self.position = position
+        self.rba_number = rba_number
         self.email = email
         self.cell = cell
         self.address1 = address1

@@ -9,6 +9,7 @@
                     <div>{{ form.firstname.label(class="col-form-label") }}{{ form.firstname(size=51, class="form-control", placeholder="First Name") }}</div>
                     <div>{{ form.lastname.label(class="col-form-label") }}{{ form.lastname(size=51, class="form-control", placeholder="Last Name") }}</div>
                     <div>{{ form.position.label(class="col-form-label") }}{{ form.position(class="form-select", placeholder="Designation") }}</div>
+                    <div>{{ form.rba_number.label(class="col-form-label") }}{{ form.rba_number(size=25, class="form-control", placeholder="RBA Number") }}</div>
                 </div>
                 <div class="row mb-3">
                     <div>
@@ -27,7 +28,10 @@
                     <div>{{ form.state.label(class="col-form-label") }}{{ form.state(class="form-select") }}</div>
                     <div>{{ form.zipcode.label(class="col-form-label") }}{{ form.zipcode(size=6, class="form-control", placeholder="Zip Code") }}</div>
                 </div>
-                {{ form.submit(class="btn btn-outline-primary") }} <a href="{{ url_for('employees.list_employees') }}" class="btn btn-secondary ms-2">Cancel</a>
+                <div class="col-auto">
+                    {{ form.submit(class="btn btn-outline-primary") }}
+                    <a href="{{ url_for('employees.list_employees') }}" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
             </form>
         </div>
     </div>

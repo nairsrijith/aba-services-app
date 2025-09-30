@@ -80,6 +80,7 @@ def invoice_preview():
         # Get the superivisor's name
         supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+        supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
 
         # Generate invoice number and dates
         invoice_number = Invoice.generate_invoice_number()
@@ -158,6 +159,7 @@ def invoice_preview():
             date_to=date_to.strftime('%Y-%m-%d'),
             status=status,
             supervisor_name=supervisor_name,
+            supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
             org_name=org_name
         )
@@ -197,6 +199,7 @@ def download_invoice_pdf_by_number(invoice_number):
         # Get the superivisor's name
         supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+        supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
@@ -211,6 +214,7 @@ def download_invoice_pdf_by_number(invoice_number):
             date_from=invoice.date_from.strftime('%Y-%m-%d'),
             date_to=invoice.date_to.strftime('%Y-%m-%d'),
             supervisor_name=supervisor_name,
+            supervisor_rba_number=supervisor_rba_number,
             status=status,
             paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
             payment_comments=invoice.payment_comments,
@@ -259,6 +263,7 @@ def preview_invoice_by_number(invoice_number):
         # Get the superivisor's name
         supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+        supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
@@ -274,6 +279,7 @@ def preview_invoice_by_number(invoice_number):
             date_to=invoice.date_to.strftime('%Y-%m-%d'),
             status=status,
             supervisor_name=supervisor_name,
+            supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
             total_cost=invoice.total_cost,
             org_name=org_name
