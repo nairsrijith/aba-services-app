@@ -2,13 +2,22 @@
 I have built this app to help my family member's small business where they provide ABA services to the special needs clients.\
 This Web Application is built to assist the business to manage client records, employee records, session records and invoicing.
 
-## During container image build and container deployment
-Create a directory in your system from where you want to run the application and store its DB and other data files.
-1) Copy the `docker-compose.yml` file into the directory.
-2) Update the docker file for port that you want to expose the app on and environment variables.\
-   Note about the Environment Variable is below.\
+## Container deployment by pulling the image from Docker Hub
+Image is available at https://hub.docker.com/r/nairsrijith/abawebapp. \
+This image is packaged and can be deployed to run the webapp using the instruction below:
+
+1) Create a directory in your system from where you want to run the application and store its DB and other data files.
+2) Copy the `docker-compose.yml` file into the directory.
+3) Update the docker file for port that you want to expose the app on specific port and supply values using the environment variables. \
    Internally application uses port 8080, but you can customize the port for incoming connections to your computer/server.
+   **Note** about the Environment Variable is below.
 4) Once ready, run `docker compose up -d`.
+
+### Port
+`1234:8080` \
+You can customize the port that server exposes by updating the value for 1234 to any port of your choice. \
+Do not change the second portion of the port i.e. 8080, as that is the port at which application will listent to the incoming requests. \
+That cannot be change unless you want to update the code and modify the parameter and rebuild the image.
 
 ### Environment Variables
 Following are the environment variables 
@@ -18,11 +27,12 @@ ORG_ADDRESS=""
 ORG_PHONE=""
 ORG_EMAIL=""
 ```
-These variables will be used to generate the Invoice.\
+These variables will be used in the header of the Invoice.\
 Also, ORG_NAME is used as the Brand Name in the side navigation bar in the webapp. 
 
 ### Persistent volume for DB
-DB is stored in /myapp/app/data, so you can have a persistent volume created to store the DB.\
+`./data:/myapp/app/data` \
+DB and the other supporting files which is reference by the DB is stored in /myapp/app/data, so you can have a docker volume or a local directory used for persistent storage location. \
 Currently DB is SQLite only.
 
 
