@@ -6,15 +6,36 @@
 # 5. Access the application at http://localhost:8080 (or the port you specified).
 
 services:
+  aba_db:
+    image: postgres:15
+    restart: unless-stopped
+    container_name: aba_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aba_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
+      POSTGRES_DB: ${POSTGRES_DB:-aba_database}
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
   aba_app:
     image: nairsrijith/abawebapp:latest
+    restart: unless-stopped
     container_name: aba_app
     ports:
-      - "8080:8080" # Update the port mapping as needed. Do not change the port number on right side of the ":".
+      - "8080:8080" # Update the port mapping as needed. Do not change the port number on right side of the ":" (colon).
     volumes:
       - ./data:/myapp/app/data # You can either have a local directory for data persistence or use a named volume.
     environment:
-      - ORG_NAME=Org Name
-      - ORG_ADDRESS=123 Main St, Toronto, ON M4E 2V9
-      - ORG_PHONE=(123) 456-7890
-      - ORG_EMAIL=support@orgname.com
+      ORG_NAME: Org Name
+      ORG_ADDRESS: 123 Main St, Toronto, ON M4E 2V9
+      ORG_PHONE: (123) 456-7890
+      ORG_EMAIL: support@orgname.com
+      POSTGRES_HOST: aba_db
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-aba_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
+      POSTGRES_DB: ${POSTGRES_DB:-aba_database}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-aba_user}:${POSTGRES_PASSWORD:-aba_pass}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-aba_db}}
+    depends_on:
+      - aba_db

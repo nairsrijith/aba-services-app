@@ -19,7 +19,22 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_app_super_secret_key'
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data/database.sqlite')
+
+# --- CHANGED: prefer DATABASE_URL env var, fallback to sqlite ---
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    # optional: allow constructing from POSTGRES_* vars
+    pg_user = os.environ.get('POSTGRES_USER')
+    pg_pass = os.environ.get('POSTGRES_PASSWORD')
+    pg_host = os.environ.get('POSTGRES_HOST', 'localhost')
+    pg_port = os.environ.get('POSTGRES_PORT', '5432')
+    pg_db   = os.environ.get('POSTGRES_DB')
+    if pg_user and pg_pass and pg_db:
+        database_url = f"postgresql+psycopg2://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}"
+# fallback to sqlite when no DB info provided
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///' + os.path.join(basedir, 'data/database.sqlite')
+# --------------------------------------------------------------
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'data/uploads')
 app.config['DELETE_FOLDER'] = os.path.join(basedir, 'data/deleted')

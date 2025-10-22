@@ -1,3 +1,5 @@
 app/data/
 .env
 app/**/__pycache__/
+*.pyc
+db_data/

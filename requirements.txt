@@ -27,6 +27,7 @@ pip==25.1
 pycparser==2.22
 pydyf==0.11.0
 pyphen==0.17.2
+psycopg2-binary>=2.9
 setuptools==78.1.1
 sqlalchemy==2.0.41
 tinycss2==1.4.0
