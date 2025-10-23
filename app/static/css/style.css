@@ -336,6 +336,19 @@ a:hover {
     color: var(--accent-clr) !important;
     opacity: 0.8;
 }
+
+/* Action links (like login/register) with theme-aware styling */
+.action-link {
+    color: var(--accent-clr) !important;
+    text-decoration: none !important;
+    padding-bottom: 2px;
+    transition: all 0.2s ease;
+}
+.action-link:hover {
+    color: var(--accent-clr) !important;
+    opacity: 0.9;
+}
+
 /* Ensure content links (not navigation) are visible using theme text color by default
    and only use accent color on hover. This overrides the global `a` rule for main
    content, tables, cards and list-groups. */
