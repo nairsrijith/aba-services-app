@@ -17,7 +17,7 @@ export FLASK_APP=${FLASK_APP:-app:create_app}
 flask db upgrade
 
 # run DB initializer to insert default rows
-python /myapp/init_db.py
+python init_db.py
 
 # start app
 exec python app.py

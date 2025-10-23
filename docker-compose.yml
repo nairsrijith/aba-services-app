@@ -31,7 +31,7 @@ services:
       - ./data:/myapp/app/data # You can either have a local directory for data persistence or use a named volume.
     env_file: .env
     environment:
-      ORG_NAME: ${ORG_NAME:-Test Org}
+      ORG_NAME: ${ORG_NAME:-Buzzing Minds}
       ORG_ADDRESS: ${ORG_ADDRESS:-123 Main St, Toronto, ON M4E 2V9}
       ORG_PHONE: ${ORG_PHONE:-(123) 456-7890}
       ORG_EMAIL: ${ORG_EMAIL:-support@testorg.com}
