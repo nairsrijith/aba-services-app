@@ -90,7 +90,12 @@
 <div class="container">
     <div class="header">
         <div>
-            <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="LOGO">
+            {% if logo_path %}
+                <!-- Provide file:// URI for weasyprint inside container -->
+                <img src="file://{{ logo_path }}" alt="LOGO">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="LOGO">
+            {% endif %}
         </div>
         <div style="text-align: right;">
             <h2>{{ org_name }}</h2>

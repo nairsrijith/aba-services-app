@@ -248,6 +248,8 @@ def download_invoice_pdf_by_number(invoice_number):
             org_address=org_address,
             org_email=org_email,
             org_phone=org_phone,
+            # Provide an absolute file path for the logo so weasyprint (running inside container) can load it
+            logo_path=(os.path.join(os.getcwd(), 'app', 'static', 'images', 'favicon.ico'))
         )
 
         pdf = HTML(string=html).write_pdf()
