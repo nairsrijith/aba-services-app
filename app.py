@@ -187,8 +187,8 @@ def register():
 
 if __name__ == '__main__':
     # Development only
-    app.run(debug=True, host='0.0.0.0', port=int("8080"))
+    # app.run(debug=True, host='0.0.0.0', port=int("8080"))
     
     # Production: Use a production WSGI server
-    # http_server = WSGIServer(('', 8080), app)
-    # http_server.serve_forever()
+    http_server = WSGIServer(('', 8080), app)
+    http_server.serve_forever()

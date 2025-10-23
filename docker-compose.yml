@@ -10,15 +10,18 @@ services:
     image: postgres:15
     restart: unless-stopped
     container_name: aba_db
+    env_file: .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-aba_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
-      POSTGRES_DB: ${POSTGRES_DB:-aba_database}
+      POSTGRES_USER: ${POSTGRES_USER} # Database username from .env file.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Database password from .env file.
+      POSTGRES_DB: ${POSTGRES_DB} # Database name from .env file.
     volumes:
       - ./db_data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5432}:5432" # Expose PostgreSQL port, can be overridden in .env file.
+
   aba_app:
+    build: .
     image: nairsrijith/abawebapp:latest
     restart: unless-stopped
     container_name: aba_app
@@ -26,16 +29,17 @@ services:
       - "8080:8080" # Update the port mapping as needed. Do not change the port number on right side of the ":" (colon).
     volumes:
       - ./data:/myapp/app/data # You can either have a local directory for data persistence or use a named volume.
+    env_file: .env
     environment:
-      ORG_NAME: Org Name
-      ORG_ADDRESS: 123 Main St, Toronto, ON M4E 2V9
-      ORG_PHONE: (123) 456-7890
-      ORG_EMAIL: support@orgname.com
-      POSTGRES_HOST: aba_db
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_USER: ${POSTGRES_USER:-aba_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
-      POSTGRES_DB: ${POSTGRES_DB:-aba_database}
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-aba_user}:${POSTGRES_PASSWORD:-aba_pass}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-aba_db}}
+      ORG_NAME: ${ORG_NAME:-Test Org}
+      ORG_ADDRESS: ${ORG_ADDRESS:-123 Main St, Toronto, ON M4E 2V9}
+      ORG_PHONE: ${ORG_PHONE:-(123) 456-7890}
+      ORG_EMAIL: ${ORG_EMAIL:-support@testorg.com}
+      POSTGRES_HOST: aba_db # This should match the service name of the database container.
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432} # Default PostgreSQL port is 5432, can be overridden in .env file.
+      POSTGRES_USER: ${POSTGRES_USER} # Database username from .env file.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Database password from .env file.
+      POSTGRES_DB: ${POSTGRES_DB} # Database name from .env file.
+      #DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-aba_user}:${POSTGRES_PASSWORD:-aba_pass}@${POSTGRES_HOST}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-aba_database}}
     depends_on:
       - aba_db
