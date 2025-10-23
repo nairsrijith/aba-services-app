@@ -5,23 +5,25 @@
   --hover-clr: #222533;
   --text-clr: #e6e6ef;
   --accent-clr: #b9bbff;
+  --accent-clr-rgb: 185, 187, 255;
   --accent-back-clr: #272836;
   --secondary-text-clr: #626986;
 }
 
-body.light-mode {
+html.light-mode, body.light-mode {
   --base-clr: #f8f9fa;
   --line-clr: #e0e0e0;
   --hover-clr: #e2e6ea;
   --text-clr: #222533;
   --accent-clr: #0d6efd;
+  --accent-clr-rgb: 13, 110, 253;
   --accent-back-clr: #e9ecef;
   --secondary-text-clr: #626986;
   background-color: var(--base-clr);
   color: var(--text-clr);
 }
 
-body.dark-mode {
+html.dark-mode, body.dark-mode {
   --base-clr: #11121a;
   --line-clr: #42434a;
   --hover-clr: #222533;
@@ -80,21 +82,27 @@ td{
   margin-bottom: 16px;
   .logo{
     font-weight: 600;
+    opacity: 1;
   }
 }
+/* Active sidebar item: only tint text and icon with accent, keep background unchanged */
 #sidebar ul li.active a{
-  color: var(--accent-clr);
+  color: var(--accent-clr) !important;
+  opacity: 1;
+  background-color: transparent !important;
+}
 
-  svg{
-    fill: var(--accent-clr);
-  }
+#sidebar ul li.active a svg,
+#sidebar ul li.active svg{
+  fill: var(--accent-clr) !important;
+  opacity: 1;
 }
 
 #sidebar a, #sidebar .dropdown-btn, #sidebar .logo{
   border-radius: .5em;
   padding: .85em;
   text-decoration: none;
-  color: var(--text-clr);
+  color: var(--text-clr) !important;
   display: flex;
   align-items: center;
   gap: 1em;
@@ -109,7 +117,10 @@ td{
 }
 #sidebar svg{
   flex-shrink: 0;
-  fill: var(--text-clr);
+  fill: var(--text-clr) !important;
+}
+#theme-toggle-icon {
+  color: var(--text-clr) !important;
 }
 #sidebar a span, #sidebar .dropdown-btn span{
   flex-grow: 1;
@@ -160,7 +171,8 @@ td{
 #toggle-btn svg {
     transition: transform 0.3s;
 }
-.form-control, .form-select {
+/* Form Elements */
+.form-control, .form-select, .input-group-text {
     background-color: var(--base-clr) !important;
     border-color: var(--line-clr) !important;
     color: var(--text-clr) !important;
@@ -169,10 +181,206 @@ td{
     background-color: var(--accent-back-clr) !important;
     border-color: var(--accent-clr) !important;
     color: var(--text-clr) !important;
+    box-shadow: 0 0 0 0.25rem rgba(var(--accent-clr-rgb), 0.25) !important;
 }
 .form-control::placeholder {
     color: var(--secondary-text-clr) !important;
-    opacity: 1 !important; /* Ensures full opacity for better visibility */
+    opacity: 1 !important;
+}
+
+/* Tables */
+.table {
+    color: var(--text-clr) !important;
+    border-color: var(--line-clr) !important;
+    background-color: transparent !important;
+}
+.table thead th {
+    background-color: var(--accent-back-clr) !important;
+    color: var(--text-clr) !important;
+    border-color: var(--line-clr) !important;
+    font-weight: 600 !important;
+}
+.table tbody tr {
+    background-color: transparent !important;
+    color: var(--text-clr) !important;
+    border-color: var(--line-clr) !important;
+}
+.table tbody tr:hover {
+    background-color: var(--hover-clr) !important;
+}
+.table-dark {
+    --bs-table-bg: transparent !important;
+    --bs-table-striped-bg: var(--hover-clr) !important;
+    --bs-table-striped-color: var(--text-clr) !important;
+    --bs-table-active-bg: var(--hover-clr) !important;
+    --bs-table-active-color: var(--text-clr) !important;
+    --bs-table-hover-bg: var(--hover-clr) !important;
+    --bs-table-hover-color: var(--text-clr) !important;
+    border-color: var(--line-clr) !important;
+    color: var(--text-clr) !important;
+}
+
+/* Force table body cells and rows to use theme variables explicitly.
+   This ensures in dark-mode the table body doesn't fallback to light styling
+   from Bootstrap defaults. */
+.table td, .table th, .table tbody td, .table tbody th {
+  /* Ensure cells use the base background so rows are consistent with theme */
+  background-color: var(--base-clr) !important;
+  color: var(--text-clr) !important;
+  border-color: var(--line-clr) !important;
+}
+
+/* Striped rows and hover state should use hover color (slightly tinted) */
+.table.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: rgba(var(--accent-clr-rgb), 0.03) !important;
+  color: var(--text-clr) !important;
+}
+.table.table-hover > tbody > tr:hover {
+  background-color: var(--hover-clr) !important;
+  color: var(--text-clr) !important;
+}
+
+/* Also set Bootstrap table CSS variables to theme values to avoid defaults */
+.table {
+  --bs-table-bg: var(--base-clr) !important;
+  --bs-table-striped-bg: rgba(var(--accent-clr-rgb), 0.03) !important;
+  --bs-table-hover-bg: var(--hover-clr) !important;
+  --bs-table-color: var(--text-clr) !important;
+}
+
+
+/* Cards */
+.card {
+    background-color: var(--base-clr) !important;
+    border-color: var(--line-clr) !important;
+    color: var(--text-clr) !important;
+}
+.card-header {
+    background-color: var(--accent-back-clr) !important;
+    border-bottom-color: var(--line-clr) !important;
+}
+.card-footer {
+    background-color: var(--accent-back-clr) !important;
+    border-top-color: var(--line-clr) !important;
+}
+
+/* Buttons */
+.btn {
+    border-color: var(--line-clr) !important;
+}
+.btn-primary {
+    background-color: var(--accent-clr) !important;
+    border-color: var(--accent-clr) !important;
+    color: var(--base-clr) !important;
+}
+.btn-outline-primary {
+    color: var(--accent-clr) !important;
+    border-color: var(--accent-clr) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--accent-clr) !important;
+    color: var(--base-clr) !important;
+}
+
+/* Modal */
+.modal-content {
+    background-color: var(--base-clr) !important;
+    color: var(--text-clr) !important;
+    border-color: var(--line-clr) !important;
+}
+.modal-header, .modal-footer {
+    border-color: var(--line-clr) !important;
+}
+
+/* List Groups */
+.list-group-item {
+    background-color: var(--base-clr) !important;
+    color: var(--text-clr) !important;
+    border-color: var(--line-clr) !important;
+}
+.list-group-item:hover {
+    background-color: var(--hover-clr) !important;
+}
+.list-group-item.active {
+    background-color: var(--accent-clr) !important;
+    border-color: var(--accent-clr) !important;
+}
+
+/* Pagination */
+.pagination .page-link {
+    background-color: var(--base-clr) !important;
+    color: var(--text-clr) !important;
+    border-color: var(--line-clr) !important;
+}
+.pagination .page-link:hover {
+    background-color: var(--hover-clr) !important;
+}
+.pagination .page-item.active .page-link {
+    background-color: var(--accent-clr) !important;
+    border-color: var(--accent-clr) !important;
+    color: var(--base-clr) !important;
+}
+
+/* Badges */
+.badge {
+    color: var(--base-clr) !important;
+}
+
+/* Links */
+a {
+    color: var(--accent-clr) !important;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+a:hover {
+    color: var(--accent-clr) !important;
+    opacity: 0.8;
+}
+/* Ensure content links (not navigation) are visible using theme text color by default
+   and only use accent color on hover. This overrides the global `a` rule for main
+   content, tables, cards and list-groups. */
+main a, .table a, .card a, .list-group a {
+  color: var(--text-clr) !important;
+}
+main a:hover, .table a:hover, .card a:hover, .list-group a:hover {
+  color: var(--accent-clr) !important;
+  opacity: 0.9;
+}
+/* Action buttons in tables */
+.table .btn-group .btn {
+    background-color: var(--accent-back-clr) !important;
+    border-color: var(--line-clr) !important;
+    color: var(--text-clr) !important;
+}
+.table .btn-group .btn:hover {
+    background-color: var(--hover-clr) !important;
+}
+.table .btn-group .btn svg {
+    fill: var(--text-clr) !important;
+}
+/* Add buttons (plus icons) */
+a[title^="Add New"] svg {
+    fill: var(--text-clr) !important;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+a[title^="Add New"]:hover svg {
+    opacity: 1;
+}
+
+/* Navbar and Navigation */
+.nav-link {
+    color: var(--text-clr) !important;
+}
+.nav-link:hover, .nav-link.active {
+    color: var(--accent-clr) !important;
+}
+
+/* Alerts */
+.alert {
+    background-color: var(--accent-back-clr) !important;
+    border-color: var(--line-clr) !important;
+    color: var(--text-clr) !important;
 }
 main{
   padding: min(30px, 7%);
