@@ -16,5 +16,8 @@ export FLASK_APP=${FLASK_APP:-app:create_app}
 # run migrations (safe to run every start)
 flask db upgrade
 
+# run DB initializer to insert default rows
+python /myapp/init_db.py
+
 # start app
 exec python app.py
