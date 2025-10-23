@@ -3,5 +3,7 @@ app/**/__pycache__/
 *.pyc
 db_data/
 db_data/*
+data/
+data/*
 .vscode
 .git
