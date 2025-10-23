@@ -90,8 +90,11 @@
 <div class="container">
     <div class="header">
         <div>
-            {% if logo_path %}
-                <!-- Provide file:// URI for weasyprint inside container -->
+            {% if logo_b64 %}
+                <img src="{{ logo_b64 }}" alt="LOGO">
+            {% elif logo_url %}
+                <img src="{{ logo_url }}" alt="LOGO">
+            {% elif logo_path %}
                 <img src="file://{{ logo_path }}" alt="LOGO">
             {% else %}
                 <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="LOGO">
@@ -159,7 +162,7 @@
     {% if status != "Paid" %}
         <div style="margin-top: 16px; background: #fff3cd; border-radius: 8px; padding: 12px;">
             <strong>Payment is accepted via:</strong>
-            Interac e-Transfer to <strong><em>v.nishanair@gmail.com</em></strong>
+            Interac e-Transfer to <strong><em>{{ payment_email }}</em></strong>
             <br>
             <em>This is not a confirmation of payment. Payment receipt will be shared once the payment is realised.</em>
         </div>

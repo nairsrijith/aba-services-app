@@ -29,12 +29,14 @@ services:
       - "8080:8080" # Update the port mapping as needed. Do not change the port number on right side of the ":" (colon).
     volumes:
       - ./data:/myapp/app/data # You can either have a local directory for data persistence or use a named volume.
+      - ./assets/logo.png:/app/app/static/images/logo.png # Mount custom logo
     env_file: .env
     environment:
       ORG_NAME: ${ORG_NAME:-Buzzing Minds}
       ORG_ADDRESS: ${ORG_ADDRESS:-123 Main St, Toronto, ON M4E 2V9}
       ORG_PHONE: ${ORG_PHONE:-(123) 456-7890}
       ORG_EMAIL: ${ORG_EMAIL:-support@testorg.com}
+      PAYMENT_EMAIL: ${PAYMENT_EMAIL:-payments@testorg.com}
       POSTGRES_HOST: aba_db # This should match the service name of the database container.
       POSTGRES_PORT: ${POSTGRES_PORT:-5432} # Default PostgreSQL port is 5432, can be overridden in .env file.
       POSTGRES_USER: ${POSTGRES_USER} # Database username from .env file.

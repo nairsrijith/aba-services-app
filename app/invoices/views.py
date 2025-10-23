@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, make_response, abort
 from app import db
 import json
+import base64
+import os
 from app.models import Invoice, Intervention, Client, Activity, Employee
 from app.invoices.forms import InvoiceClientSelectionForm
 from datetime import date, timedelta, datetime
@@ -14,7 +16,8 @@ invoices_bp = Blueprint('invoices', __name__, template_folder='templates')
 
 org_name = os.environ.get('ORG_NAME', 'My Organization')
 org_address = os.environ.get('ORG_ADDRESS', 'Organization Address')
-org_email = os.environ.get('ORG_EMAIL', 'Org Email')
+org_email = os.environ.get('ORG_EMAIL', 'email@org.com')
+payment_email = os.environ.get('PAYMENT_EMAIL', 'payments@org.com')
 org_phone = os.environ.get('ORG_PHONE', 'Org Phone')
 
 
@@ -228,6 +231,29 @@ def download_invoice_pdf_by_number(invoice_number):
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
+        # Build logo context from deployment-time environment variables. Priority:
+        # LOGO_BASE64 -> LOGO_URL -> LOGO_PATH -> fallback to static url
+        logo_b64 = None
+        logo_url = os.environ.get('LOGO_URL')
+        logo_path_env = os.environ.get('LOGO_PATH')
+        logo_base64_env = os.environ.get('LOGO_BASE64')
+
+        if logo_base64_env:
+            # If the env var contains raw base64 (without data: prefix), add prefix
+            if logo_base64_env.strip().startswith('data:'):
+                logo_b64 = logo_base64_env.strip()
+            else:
+                # assume png unless overridden; icon files may be x-icon
+                # allow user to include mime if needed in env
+                logo_b64 = f"data:image/png;base64,{logo_base64_env.strip()}"
+        elif logo_url:
+            # remote HTTP(S) URL
+            pass
+        elif logo_path_env:
+            # file path inside container
+            # normalize to absolute path
+            logo_path_env = os.path.abspath(logo_path_env)
+
         html = render_template(
             'invoice_pdf.html',  # <-- use the new template!
             parent_name=parent_name,
@@ -247,9 +273,11 @@ def download_invoice_pdf_by_number(invoice_number):
             org_name=org_name,
             org_address=org_address,
             org_email=org_email,
+            payment_email=payment_email,
             org_phone=org_phone,
-            # Provide an absolute file path for the logo so weasyprint (running inside container) can load it
-            logo_path=(os.path.join(os.getcwd(), 'app', 'static', 'images', 'favicon.ico'))
+            logo_b64=logo_b64,
+            logo_url=logo_url,
+            logo_path=logo_path_env
         )
 
         pdf = HTML(string=html).write_pdf()

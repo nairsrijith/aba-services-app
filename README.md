@@ -26,6 +26,7 @@ ORG_NAME=""
 ORG_ADDRESS=""
 ORG_PHONE=""
 ORG_EMAIL=""
+PAYMENT_EMAIL=""
 ```
 These variables will be used in the header of the Invoice.\
 Also, ORG_NAME is used as the Brand Name in the side navigation bar in the webapp. 
