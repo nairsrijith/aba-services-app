@@ -165,7 +165,7 @@ class Invoice(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
     date_from = db.Column(db.Date, nullable=False)
     date_to = db.Column(db.Date, nullable=False)
-    intervention_ids = db.Column(db.String, nullable=True)  # Store as comma-separated IDs
+    invoice_items = db.Column(db.Text, nullable=True)  # JSON snapshot of line items (rate, duration, cost, etc.)
     total_cost = db.Column(db.Float, nullable=False, default=0.0)  # Total cost of the invoice
     status = db.Column(db.String(25)) # Draft, Sent, Paid
     paid_date = db.Column(db.Date)
@@ -173,18 +173,18 @@ class Invoice(db.Model):
 
     client = db.relationship('Client', backref='invoices')
 
-    def __init__(self, invoice_number, invoiced_date, payby_date, client_id, date_from, date_to, intervention_ids, total_cost, status, paid_date, payment_comments):
+    def __init__(self, invoice_number, invoiced_date, payby_date, client_id, date_from, date_to, total_cost, status, paid_date, payment_comments, invoice_items=None):
         self.invoice_number = invoice_number
         self.invoiced_date = invoiced_date
         self.payby_date = payby_date
         self.client_id = client_id
         self.date_from = date_from
         self.date_to = date_to
-        self.intervention_ids = intervention_ids
         self.total_cost = total_cost  # Initialize total cost
         self.status = status
         self.paid_date = paid_date
         self.payment_comments = payment_comments
+        self.invoice_items = invoice_items
 
     @staticmethod
     def generate_invoice_number():

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, make_response, abort
 from app import db
+import json
 from app.models import Invoice, Intervention, Client, Activity, Employee
 from app.invoices.forms import InvoiceClientSelectionForm
 from datetime import date, timedelta, datetime
@@ -117,10 +118,20 @@ def invoice_preview():
                 i.cost = 0
 
         if request.method == 'POST':
-            intervention_ids_str = ",".join(str(i.id) for i in interventions)
-            
-            total_cost = sum(i.cost for i in interventions)
-            # 1. Create Invoice record
+            # Build a snapshot of invoice line items so future changes to client rates won't affect this invoice
+            invoice_items = []
+            for i in interventions:
+                invoice_items.append({
+                    'intervention_id': i.id,
+                    'date': i.date.strftime('%Y-%m-%d'),
+                    'activity': i.intervention_type,
+                    'duration': float(i.duration) if i.duration is not None else 0,
+                    'rate': float(i.rate) if hasattr(i, 'rate') and i.rate is not None else 0,
+                    'cost': float(i.cost) if hasattr(i, 'cost') and i.cost is not None else 0
+                })
+
+            total_cost = sum(item['cost'] for item in invoice_items)
+            # 1. Create Invoice record (no longer storing intervention_ids; snapshot stored in invoice_items)
             invoice = Invoice(
                 client_id=client.id,
                 invoice_number=invoice_number,
@@ -128,11 +139,11 @@ def invoice_preview():
                 payby_date=payby_date,
                 date_from=date_from,
                 date_to=date_to,
-                intervention_ids=intervention_ids_str,
                 total_cost=total_cost,  # <-- store here
                 status="Draft",
                 paid_date=None,
-                payment_comments=""
+                payment_comments="",
+                invoice_items=json.dumps(invoice_items)
             )
             db.session.add(invoice)
             db.session.flush()  # To get invoice.id if needed
@@ -175,23 +186,37 @@ def download_invoice_pdf_by_number(invoice_number):
         client = invoice.client
         interventions = Intervention.query.filter_by(invoice_number=invoice_number).order_by(Intervention.date, Intervention.start_time).all()
 
-        # Calculate cost for each intervention (if needed)
-        from app.models import Activity
-        activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
-        for i in interventions:
-            category = activity_map.get(i.intervention_type, '').lower()
-            if category == 'therapy':
-                rate = client.cost_therapy
-            elif category == 'supervision':
-                rate = client.cost_supervision
-            else:
-                rate = 0
-            i.rate = rate  # Store the rate in the intervention for later use
-
+        # Use invoice_items snapshot if available; otherwise fall back to calculating from current rates
+        import json
+        if invoice.invoice_items:
             try:
-                i.cost = float(i.duration) * float(rate)
+                items = json.loads(invoice.invoice_items)
             except Exception:
-                i.cost = 0
+                items = []
+            # attach snapshot data to interventions by matching ids
+            items_map = {item.get('intervention_id'): item for item in items}
+            for i in interventions:
+                item = items_map.get(i.id)
+                if item:
+                    i.rate = item.get('rate', 0)
+                    i.cost = item.get('cost', 0)
+                    i._snapshot = item
+                else:
+                    # fallback: compute from current client rates
+                    from app.models import Activity
+                    activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
+                    category = activity_map.get(i.intervention_type, '').lower()
+                    if category == 'therapy':
+                        rate = client.cost_therapy
+                    elif category == 'supervision':
+                        rate = client.cost_supervision
+                    else:
+                        rate = 0
+                    i.rate = rate
+                    try:
+                        i.cost = float(i.duration) * float(rate)
+                    except Exception:
+                        i.cost = 0
 
         parent_name = getattr(client, 'parent_name', '')
         address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
@@ -241,22 +266,35 @@ def preview_invoice_by_number(invoice_number):
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
         client = invoice.client
         interventions = Intervention.query.filter_by(invoice_number=invoice_number).order_by(Intervention.date, Intervention.start_time).all()
-        # Calculate cost/rate for each intervention as in your other views
-        from app.models import Activity
-        activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
-        for i in interventions:
-            category = activity_map.get(i.intervention_type, '').lower()
-            if category == 'therapy':
-                rate = client.cost_therapy
-            elif category == 'supervision':
-                rate = client.cost_supervision
-            else:
-                rate = 0
-            i.rate = rate
+        # Use invoice_items snapshot if available; otherwise compute
+        import json
+        if invoice.invoice_items:
             try:
-                i.cost = float(i.duration) * float(rate)
+                items = json.loads(invoice.invoice_items)
             except Exception:
-                i.cost = 0
+                items = []
+            items_map = {item.get('intervention_id'): item for item in items}
+            for i in interventions:
+                item = items_map.get(i.id)
+                if item:
+                    i.rate = item.get('rate', 0)
+                    i.cost = item.get('cost', 0)
+                    i._snapshot = item
+                else:
+                    from app.models import Activity
+                    activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
+                    category = activity_map.get(i.intervention_type, '').lower()
+                    if category == 'therapy':
+                        rate = client.cost_therapy
+                    elif category == 'supervision':
+                        rate = client.cost_supervision
+                    else:
+                        rate = 0
+                    i.rate = rate
+                    try:
+                        i.cost = float(i.duration) * float(rate)
+                    except Exception:
+                        i.cost = 0
         parent_name = getattr(client, 'parent_name', '')
         address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
 
