@@ -2,10 +2,10 @@
 {% block content %}
 <form method="POST">
     {{ form.hidden_tag() }}
-    <div class="container mt-4" style="max-width: 500px;">
+    <div class="container auth-container">
         <h2>Login</h2>
         <p>Please enter your credentials to log in.</p>
-        <div class="card mb-3" style="width: 300px;">
+        <div class="card auth-card">
             <div class="card-body">
                 {{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}
                 {% for error in form.email.errors %}
