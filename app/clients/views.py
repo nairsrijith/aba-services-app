@@ -112,7 +112,7 @@ def update_client(client_id):
             client.address1 = form.address1.data.title()
             client.address2 = form.address2.data.title()
             client.city = form.city.data
-            client.state = form.state.data.title()
+            client.state = form.state.data
             client.zipcode = form.zipcode.data.upper()
             client.supervisor_id = form.supervisor_id.data
             client.cost_supervision = form.cost_supervision.data or 0
