@@ -10,6 +10,29 @@
   --secondary-text-clr: #626986;
 }
 
+html {
+  background-image: url('/static/images/bg-dark.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  transition: background-color 0.5s ease;
+}
+
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('/static/images/bg-light.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+
 html.light-mode {
   --base-clr: #f8f9fa;
   --line-clr: #bebebe;
@@ -19,16 +42,10 @@ html.light-mode {
   --accent-clr-rgb: 25, 152, 168;
   --accent-back-clr: #e9ecef;
   --secondary-text-clr: #626986;
-  background-image: url('/static/images/bg-light.svg');
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center center;
-  background-attachment: fixed;
 }
 
-body.light-mode {
-  background: transparent;
-  color: var(--text-clr);
+html.light-mode::before {
+  opacity: 1;
 }
 
 html.dark-mode {
@@ -40,11 +57,6 @@ html.dark-mode {
   --accent-clr-rgb: 25, 152, 168;
   --accent-back-clr: #272836;
   --secondary-text-clr: #626986;
-  background-image: url('/static/images/bg-dark.svg');
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center center;
-  background-attachment: fixed;
 }
 
 body.dark-mode {
