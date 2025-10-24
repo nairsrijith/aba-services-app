@@ -15,6 +15,8 @@
                 <div>{{ form.start_time.label(class="col-form-label") }}{{ form.start_time(class="form-control", placeholder="Start Time", id="start_time", type="time") }}</div>
                 <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", placeholder="End Time", id="end_time", type="time") }}</div>
                 <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", placeholder="0.0", id="duration", readonly=True) }}</div>
+            </div>
+            <div class="row mb-3">
                 <div>{{ form.file_names.label(class="col-form-label") }}{{ form.file_names(class="form-control", type="file", multiple=True ) }}</div>
             </div>
             <div class="col-auto">

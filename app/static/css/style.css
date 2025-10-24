@@ -1,13 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 :root{
   --base-clr: #11121a;
-  --line-clr: #424242;
+  --line-clr: #bebebe;
   --hover-clr: #222533;
   --text-clr: #e6e6ef;
   --accent-clr: #1998a8;
   --accent-clr-rgb: 25, 152, 168;
   --accent-back-clr: #272836;
   --secondary-text-clr: #626986;
+  --text-clr-brightness: 1; /* For dark theme, invert icons */
 }
 
 html {
@@ -35,13 +36,14 @@ html::before {
 
 html.light-mode {
   --base-clr: #f8f9fa;
-  --line-clr: #bebebe;
+  --line-clr: #424242;
   --hover-clr: #e2e6ea;
   --text-clr: #222533;
   --accent-clr: #1998a8;
   --accent-clr-rgb: 25, 152, 168;
   --accent-back-clr: #e9ecef;
   --secondary-text-clr: #626986;
+  --text-clr-brightness: 0; /* For light theme, keep icons dark */
 }
 
 html.light-mode::before {
@@ -50,7 +52,7 @@ html.light-mode::before {
 
 html.dark-mode {
   --base-clr: #11121a;
-  --line-clr: #424242;
+  --line-clr: #bebebe;
   --hover-clr: #222533;
   --text-clr: #e6e6ef;
   --accent-clr: #1998a8;
@@ -104,23 +106,62 @@ td{
   overflow: hidden;
   text-wrap: nowrap;
 }
-#sidebar.close{
-  padding: 5px;
+#sidebar.close {
   width: 60px;
 }
-#sidebar ul{
+
+#sidebar.close a,
+#sidebar.close .dropdown-btn {
+  padding: .85em 0;
+  justify-content: center;
+}
+
+#sidebar.close a span,
+#sidebar.close .dropdown-btn span,
+#sidebar.close .dropdown-btn svg:last-child {
+  display: none;
+}
+
+#sidebar ul {
   list-style: none;
-  padding-left: 0rem;
+  padding: 0;
+  margin: 0;
 }
-#sidebar > ul > li:first-child{
+
+#sidebar > ul > li:first-child {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
-  .logo{
-    font-weight: 600;
-    opacity: 1;
-  }
 }
+
+.logo-container {
+  padding: 10px 0;
+  margin-bottom: 10px;
+}
+
+.logo-wrapper {
+  width: 100%;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.logo-image {
+  max-width: 110px;
+  max-height: 40px;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+#sidebar.close .logo-wrapper {
+  padding: 0 5px;
+}
+
+#sidebar.close .logo-image {
+  max-width: 40px;
+  max-height: 40px;
+}
+
 /* Active sidebar item: only tint text and icon with accent, keep background unchanged */
 #sidebar ul li.active a{
   color: var(--accent-clr) !important;
@@ -134,26 +175,32 @@ td{
   opacity: 1;
 }
 
-#sidebar a, #sidebar .dropdown-btn, #sidebar .logo{
+#sidebar a, #sidebar .dropdown-btn {
   border-radius: .5em;
+  margin: 0 8px;
   padding: .85em;
   text-decoration: none;
   color: var(--text-clr) !important;
   display: flex;
   align-items: center;
   gap: 1em;
+  width: calc(100% - 16px);
+  box-sizing: border-box;
 }
-.dropdown-btn{
-  width: 100%;
+
+.dropdown-btn {
   text-align: left;
   background: none;
   border: none;
   font: inherit;
   cursor: pointer;
 }
-#sidebar svg{
+
+#sidebar svg {
   flex-shrink: 0;
   fill: var(--text-clr) !important;
+  width: 24px;
+  height: 24px;
 }
 #theme-toggle-icon {
   color: var(--text-clr) !important;
@@ -193,64 +240,218 @@ td{
 #sidebar .sub-menu a{
   padding-left: 2em;
 }
-#toggle-btn{
-  margin-left: auto;
-  padding: 0.75em;
-  border: none;
-  border-radius: .5em;
-  background: none;
+#toggle-btn {
+  position: fixed;
+  top: 0px;
+  left: 220px; /* Same as sidebar width */
+  background: rgba(var(--accent-clr-rgb), 0.02);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--line-clr);
+  border-left: none;
+  padding: 8px;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
-
-  svg{
-    transition: rotate 150ms ease;
-  }
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
 }
 
-#toggle-btn:hover{
-  background-color: var(--hover-clr);
+#sidebar.close + #toggle-btn {
+  left: 60px; /* Same as collapsed sidebar width */
 }
+
+#toggle-btn:hover {
+  background: rgba(var(--accent-clr-rgb), 0.05);
+}
+
 #toggle-btn.rotated svg {
-    transform: rotate(180deg);
+  transform: rotate(180deg);
 }
+
 #toggle-btn svg {
-    transition: transform 0.3s;
+  transition: transform 0.3s;
+  fill: var(--text-clr) !important;
 }
 /* Form Elements */
 .form-control, .form-select, .input-group-text {
-    background-color: var(--base-clr) !important;
+    background: rgba(var(--accent-clr-rgb), 0.02) !important;
+    backdrop-filter: blur(4px) !important;
+
+    -webkit-backdrop-filter: blur(4px) !important;
     border-color: var(--line-clr) !important;
     color: var(--text-clr) !important;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
-.form-control:focus, .form-select:focus {
-    background-color: var(--accent-back-clr) !important;
-    border-color: var(--accent-clr) !important;
+
+/* Style date input to match theme */
+/* Date input styling */
+.form-control[type="date"] {
+    appearance: textfield !important;
+    position: relative;
+}
+
+/* Calendar icon color */
+.form-control[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(var(--text-clr-brightness)) opacity(0.8) !important;
+    cursor: pointer;
+}
+
+/* Ensure date input placeholder color matches theme */
+.form-control[type="date"]::-webkit-datetime-edit-fields-wrapper {
     color: var(--text-clr) !important;
-    box-shadow: 0 0 0 0.25rem rgba(var(--accent-clr-rgb), 0.25) !important;
+}
+
+.form-control[type="date"]::-webkit-datetime-edit-text {
+    color: var(--text-clr) !important;
+}
+
+.form-control[type="date"]::-webkit-datetime-edit-month-field,
+.form-control[type="date"]::-webkit-datetime-edit-day-field,
+.form-control[type="date"]::-webkit-datetime-edit-year-field {
+    color: var(--text-clr) !important;
+}
+
+/* Calendar popup styling */
+::-webkit-calendar-picker {
+    background-color: var(--base-clr) !important;
+    color: var(--text-clr) !important;
+    border: 1px solid var(--line-clr) !important;
+    border-radius: 4px !important;
+}
+
+/* Calendar header */
+::-webkit-calendar-picker-header {
+    background-color: var(--accent-back-clr) !important;
+    color: var(--text-clr) !important;
+}
+
+/* Calendar navigation buttons */
+::-webkit-calendar-picker-nav button {
+    color: var(--text-clr) !important;
+}
+
+/* Calendar days */
+::-webkit-calendar-picker-day-cell {
+    color: var(--text-clr) !important;
+    background-color: var(--base-clr) !important;
+}
+
+/* Hover state for calendar days */
+::-webkit-calendar-picker-day-cell:hover {
+    background-color: var(--hover-clr) !important;
+}
+
+/* Selected day */
+::-webkit-calendar-picker-day-cell:selected {
+    background-color: var(--accent-clr) !important;
+    color: var(--base-clr) !important;
+}
+
+/* Today's date */
+::-webkit-calendar-picker-day-cell[today] {
+    border: 1px solid var(--accent-clr) !important;
+}
+
+/* Custom datepicker for Firefox */
+@-moz-document url-prefix() {
+    .form-control[type="date"] {
+        background-color: var(--base-clr) !important;
+        color: var(--text-clr) !important;
+    }
+}
+
+/* For browsers that support :modal */
+::backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Style the select dropdown menu */
+.form-select {
+    appearance: auto !important; /* Enable native dropdown styling */
+}
+
+/* Style both the dropdown and its options to match theme */
+.form-select,
+.form-select option,
+.form-select optgroup {
+    background-color: var(--base-clr) !important;
+    color: var(--text-clr) !important;
+}
+
+/* Add hover effect for options */
+.form-select option:hover,
+.form-select option:focus,
+.form-select option:active,
+.form-select option:checked {
+    background-color: var(--accent-clr) !important;
+    color: var(--base-clr) !important;
+}
+
+/* Style for the select element when focused */
+.form-select:focus {
+    background: var(--base-clr) !important;
+    border-color: var(--accent-clr) !important;
+    box-shadow: 0 0 0 0.25rem rgba(var(--accent-clr-rgb), 0.15) !important;
 }
 .form-control::placeholder {
     color: var(--secondary-text-clr) !important;
-    opacity: 1 !important;
+    opacity: 0.7 !important;
 }
 
+/* Responsive form grid: distribute form controls into columns based on width
+   Uses auto-fit with a reasonable minimum so narrow fields stack and wider
+   containers show multiple columns. Applies only to rows inside forms. */
+form .row.mb-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  align-items: start; /* keep labels aligned with inputs */
+}
+
+/* Each direct child becomes a vertical stack of label + control */
+form .row.mb-3 > div {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+/* Fallback to single column on very small screens */
+@media (max-width: 575.98px) {
+  form .row.mb-3 {
+    grid-template-columns: 1fr;
+  }
+}
 /* Tables */
 .table {
     color: var(--text-clr) !important;
     border-color: var(--line-clr) !important;
-    background-color: transparent !important;
+    background: transparent !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
 }
 .table thead th {
-    background-color: var(--accent-back-clr) !important;
+    background: rgba(var(--accent-clr-rgb), 0.03) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
     color: var(--text-clr) !important;
     border-color: var(--line-clr) !important;
     font-weight: 600 !important;
+    transition: background-color 0.3s ease !important;
 }
 .table tbody tr {
-    background-color: transparent !important;
+    background: transparent !important;
     color: var(--text-clr) !important;
     border-color: var(--line-clr) !important;
+    transition: background-color 0.3s ease !important;
 }
 .table tbody tr:hover {
-    background-color: var(--hover-clr) !important;
+    background: rgba(var(--accent-clr-rgb), 0.05) !important;
 }
 .table-dark {
     --bs-table-bg: transparent !important;
@@ -268,27 +469,31 @@ td{
    This ensures in dark-mode the table body doesn't fallback to light styling
    from Bootstrap defaults. */
 .table td, .table th, .table tbody td, .table tbody th {
-  /* Ensure cells use the base background so rows are consistent with theme */
-  background-color: var(--base-clr) !important;
+  background: transparent !important;
   color: var(--text-clr) !important;
   border-color: var(--line-clr) !important;
+  transition: background-color 0.3s ease !important;
 }
 
 /* Striped rows and hover state should use hover color (slightly tinted) */
 .table.table-striped > tbody > tr:nth-of-type(odd) {
-  background-color: rgba(var(--accent-clr-rgb), 0.03) !important;
+  background: rgba(var(--accent-clr-rgb), 0.02) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   color: var(--text-clr) !important;
 }
 .table.table-hover > tbody > tr:hover {
-  background-color: var(--hover-clr) !important;
+  background: rgba(var(--accent-clr-rgb), 0.05) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
   color: var(--text-clr) !important;
 }
 
 /* Also set Bootstrap table CSS variables to theme values to avoid defaults */
 .table {
-  --bs-table-bg: var(--base-clr) !important;
-  --bs-table-striped-bg: rgba(var(--accent-clr-rgb), 0.03) !important;
-  --bs-table-hover-bg: var(--hover-clr) !important;
+  --bs-table-bg: transparent !important;
+  --bs-table-striped-bg: rgba(var(--accent-clr-rgb), 0.02) !important;
+  --bs-table-hover-bg: rgba(var(--accent-clr-rgb), 0.05) !important;
   --bs-table-color: var(--text-clr) !important;
 }
 
@@ -437,6 +642,14 @@ a[title^="Add New"]:hover svg {
 .auth-card {
     width: 300px !important;
     margin-bottom: 1rem !important;
+    background: rgba(var(--accent-clr-rgb), 0.02) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid var(--line-clr) !important;
+}
+
+.auth-card .card-body {
+    background: transparent !important;
 }
 
 /* Home page styling */
@@ -473,6 +686,10 @@ a[title^="Add New"]:hover svg {
     color: #adadad;
 }
 
+html.light-mode .subtle-text {
+    color: #555555;
+}
+
 .large-text {
     font-size: 2rem;
 }
@@ -492,21 +709,40 @@ a[title^="Add New"]:hover svg {
 }
 
 .earnings-total {
-    color: rgba(105, 105, 255, 0.75);
+  color: rgba(105, 105, 255, 0.75);
 }
 
 .earnings-pending-negative {
-    color: rgb(255, 93, 93);
+  color: rgb(255, 93, 93);
 }
 
 .earnings-pending-positive {
-    color: rgb(0, 189, 0);
+  color: rgb(0, 189, 0);
 }
 
 .earnings-value {
-    font-size: 2rem;
-    vertical-align: bottom;
+  font-size: 2rem;
+  vertical-align: bottom;
 }
+
+/* Light-mode overrides for better contrast */
+html.light-mode .earnings-received {
+  color: rgb(0, 120, 0) !important; /* stronger green */
+}
+
+html.light-mode .earnings-total {
+  color: rgb(30, 30, 180) !important; /* stronger blue */
+}
+
+html.light-mode .earnings-pending-negative {
+  color: rgb(180, 30, 30) !important; /* stronger red */
+}
+
+html.light-mode .earnings-pending-positive {
+  color: rgb(0, 120, 0) !important; /* match received */
+}
+
+/* Keep earnings font sizing consistent across themes; only color changes in light mode */
 
 /* Theme toggle (floating in the right pane) */
 .theme-toggle-float {
@@ -580,13 +816,46 @@ main{
     justify-content: space-around; /* Distributes space around items */
 }
 .custom-card-shadow {
+    background: rgba(17, 18, 26, 0.04) !important; /* Dark base color */
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
     box-shadow: 0 6px 10px rgba(0,0,0,.08), 0 0 6px rgba(0,0,0,.05); /* Initial shadow */
-    transition: transform 0.3s cubic-bezier(.155,1.105,.295,1.12), box-shadow 0.3s; /* Smooth transition */
-  border: 1px solid var(--line-clr) !important;
+    transition: transform 0.3s cubic-bezier(.155,1.105,.295,1.12), box-shadow 0.3s, background 0.3s ease; /* Smooth transition */
+    border: 1px solid var(--line-clr) !important;
 }
+
+html.light-mode .custom-card-shadow {
+    background: rgba(255, 255, 255, 0.25) !important; /* Light base color */
+}
+
 .custom-card-shadow:hover {
     transform: scale(1.01); /* Scale up by 1% */
     box-shadow: 0 10px 20px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06); /* Enhanced shadow */
+    background: rgba(17, 18, 26, 0.08) !important; /* Slightly darker on hover */
+}
+
+html.light-mode .custom-card-shadow:hover {
+    background: rgba(255, 255, 255, 0.35) !important; /* Slightly more white on hover */
+}
+
+/* Dark theme cards (earnings) */
+.text-bg-dark.custom-card-shadow {
+    background: rgba(17, 18, 26, 0.65) !important; /* Dark overlay */
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+
+html.light-mode .text-bg-dark.custom-card-shadow {
+    background: rgba(25, 152, 168, 0.15) !important; /* Light accent-colored overlay */
+    color: var(--text-clr) !important;
+}
+
+.text-bg-dark.custom-card-shadow:hover {
+    background: rgba(17, 18, 26, 0.75) !important; /* Darker overlay on hover */
+}
+
+html.light-mode .text-bg-dark.custom-card-shadow:hover {
+    background: rgba(25, 152, 168, 0.2) !important; /* Slightly stronger accent overlay on hover */
 }
 .card-title {
     font-size: 1.5rem;
@@ -616,5 +885,149 @@ main{
     text-decoration: line-through;
     color: #951f1f !important;
 }
+
+/* Strong Flatpickr overrides to enforce application theme colors
+   Use high-specificity selectors and !important to override the
+   default Flatpickr stylesheet which may apply light backgrounds. */
+.flatpickr-calendar,
+.flatpickr-calendar * {
+  background: var(--base-clr) !important;
+  color: var(--text-clr) !important;
+  border-color: var(--line-clr) !important;
+}
+
+.flatpickr-calendar {
+  background-color: var(--base-clr) !important;
+  border: 1px solid var(--line-clr) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+
+.flatpickr-months,
+.flatpickr-weekdays {
+  background: var(--accent-back-clr) !important;
+  color: var(--text-clr) !important;
+}
+
+.flatpickr-weekday {
+  color: var(--text-clr) !important;
+}
+
+.flatpickr-day {
+  background: transparent !important;
+  color: var(--text-clr) !important;
+  border-color: transparent !important;
+}
+
+.flatpickr-day:hover {
+  background: rgba(var(--accent-clr-rgb), 0.08) !important;
+  color: var(--text-clr) !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:focus {
+  background: var(--accent-clr) !important;
+  color: var(--base-clr) !important;
+  box-shadow: none !important;
+}
+
+.flatpickr-day.today {
+  box-shadow: 0 0 0 1px var(--accent-clr) inset !important;
+}
+
+.flatpickr-input {
+  background: rgba(var(--accent-clr-rgb), 0.02) !important;
+  color: var(--text-clr) !important;
+  border: 1px solid var(--line-clr) !important;
+}
+
+/* Make sure month dropdowns and nav arrows are visible */
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-prev-month, .flatpickr-next-month {
+  color: var(--text-clr) !important;
+  fill: var(--text-clr) !important;
+}
+
+/* Ensure the z-index is high so calendar overlays app content */
+.flatpickr-calendar {
+  z-index: 2000 !important;
+}
+
+/* Light-mode specific adjustments */
+html.light-mode .flatpickr-calendar,
+html.light-mode .flatpickr-calendar * {
+  background: var(--base-clr) !important;
+  color: var(--text-clr) !important;
+}
+
+/* Extra targeted overrides to catch nested containers and SVGs */
+.flatpickr-calendar .flatpickr-innerContainer,
+.flatpickr-calendar .flatpickr-rContainer,
+.flatpickr-calendar .flatpickr-days {
+  background: var(--base-clr) !important;
+  color: var(--text-clr) !important;
+}
+
+.flatpickr-calendar .flatpickr-months {
+  background: var(--accent-back-clr) !important;
+}
+
+.flatpickr-prev-month svg, .flatpickr-next-month svg,
+.flatpickr-prev-month, .flatpickr-next-month {
+  color: var(--text-clr) !important;
+  fill: var(--text-clr) !important;
+}
+
+.flatpickr-weekday, .flatpickr-weekdays .flatpickr-weekday {
+  background: var(--accent-back-clr) !important;
+  color: var(--text-clr) !important;
+}
+
+/* If Flatpickr applies inline styles for light theme on open, force the values */
+.flatpickr-calendar[style] {
+  background: var(--base-clr) !important;
+  color: var(--text-clr) !important;
+}
+
+/* Strong hover/focus rules so hover is visible on both themes.
+   Targets only active month days and skips prev/next month and disabled cells. */
+.flatpickr-day:not(.prevMonthDay):not(.nextMonthDay):not(.disabled):hover,
+.flatpickr-day:not(.prevMonthDay):not(.nextMonthDay):not(.disabled):focus {
+  background: rgba(var(--accent-clr-rgb), 0.12) !important;
+  color: var(--text-clr) !important;
+}
+
+/* Light-mode: use slightly stronger hover so it shows against white */
+html.light-mode .flatpickr-day:not(.prevMonthDay):not(.nextMonthDay):not(.disabled):hover,
+html.light-mode .flatpickr-day:not(.prevMonthDay):not(.nextMonthDay):not(.disabled):focus {
+  background: rgba(var(--accent-clr-rgb), 0.22) !important;
+  color: var(--base-clr) !important; /* dark text on accent tint for contrast */
+}
+
+/* Light-mode: make selected day clearly highlighted (filled) */
+html.light-mode .flatpickr-day.selected,
+html.light-mode .flatpickr-day.selected:focus {
+  background: var(--accent-clr) !important;
+  color: var(--base-clr) !important;
+  box-shadow: none !important;
+  border-color: var(--accent-clr) !important;
+}
+
+/* Prev/next month days should be toned down in both themes */
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+  color: var(--secondary-text-clr) !important;
+  opacity: 0.7 !important;
+  background: transparent !important;
+}
+
+/* Also tone down disabled days */
+.flatpickr-day.disabled {
+  color: var(--secondary-text-clr) !important;
+  opacity: 0.5 !important;
+}
+
+
+
+
 
 
