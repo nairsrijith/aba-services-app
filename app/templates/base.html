@@ -46,6 +46,9 @@
       var current = localStorage.getItem('theme') || 'light';
       var next = current === 'light' ? 'dark' : 'light';
       localStorage.setItem('theme', next);
+      var root = document.documentElement;
+      root.classList.toggle('dark-mode', next === 'dark');
+      root.classList.toggle('light-mode', next === 'light');
       document.body.classList.toggle('dark-mode', next === 'dark');
       document.body.classList.toggle('light-mode', next === 'light');
       updateThemeIcon();

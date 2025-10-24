@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bohemian mountains & trees background (light) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- warm boho palette gradients -->
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fff7f0"/>
+      <stop offset="100%" stop-color="#fbf6f2"/>
+    </linearGradient>
+    <linearGradient id="sunGlow" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffd6a5" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffd6a5" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" stitchTiles="stitch" result="n" />
+      <feColorMatrix type="saturate" values="0" />
+      <feBlend in="SourceGraphic" in2="n" mode="overlay" />
+    </filter>
+  </defs>
+
+  <!-- sky background -->
+  <rect width="100%" height="100%" fill="url(#sky)" />
+
+  <!-- sun (soft) -->
+  <g transform="translate(1180,140)">
+    <circle r="80" fill="#ffd6a5" opacity="0.95" />
+    <circle r="160" fill="url(#sunGlow)" opacity="0.45" />
+  </g>
+
+  <!-- distant mountains (muted teal) -->
+  <path d="M0 600 L140 420 L320 520 L500 430 L700 520 L900 400 L1200 520 L1600 420 L1600 900 L0 900 Z" fill="#9dbfb6" opacity="0.95" />
+
+  <!-- middle mountains (dusty rose and soft mauve) -->
+  <path d="M0 700 L120 520 L280 620 L460 500 L620 620 L820 480 L980 600 L1200 480 L1600 700 L1600 900 L0 900 Z" fill="#d8a6b0" opacity="0.95" />
+
+  <!-- foreground mountains (warm terracotta) -->
+  <path d="M0 820 L180 620 L360 760 L580 600 L760 760 L980 620 L1200 780 L1400 640 L1600 820 L1600 900 L0 900 Z" fill="#c66b50" opacity="0.98" />
+
+  <!-- rolling hills (mustard/olive) -->
+  <path d="M0 780 C180 720 300 800 480 760 C660 720 840 820 1000 760 C1160 700 1360 820 1600 760 L1600 900 L0 900 Z" fill="#e6c892" opacity="0.9" />
+
+  <!-- stylized trees grouped across foreground -->
+  <g fill-opacity="0.95">
+    <!-- left cluster -->
+    <g transform="translate(120,700)">
+      <rect x="-6" y="18" width="12" height="28" fill="#8b5a3c" rx="2" />
+      <polygon points="0,-20 -36,20 36,20" fill="#6b8b3b" />
+      <polygon points="0,-36 -28,-6 28,-6" fill="#7aa05a" opacity="0.96" />
+    </g>
+
+    <!-- center-left cluster -->
+    <g transform="translate(380,720) scale(1.1)">
+      <rect x="-6" y="18" width="12" height="28" fill="#8b5a3c" rx="2" />
+      <polygon points="0,-22 -30,18 30,18" fill="#7aa05a" />
+    </g>
+
+    <!-- center cluster -->
+    <g transform="translate(760,700) scale(1.25)">
+      <rect x="-7" y="22" width="14" height="34" fill="#7a4b2a" rx="2" />
+      <polygon points="0,-28 -40,24 40,24" fill="#9bbf9f" />
+      <polygon points="0,-44 -34,-6 34,-6" fill="#7aa05a" />
+    </g>
+
+    <!-- right cluster -->
+    <g transform="translate(1200,720) scale(1.05)">
+      <rect x="-6" y="18" width="12" height="28" fill="#6b4a33" rx="2" />
+      <polygon points="0,-22 -30,18 30,18" fill="#8fb07e" />
+    </g>
+  </g>
+
+  <!-- decorative boho accents (circles and subtle lines) -->
+  <g opacity="0.12" fill="#e1c07a">
+    <circle cx="220" cy="140" r="28" />
+    <circle cx="480" cy="200" r="18" />
+    <circle cx="1320" cy="220" r="22" />
+  </g>
+
+  <!-- mild noise for texture -->
+  <rect width="100%" height="100%" fill="transparent" filter="url(#softNoise)" opacity="0.03" />
+</svg>

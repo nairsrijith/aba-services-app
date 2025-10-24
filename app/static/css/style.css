@@ -10,7 +10,7 @@
   --secondary-text-clr: #626986;
 }
 
-html.light-mode, body.light-mode {
+html.light-mode {
   --base-clr: #f8f9fa;
   --line-clr: #bebebe;
   --hover-clr: #e2e6ea;
@@ -19,11 +19,19 @@ html.light-mode, body.light-mode {
   --accent-clr-rgb: 25, 152, 168;
   --accent-back-clr: #e9ecef;
   --secondary-text-clr: #626986;
-  background-color: var(--base-clr);
+  background-image: url('/static/images/bg-light.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+}
+
+body.light-mode {
+  background: transparent;
   color: var(--text-clr);
 }
 
-html.dark-mode, body.dark-mode {
+html.dark-mode {
   --base-clr: #11121a;
   --line-clr: #424242;
   --hover-clr: #222533;
@@ -32,7 +40,15 @@ html.dark-mode, body.dark-mode {
   --accent-clr-rgb: 25, 152, 168;
   --accent-back-clr: #272836;
   --secondary-text-clr: #626986;
-  background-color: var(--base-clr);
+  background-image: url('/static/images/bg-dark.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+}
+
+body.dark-mode {
+  background: transparent;
   color: var(--text-clr);
 }
 *{
@@ -43,10 +59,15 @@ html{
   font-family: Poppins, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.5rem;
 }
+html {
+  min-height: 100%;
+  background-color: var(--base-clr);
+}
+
 body{
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: var(--base-clr);
+  background: transparent;
   color: var(--text-clr);
   display: grid;
   grid-template-columns: auto 1fr;
@@ -59,8 +80,10 @@ td{
   height: 100vh;
   width: 220px;
   padding: 5px 0;
-  background-color: var(--base-clr);
+  background: rgba(var(--accent-clr-rgb), 0.02);
   border-right: 1px solid var(--line-clr);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
   position: sticky;
   top: 0;
@@ -127,7 +150,7 @@ td{
   flex-grow: 1;
 }
 #sidebar a:hover, #sidebar .dropdown-btn:hover{
-  background-color: var(--hover-clr);
+  background: rgba(var(--accent-clr-rgb), 0.05);
 }
 #sidebar .sub-menu{
   display: grid;
@@ -521,7 +544,7 @@ a[title^="Add New"]:hover svg {
 }
 main{
   padding: min(30px, 7%);
-  background-color: var(--base-clr);
+  background: transparent;
   color: var(--text-clr);
 }
 .flex-item svg{
