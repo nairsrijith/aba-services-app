@@ -107,7 +107,8 @@ td{
   top: 0;
   align-self: start;
   transition: 300ms ease-in-out;
-  overflow: hidden;
+  /* allow scrolling when the sidebar (or its submenus) exceed viewport height */
+  overflow: auto;
   text-wrap: nowrap;
 }
 #sidebar.close {
@@ -220,12 +221,18 @@ td{
   grid-template-rows: 0fr;
   transition: 300ms ease-in-out;
   width: 100%;
-
-  > div{
-    overflow: hidden;
-    width: 100%;
-  }
 }
+
+/* Make the submenu's inner container scrollable when it grows taller than the viewport.
+   Keep a sensible max-height so it never overflows off-screen. */
+#sidebar .sub-menu > div{
+  width: 100%;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  overflow-x: hidden; /* prevent horizontal scrollbar */
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on mobile */
+}
+
 #sidebar .sub-menu.show{
   grid-template-rows: 1fr;
 }
@@ -234,6 +241,10 @@ td{
 }
 #sidebar .sub-menu a {
   width: 100%;
+  display: block; /* ensure text-overflow works */
+  white-space: nowrap; /* prevent wrapping which causes horizontal scroll */
+  overflow: hidden;
+  text-overflow: ellipsis; /* show an ellipsis for long labels */
 }
 .dropdown-btn svg{
   transition: 200ms ease;
@@ -321,55 +332,6 @@ td{
     color: var(--text-clr) !important;
 }
 
-/* Calendar popup styling */
-::-webkit-calendar-picker {
-    background-color: var(--base-clr) !important;
-    color: var(--text-clr) !important;
-    border: 1px solid var(--line-clr) !important;
-    border-radius: 4px !important;
-}
-
-/* Calendar header */
-::-webkit-calendar-picker-header {
-    background-color: var(--accent-back-clr) !important;
-    color: var(--text-clr) !important;
-}
-
-/* Calendar navigation buttons */
-::-webkit-calendar-picker-nav button {
-    color: var(--text-clr) !important;
-}
-
-/* Calendar days */
-::-webkit-calendar-picker-day-cell {
-    color: var(--text-clr) !important;
-    background-color: var(--base-clr) !important;
-}
-
-/* Hover state for calendar days */
-::-webkit-calendar-picker-day-cell:hover {
-    background-color: var(--hover-clr) !important;
-}
-
-/* Selected day */
-::-webkit-calendar-picker-day-cell:selected {
-    background-color: var(--accent-clr) !important;
-    color: var(--base-clr) !important;
-}
-
-/* Today's date */
-::-webkit-calendar-picker-day-cell[today] {
-    border: 1px solid var(--accent-clr) !important;
-}
-
-/* Custom datepicker for Firefox */
-@-moz-document url-prefix() {
-    .form-control[type="date"] {
-        background-color: var(--base-clr) !important;
-        color: var(--text-clr) !important;
-    }
-}
-
 /* For browsers that support :modal */
 ::backdrop {
     background-color: rgba(0, 0, 0, 0.5) !important;
@@ -432,92 +394,65 @@ form .row.mb-3 > div {
   }
 }
 /* Tables */
+
+/* Consistent table styling: white translucent in light mode, black translucent in dark mode */
 .table {
-    color: var(--text-clr) !important;
-    border-color: var(--line-clr) !important;
-    background: transparent !important;
-    backdrop-filter: blur(4px) !important;
-    -webkit-backdrop-filter: blur(4px) !important;
+  color: var(--text-clr) !important;
+  border-color: var(--line-clr) !important;
+  background: transparent !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 .table thead th {
-    background: rgba(var(--accent-clr-rgb), 0.03) !important;
-    backdrop-filter: blur(6px) !important;
-    -webkit-backdrop-filter: blur(6px) !important;
-    color: var(--text-clr) !important;
-    border-color: var(--line-clr) !important;
-    font-weight: 600 !important;
-    transition: background-color 0.3s ease !important;
-}
-.table tbody tr {
-    background: transparent !important;
-    color: var(--text-clr) !important;
-    border-color: var(--line-clr) !important;
-    transition: background-color 0.3s ease !important;
-}
-.table tbody tr:hover {
-    background: rgba(var(--accent-clr-rgb), 0.05) !important;
-}
-.table-dark {
-    --bs-table-bg: transparent !important;
-    --bs-table-striped-bg: var(--hover-clr) !important;
-    --bs-table-striped-color: var(--text-clr) !important;
-    --bs-table-active-bg: var(--hover-clr) !important;
-    --bs-table-active-color: var(--text-clr) !important;
-    --bs-table-hover-bg: var(--hover-clr) !important;
-    --bs-table-hover-color: var(--text-clr) !important;
-    border-color: var(--line-clr) !important;
-    color: var(--text-clr) !important;
-}
-
-/* Force table body cells and rows to use theme variables explicitly.
-   This ensures in dark-mode the table body doesn't fallback to light styling
-   from Bootstrap defaults. */
-.table td, .table th, .table tbody td, .table tbody th {
-  background: transparent !important;
-  color: var(--text-clr) !important;
+  background: rgba(255,255,255,0.7) !important; /* white translucent for light mode */
+  color: #212529 !important;
+  font-weight: 600 !important;
   border-color: var(--line-clr) !important;
   transition: background-color 0.3s ease !important;
 }
-
-/* Striped rows and hover state should use hover color (slightly tinted) */
-.table.table-striped > tbody > tr:nth-of-type(odd) {
-  background: rgba(var(--accent-clr-rgb), 0.02) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
+html.dark-mode .table thead th {
+  background: rgba(0,0,0,0.7) !important; /* black translucent for dark mode */
+  color: #f8f9fa !important;
+}
+.table td {
+  background: rgba(255,255,255,0.5) !important;
+  color: #212529 !important;
+  border-color: var(--line-clr) !important;
+}
+html.dark-mode .table td {
+  background: rgba(0,0,0,0.5) !important;
+  color: #f8f9fa !important;
+}
+.table tbody tr {
   color: var(--text-clr) !important;
+  border-color: var(--line-clr) !important;
+}
+.table.table-striped > tbody > tr:nth-of-type(odd) {
+  background: rgba(255,255,255,0.5) !important;
+  color: #212529 !important;
+}
+html.dark-mode .table.table-striped > tbody > tr:nth-of-type(odd) {
+  background: rgba(0,0,0,0.5) !important;
+  color: #f8f9fa !important;
 }
 .table.table-hover > tbody > tr:hover {
-  background: rgba(var(--accent-clr-rgb), 0.05) !important;
-  backdrop-filter: blur(6px) !important;
-  -webkit-backdrop-filter: blur(6px) !important;
-  color: var(--text-clr) !important;
-}
-
-/* Also set Bootstrap table CSS variables to theme values to avoid defaults */
-.table {
-  --bs-table-bg: transparent !important;
-  --bs-table-striped-bg: rgba(var(--accent-clr-rgb), 0.02) !important;
-  --bs-table-hover-bg: rgba(var(--accent-clr-rgb), 0.05) !important;
-  --bs-table-color: var(--text-clr) !important;
+  background: rgba(var(--accent-clr-rgb), 0.08) !important;
 }
 
 
 /* Cards */
 .card {
     background-color: var(--base-clr) !important;
-  border-color: var(--line-clr) !important;
-  border: 1px solid var(--line-clr) !important;
+    border: 1px solid var(--line-clr) !important;
     color: var(--text-clr) !important;
 }
 .card-header {
     background-color: var(--accent-back-clr) !important;
-  border-bottom-color: var(--line-clr) !important;
-  border-bottom: 1px solid var(--line-clr) !important;
+    border-bottom: 1px solid var(--line-clr) !important;
 }
 .card-footer {
     background-color: var(--accent-back-clr) !important;
-  border-top-color: var(--line-clr) !important;
-  border-top: 1px solid var(--line-clr) !important;
+    border-top: 1px solid var(--line-clr) !important;
 }
 
 /* Buttons */
@@ -589,20 +524,12 @@ a {
     transition: all 0.2s ease;
 }
 a:hover {
-    color: var(--accent-clr) !important;
     opacity: 0.8;
 }
 
 /* Action links (like login/register) with theme-aware styling */
 .action-link {
-    color: var(--accent-clr) !important;
-    text-decoration: none !important;
     padding-bottom: 2px;
-    transition: all 0.2s ease;
-}
-.action-link:hover {
-    color: var(--accent-clr) !important;
-    opacity: 0.9;
 }
 
 /* Ensure content links (not navigation) are visible using theme text color by default
@@ -805,15 +732,6 @@ main{
     height: 48px;
     width: 48px;
 }
-.flex-master {
-    box-shadow: 0 6px 10px rgba(0,0,0,.08);
-
-    svg {
-        fill: var(--text-clr);
-        height: 48px;
-        width: 48px;
-    }
-}
 .flex-container {
     display: flex;
     flex-wrap: nowrap; /* Allows items to wrap to new lines */
@@ -949,6 +867,11 @@ html.light-mode .text-bg-dark.custom-card-shadow:hover {
 .flatpickr-prev-month, .flatpickr-next-month {
   color: var(--text-clr) !important;
   fill: var(--text-clr) !important;
+  opacity: 0.8 !important;
+}
+
+.flatpickr-prev-month:hover, .flatpickr-next-month:hover {
+  opacity: 1 !important;
 }
 
 /* Ensure the z-index is high so calendar overlays app content */
@@ -979,6 +902,63 @@ html.light-mode .flatpickr-calendar * {
 .flatpickr-prev-month, .flatpickr-next-month {
   color: var(--text-clr) !important;
   fill: var(--text-clr) !important;
+  opacity: 0.95 !important;
+}
+
+/* Hover to fully opaque */
+.flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg,
+.flatpickr-prev-month:hover, .flatpickr-next-month:hover {
+  opacity: 1 !important;
+}
+
+/* Year input (number) and spinner buttons visibility */
+/* Target the Flatpickr year input wrapper */
+.flatpickr-current-month .numInputWrapper {
+  overflow: visible !important; /* ensure native spin buttons aren't clipped */
+  position: relative;
+  padding-right: 6px !important;
+}
+
+.flatpickr-current-month .numInputWrapper input[type="number"] {
+  background: transparent !important;
+  color: var(--text-clr) !important;
+  border: 0 !important;
+  padding: 0 2px !important;
+  width: auto !important;
+  /* allow native spin buttons to render */
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+  -moz-appearance: auto !important;
+}
+
+/* WebKit spin buttons styling: ensure visible and high-contrast */
+.flatpickr-current-month .numInputWrapper input[type="number"]::-webkit-inner-spin-button,
+.flatpickr-current-month .numInputWrapper input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.95 !important;
+  filter: none !important;
+  color: var(--text-clr) !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Dark mode: invert spin buttons for contrast if user agent draws them dark */
+html.dark-mode .flatpickr-current-month .numInputWrapper input[type="number"]::-webkit-inner-spin-button,
+html.dark-mode .flatpickr-current-month .numInputWrapper input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(1) brightness(1.6) !important;
+  opacity: 0.95 !important;
+}
+
+/* Light mode: keep default appearance but ensure visibility */
+html.light-mode .flatpickr-current-month .numInputWrapper input[type="number"]::-webkit-inner-spin-button,
+html.light-mode .flatpickr-current-month .numInputWrapper input[type="number"]::-webkit-outer-spin-button {
+  filter: none !important;
+  opacity: 0.95 !important;
+}
+
+/* Also ensure the month dropdown caret is visible */
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+  color: var(--text-clr) !important;
+  opacity: 0.95 !important;
 }
 
 .flatpickr-weekday, .flatpickr-weekdays .flatpickr-weekday {

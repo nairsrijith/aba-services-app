@@ -12,11 +12,13 @@
     </form>
 </div>
 <table class="table table-hover">
-    <tbody>
+    <thead>
         <tr>
             <th>Designation</th>
             <th>Actions</th>
         </tr>
+    </thead>
+    <tbody>
         {% if not designations %}
             <tr><td colspan="2" class="text-center">No designations found.</td></tr>
         {% else %}

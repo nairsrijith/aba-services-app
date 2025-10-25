@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>Pay Rates</h1>
+        <a href="{{ url_for('payroll.add_payrate') }}" class="btn btn-primary">Add Pay Rate</a>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Client</th>
+                            <th>Rate</th>
+                            <th>Effective Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payrate in payrates %}
+                        <tr>
+                            <td>{{ payrate.employee.firstname }} {{ payrate.employee.lastname }}</td>
+                            <td>{{ payrate.client.firstname }} {{ payrate.client.lastname }}</td>
+                            <td>${{ "%.2f"|format(payrate.rate) }}</td>
+                            <td>{{ payrate.effective_date or 'Always' }}</td>
+                            <td>
+                                <a href="{{ url_for('payroll.edit_payrate', id=payrate.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ payrate.id }})">Delete</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" method="POST" style="display: none;">
+    {%- if csrf_token is defined -%}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {%- endif -%}
+</form>
+
+<script>
+function confirmDelete(id) {
+    if (confirm('Are you sure you want to delete this pay rate?')) {
+        const form = document.getElementById('deleteForm');
+        form.action = "{{ url_for('payroll.delete_payrate', id=0) }}".replace('0', id);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

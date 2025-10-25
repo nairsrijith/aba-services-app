@@ -121,6 +121,7 @@ class Intervention(db.Model):
     file_names = db.Column(db.Text, nullable=True)  # Comma-separated filenames if multiple files are uploaded
     invoiced = db.Column(db.Boolean, default=False)  # Indicates if the intervention has been invoiced
     invoice_number = db.Column(db.String(25), db.ForeignKey('invoices.invoice_number'), nullable=True)  # Invoice number if invoiced
+    is_paid = db.Column(db.Boolean, default=False)  # Indicates if the intervention has been paid
 
     client = db.relationship('Client', backref='interventions')
     employee = db.relationship('Employee', backref='interventions')
@@ -196,4 +197,54 @@ class Invoice(db.Model):
         ).count() + 1
         seq = str(count).zfill(4)
         return f'INV{date_str}{seq}'
+
+
+class PayRate(db.Model):
+    __tablename__ = 'payrates'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    rate = db.Column(db.Float, nullable=False)  # hourly rate
+    effective_date = db.Column(db.Date, nullable=True)
+
+    employee = db.relationship('Employee', backref='payrates')
+    client = db.relationship('Client', backref='payrates')
+
+    def __repr__(self):
+        return f"<PayRate emp={self.employee_id} client={self.client_id} rate={self.rate}>"
+
+
+class PayStub(db.Model):
+    __tablename__ = 'paystubs'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    period_start = db.Column(db.Date, nullable=False)
+    period_end = db.Column(db.Date, nullable=False)
+    generated_date = db.Column(db.Date, nullable=False)
+    total_hours = db.Column(db.Float, nullable=False, default=0.0)
+    total_amount = db.Column(db.Float, nullable=False, default=0.0)
+    notes = db.Column(db.Text)
+
+    employee = db.relationship('Employee', backref='paystubs')
+    items = db.relationship('PayStubItem', backref='paystub', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f"<PayStub id={self.id} emp={self.employee_id} {self.period_start}..{self.period_end}>"
+
+
+class PayStubItem(db.Model):
+    __tablename__ = 'paystub_items'
+    id = db.Column(db.Integer, primary_key=True)
+    paystub_id = db.Column(db.Integer, db.ForeignKey('paystubs.id'), nullable=False)
+    intervention_id = db.Column(db.Integer, db.ForeignKey('interventions.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    rate = db.Column(db.Float, nullable=False)
+    hours = db.Column(db.Float, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+
+    intervention = db.relationship('Intervention')
+    client = db.relationship('Client')
+
+    def __repr__(self):
+        return f"<PayStubItem paystub={self.paystub_id} int={self.intervention_id} amount={self.amount}>"
 

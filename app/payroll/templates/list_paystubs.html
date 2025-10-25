@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-2 mb-4 rounded-3 container-fluid">
+  <h2>Paystubs</h2>
+  <a href="{{ url_for('payroll.create_paystub') }}" class="btn btn-primary mb-3">Create Paystub</a>
+  <table class="table table-dark table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Employee</th>
+        <th>Period</th>
+        <th>Generated</th>
+        <th>Hours</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ps in paystubs %}
+      <tr>
+        <td>{{ ps.id }}</td>
+        <td>{{ ps.employee.firstname }} {{ ps.employee.lastname }}</td>
+        <td>{{ ps.period_start }} - {{ ps.period_end }}</td>
+        <td>{{ ps.generated_date }}</td>
+        <td>{{ ps.total_hours }}</td>
+        <td>{{ ps.total_amount }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No paystubs found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

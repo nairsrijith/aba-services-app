@@ -77,6 +77,9 @@ app.register_blueprint(interventions_bp, url_prefix='/interventions')
 from app.invoices.views import invoices_bp
 app.register_blueprint(invoices_bp, url_prefix='/invoices')
 
+from app.payroll.views import payroll_bp
+app.register_blueprint(payroll_bp, url_prefix='/payroll')
+
 from app.users.views import users_bp
 app.register_blueprint(users_bp, url_prefix='/users')
 
@@ -136,6 +139,9 @@ def create_app():
     app.register_blueprint(interventions_bp, url_prefix='/interventions')
     from app.invoices.views import invoices_bp
     app.register_blueprint(invoices_bp, url_prefix='/invoices')
+    # payroll blueprint (admin-only features: paystubs, payrates)
+    from app.payroll.views import payroll_bp
+    app.register_blueprint(payroll_bp, url_prefix='/payroll')
     from app.users.views import users_bp
     app.register_blueprint(users_bp, url_prefix='/users')
     from app.manage.views import manage_bp
