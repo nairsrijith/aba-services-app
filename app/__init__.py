@@ -34,6 +34,47 @@ def _format_phone(value):
         return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
     return s
 
+
+def _format_date(value):
+    """Normalize a date-like value to YYYY-MM-DD for templates.
+
+    Accepts date/datetime objects or strings. If the value has a strftime
+    method it will be used; otherwise strings are returned as-is.
+    """
+    if not value:
+        return ''
+    # datetime/date objects
+    if hasattr(value, 'strftime'):
+        try:
+            return value.strftime('%Y-%m-%d')
+        except Exception:
+            return str(value)
+    # strings — assume already in a reasonable format
+    s = str(value)
+    return s
+
+
+def _format_time(value):
+    """Normalize a time-like value to HH:MM for templates.
+
+    Accepts time/datetime objects or strings. For strings that contain
+    HH:MM:SS the seconds are dropped. If value has strftime, use it.
+    """
+    if not value:
+        return ''
+    if hasattr(value, 'strftime'):
+        try:
+            return value.strftime('%H:%M')
+        except Exception:
+            return str(value)
+    s = str(value)
+    # common patterns: HH:MM:SS or HH:MM
+    import re
+    m = re.match(r"^(\d{1,2}:\d{2})(:\d{2})?$", s)
+    if m:
+        return m.group(1)
+    return s
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # --- CHANGED: prefer DATABASE_URL env var, fallback to sqlite ---
@@ -91,6 +132,8 @@ app.register_blueprint(error_pages)
 
 # Register Jinja filters on the global `app` instance
 app.jinja_env.filters['format_phone'] = _format_phone
+app.jinja_env.filters['format_date'] = _format_date
+app.jinja_env.filters['format_time'] = _format_time
 
 
 def create_app():
@@ -129,6 +172,8 @@ def create_app():
 
     # Register Jinja filter for factory-created app
     app.jinja_env.filters['format_phone'] = _format_phone
+    app.jinja_env.filters['format_date'] = _format_date
+    app.jinja_env.filters['format_time'] = _format_time
 
     # register blueprints (import at runtime to avoid circular import issues)
     from app.clients.views import clients_bp

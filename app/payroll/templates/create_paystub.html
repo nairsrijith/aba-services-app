@@ -20,7 +20,7 @@
 
     {% if preview %}
     <hr>
-    <h4>Preview for {{ preview.employee.firstname }} {{ preview.employee.lastname }} ({{ preview.start.strftime('%B %d, %Y') }} - {{ preview.end.strftime('%B %d, %Y') }})</h4>
+  <h4>Preview for {{ preview.employee.firstname }} {{ preview.employee.lastname }} ({{ preview.start.strftime('%Y-%m-%d') }} - {{ preview.end.strftime('%Y-%m-%d') }})</h4>
     <table class="table table-hover mt-2">
       <thead>
         <tr><th>Date</th><th>Client</th><th>Activity</th><th class="text-end">Hours</th><th class="text-end">Rate</th><th class="text-end">Amount</th></tr>
@@ -28,7 +28,7 @@
       <tbody>
         {% for ln in preview.lines %}
           <tr>
-            <td>{{ ln.intervention.date.strftime('%B %d, %Y') }}</td>
+            <td>{{ ln.intervention.date.strftime('%Y-%m-%d') }}</td>
             <td>{{ ln.client.firstname }} {{ ln.client.lastname }}</td>
             <td>{{ ln.intervention.intervention_type }}</td>
             <td class="text-end">{{ "%.2f"|format(ln.hours|float) }}</td>

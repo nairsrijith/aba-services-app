@@ -63,12 +63,17 @@ def add_payrate():
     
     form = PayRateForm()
     form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.order_by(Employee.firstname, Employee.lastname).all()]
-    form.client.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.order_by(Client.firstname, Client.lastname).all()]
+    # Add a 'Base Rate (All Clients)' option for client_id=None
+    client_choices = [("", "Base Rate (All Clients)")]
+    client_choices += [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.order_by(Client.firstname, Client.lastname).all()]
+    form.client.choices = client_choices
     
     if form.validate_on_submit():
+        # If client is blank, treat as base rate (client_id=None)
+        client_id = int(form.client.data) if form.client.data else None
         payrate = PayRate(
             employee_id=int(form.employee.data),
-            client_id=int(form.client.data),
+            client_id=client_id,
             rate=form.rate.data,
             effective_date=form.effective_date.data
         )
@@ -91,11 +96,13 @@ def edit_payrate(id):
     form = PayRateForm()
     
     form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.order_by(Employee.firstname, Employee.lastname).all()]
-    form.client.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.order_by(Client.firstname, Client.lastname).all()]
+    client_choices = [("", "Base Rate (All Clients)")]
+    client_choices += [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.order_by(Client.firstname, Client.lastname).all()]
+    form.client.choices = client_choices
     
     if form.validate_on_submit():
         payrate.employee_id = int(form.employee.data)
-        payrate.client_id = int(form.client.data)
+        payrate.client_id = int(form.client.data) if form.client.data else None
         payrate.rate = form.rate.data
         payrate.effective_date = form.effective_date.data
         db.session.commit()
@@ -103,7 +110,7 @@ def edit_payrate(id):
         return redirect(url_for('payroll.list_payrates'))
     elif request.method == 'GET':
         form.employee.data = str(payrate.employee_id)
-        form.client.data = str(payrate.client_id)
+        form.client.data = str(payrate.client_id) if payrate.client_id is not None else ""
         form.rate.data = payrate.rate
         form.effective_date.data = payrate.effective_date
     
@@ -261,11 +268,10 @@ def create_paystub():
         total_hours = 0.0
         total_amount = 0.0
         for s in sessions:
-            # find pay rate for employee-client pair (choose latest effective_date <= session.date)
+            # 1. Try to find latest client-specific rate for employee-client pair
             rate = None
             payrates = PayRate.query.filter_by(employee_id=emp_id, client_id=s.client_id).order_by(PayRate.effective_date.desc()).all()
             if payrates:
-                # choose first where effective_date is None or <= s.date
                 for pr in payrates:
                     if pr.effective_date is None or pr.effective_date <= s.date:
                         rate = pr.rate
@@ -273,6 +279,18 @@ def create_paystub():
                 if rate is None:
                     rate = payrates[0].rate
 
+            # 2. If no client-specific rate, use latest base rate (client_id is None)
+            if rate is None:
+                base_rates = PayRate.query.filter_by(employee_id=emp_id, client_id=None).order_by(PayRate.effective_date.desc()).all()
+                if base_rates:
+                    for br in base_rates:
+                        if br.effective_date is None or br.effective_date <= s.date:
+                            rate = br.rate
+                            break
+                    if rate is None:
+                        rate = base_rates[0].rate
+
+            # 3. If still no rate, mark as missing
             if rate is None:
                 missing_rates.append((s.client_id, s.id))
                 continue

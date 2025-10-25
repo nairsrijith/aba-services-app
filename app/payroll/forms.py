@@ -6,7 +6,7 @@ from wtforms.validators import DataRequired, Optional
 
 class PayRateForm(FlaskForm):
     employee = SelectField('Employee', validators=[DataRequired()])
-    client = SelectField('Client', validators=[DataRequired()])
+    client = SelectField('Client', validators=[Optional()])  # Optional for base rate
     rate = DecimalField('Hourly Rate', validators=[DataRequired()], places=2)
     effective_date = DateField('Effective Date', validators=[Optional()])
     submit = SubmitField('Save')

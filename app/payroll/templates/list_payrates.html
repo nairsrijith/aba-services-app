@@ -23,8 +23,14 @@
                     <tbody>
                         {% for payrate in payrates %}
                         <tr>
-                            <td>{{ payrate.employee.firstname }} {{ payrate.employee.lastname }}</td>
-                            <td>{{ payrate.client.firstname }} {{ payrate.client.lastname }}</td>
+                                                        <td>{{ payrate.employee.firstname }} {{ payrate.employee.lastname }}</td>
+                                                        <td>
+                                                            {% if payrate.client_id is none %}
+                                                                <span class="text-muted">Base Rate (All Clients)</span>
+                                                            {% else %}
+                                                                {{ payrate.client.firstname }} {{ payrate.client.lastname }}
+                                                            {% endif %}
+                                                        </td>
                             <td class="text-end">${{ "%.2f"|format(payrate.rate|float) }}</td>
                             <td class="text-end">{{ payrate.effective_date or 'Always' }}</td>
                             <td>

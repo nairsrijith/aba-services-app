@@ -134,19 +134,33 @@ def bulk_delete():
         ids = request.form.getlist('selected_ids')
         if ids:
             interventions = Intervention.query.filter(Intervention.id.in_(ids)).all()
+            to_delete = []
+            skipped = []
             for intervention in interventions:
-                client_id = intervention.client_id
-                client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
-                deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
-                os.makedirs(deleted_folder, exist_ok=True)
-                filenames = intervention.get_file_names()
-                for filename in filenames:
-                    src = os.path.join(client_folder, filename)
-                    dst = os.path.join(deleted_folder, filename)
-                    if os.path.exists(src):
-                        shutil.move(src, dst)
-                db.session.delete(intervention)
-            db.session.commit()
+                # Prevent deletion when invoiced or already paid
+                if intervention.invoiced or intervention.is_paid:
+                    skipped.append(intervention)
+                else:
+                    to_delete.append(intervention)
+
+            if to_delete:
+                for intervention in to_delete:
+                    client_id = intervention.client_id
+                    client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+                    deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
+                    os.makedirs(deleted_folder, exist_ok=True)
+                    filenames = intervention.get_file_names()
+                    for filename in filenames:
+                        src = os.path.join(client_folder, filename)
+                        dst = os.path.join(deleted_folder, filename)
+                        if os.path.exists(src):
+                            shutil.move(src, dst)
+                    db.session.delete(intervention)
+                db.session.commit()
+
+            if skipped:
+                # Inform the user which sessions were not deleted
+                flash(f"{len(skipped)} selected session(s) were not deleted because they are invoiced or already paid.", "warning")
         return redirect(url_for('interventions.list_interventions'))
     else:
         abort(403)
@@ -157,6 +171,11 @@ def bulk_delete():
 def update_intervention(intervention_id):
     if current_user.is_authenticated and not current_user.user_type == "super":
         intervention = Intervention.query.get_or_404(intervention_id)
+
+        # Disallow editing if the session is invoiced or already paid
+        if intervention.invoiced or intervention.is_paid:
+            flash('This session cannot be edited because it is either invoiced or already paid.', 'warning')
+            return redirect(url_for('interventions.list_interventions'))
         form = UpdateInterventionForm(obj=intervention)
         form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.all()]
         if current_user.user_type == "admin":

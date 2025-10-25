@@ -111,7 +111,8 @@ class Client(db.Model):
 class Intervention(db.Model):
     __tablename__ = 'interventions'
     id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    # allow NULL for client_id to support base rates (apply to all clients)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
     employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
     intervention_type = db.Column(db.String(51), db.ForeignKey('activities.activity_name') , nullable=False)
     date = db.Column(db.Date, nullable=False)

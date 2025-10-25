@@ -142,9 +142,9 @@
             {% for i in interventions %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td style="text-align: left;">
+                    <td style="text-align: left;">
                     <strong>{{ i.intervention_type }}</strong> by <strong><em>{{ i.employee.firstname }} {{ i.employee.lastname }}</em></strong><br>
-                    <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time }}-{{ i.end_time }})</small>
+                    <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time.strftime('%H:%M') }}-{{ i.end_time.strftime('%H:%M') }})</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
                 <td style="text-align: right;">${{ "%.2f"|format(i.rate|float) }}</td>

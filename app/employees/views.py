@@ -47,8 +47,15 @@ def add_employee():
                                     state=form.state.data,
                                     zipcode=form.zipcode.data.upper())
                 db.session.add(new_employee)
+                db.session.flush()  # get new_employee.id before commit
+
+                # Add base pay rate for new employee (client_id=None means base rate)
+                base_rate = 25.0  # Default base rate, can be changed or set via form later
+                from app.models import PayRate
+                base_payrate = PayRate(employee_id=new_employee.id, client_id=None, rate=base_rate, effective_date=None)
+                db.session.add(base_payrate)
                 db.session.commit()
-                flash('Employee added successfully!', 'success')
+                flash('Employee added successfully! Base pay rate set to ${:.2f}.'.format(base_rate), 'success')
                 return redirect(url_for('employees.list_employees'))
             except Exception as e:
                 db.session.rollback()
