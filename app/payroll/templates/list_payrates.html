@@ -15,8 +15,8 @@
                         <tr>
                             <th>Employee</th>
                             <th>Client</th>
-                            <th>Rate</th>
-                            <th>Effective Date</th>
+                            <th class="text-end">Rate</th>
+                            <th class="text-end">Effective Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -25,8 +25,8 @@
                         <tr>
                             <td>{{ payrate.employee.firstname }} {{ payrate.employee.lastname }}</td>
                             <td>{{ payrate.client.firstname }} {{ payrate.client.lastname }}</td>
-                            <td>${{ "%.2f"|format(payrate.rate) }}</td>
-                            <td>{{ payrate.effective_date or 'Always' }}</td>
+                            <td class="text-end">${{ "%.2f"|format(payrate.rate) }}</td>
+                            <td class="text-end">{{ payrate.effective_date or 'Always' }}</td>
                             <td>
                                 <a href="{{ url_for('payroll.edit_payrate', id=payrate.id) }}" class="btn btn-sm btn-primary">Edit</a>
                                 <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ payrate.id }})">Delete</button>

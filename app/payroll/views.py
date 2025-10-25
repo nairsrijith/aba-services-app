@@ -162,6 +162,28 @@ def export_paystub_pdf(id):
     )
 
 
+@payroll_bp.route('/paystubs/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_paystub(id):
+    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+        flash('Unauthorized', 'danger')
+        return redirect(url_for('home'))
+
+    paystub = PayStub.query.get_or_404(id)
+    
+    # Get all interventions associated with this paystub through paystub items
+    for item in paystub.items:
+        # Unmark the intervention as paid
+        if item.intervention:
+            item.intervention.is_paid = False
+    
+    # deleting paystub will cascade to PayStubItem because of relationship cascade
+    db.session.delete(paystub)
+    db.session.commit()
+    flash('Paystub deleted successfully', 'success')
+    return redirect(url_for('payroll.list_paystubs'))
+
+
 @payroll_bp.route('/paystubs/create', methods=['GET', 'POST'])
 @login_required
 def create_paystub():

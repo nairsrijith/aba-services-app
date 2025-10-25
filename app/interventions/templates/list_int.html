@@ -72,10 +72,10 @@
                         <th>Client Name</th>
                         <th>Employee Name</th>
                         <th>Session Type</th>
-                        <th>Date</th>
-                        <th>Start Time</th>
-                        <th>End Time</th>
-                        <th>Duration(hrs)</th>
+                        <th class="text-end">Date</th>
+                        <th class="text-end">Start Time</th>
+                        <th class="text-end">End Time</th>
+                        <th class="text-end">Duration(hrs)</th>
                         <th>Invoice Number</th>
                         <th>Actions</th>
                     </tr>
@@ -96,10 +96,10 @@
                             <td>{{ intervention.client.firstname }} {{ intervention.client.lastname }}</td>
                             <td>{{ intervention.employee.firstname }} {{ intervention.employee.lastname }}</td>
                             <td>{{ intervention.intervention_type }}</td>
-                            <td>{{ intervention.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ intervention.start_time.strftime('%H:%M') }}</td>
-                            <td>{{ intervention.end_time.strftime('%H:%M') }}</td>
-                            <td>{{ '%.2f' % intervention.duration }}</td>
+                            <td class="text-end">{{ intervention.date.strftime('%Y-%m-%d') }}</td>
+                            <td class="text-end">{{ intervention.start_time.strftime('%H:%M') }}</td>
+                            <td class="text-end">{{ intervention.end_time.strftime('%H:%M') }}</td>
+                            <td class="text-end">{{ '%.2f' % intervention.duration }}</td>
                             <td>{{ intervention.invoice_number if intervention.invoice_number else 'N/A' }}</td>
                             <td>
                                 <div class="btn-group" role="group" aria-label="Action buttons">

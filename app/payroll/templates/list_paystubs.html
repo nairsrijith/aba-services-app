@@ -3,15 +3,16 @@
 <div class="p-2 mb-4 rounded-3 container-fluid">
   <h2>Paystubs</h2>
   <a href="{{ url_for('payroll.create_paystub') }}" class="btn btn-primary mb-3">Create Paystub</a>
-  <table class="table table-dark table-hover">
+  <table class="table table-hover">
     <thead>
       <tr>
         <th>ID</th>
         <th>Employee</th>
-        <th>Period</th>
-        <th>Generated</th>
-        <th>Hours</th>
-        <th>Amount</th>
+        <th class="text-end">Period</th>
+        <th class="text-end">Generated</th>
+        <th class="text-end">Hours</th>
+        <th class="text-end">Amount</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -19,15 +20,61 @@
       <tr>
         <td>{{ ps.id }}</td>
         <td>{{ ps.employee.firstname }} {{ ps.employee.lastname }}</td>
-        <td>{{ ps.period_start }} - {{ ps.period_end }}</td>
-        <td>{{ ps.generated_date }}</td>
-        <td>{{ ps.total_hours }}</td>
-        <td>{{ ps.total_amount }}</td>
+        <td class="text-end">{{ ps.period_start }} - {{ ps.period_end }}</td>
+        <td class="text-end">{{ ps.generated_date }}</td>
+        <td class="text-end">{{ ps.total_hours }}</td>
+        <td class="text-end">{{ ps.total_amount }}</td>
+        <td>
+          <a href="{{ url_for('payroll.view_paystub', id=ps.id) }}" class="btn btn-sm btn-success">View</a>
+          <a href="{{ url_for('payroll.export_paystub_pdf', id=ps.id) }}" class="btn btn-sm btn-info" target="_blank">PDF</a>
+          <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ ps.id }})">Delete</button>
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="6">No paystubs found.</td></tr>
+      <tr><td colspan="7">No paystubs found.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this paystub? This will also mark all associated interventions as unpaid.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="deleteForm" method="POST" style="display: none;">
+    {%- if csrf_token is defined -%}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {%- endif -%}
+</form>
+
+<script>
+let deletePaystubId = null;
+const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+function confirmDelete(id) {
+    deletePaystubId = id;
+    deleteModal.show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    const form = document.getElementById('deleteForm');
+    form.action = "{{ url_for('payroll.delete_paystub', id=0) }}".replace('0', deletePaystubId);
+    form.submit();
+});
+</script>
 {% endblock %}

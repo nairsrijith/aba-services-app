@@ -11,10 +11,10 @@
             <thead>
                 <tr>
                     <th>Invoice Number</th>
-                    <th>Invoice Date</th>
+                    <th class="text-end">Invoice Date</th>
                     <th>Status</th>
                     <th>Client</th>
-                    <th>Amount</th>
+                    <th class="text-end">Amount</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -22,10 +22,10 @@
                 {% for invoice in invoices %}
                 <tr>
                     <td>{{ invoice.invoice_number }}</td>
-                    <td>{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="text-end">{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ invoice.status }}</td>
                     <td>{{ invoice.client.firstname }} {{ invoice.client.lastname }}</td>
-                    <td>{{ "{:,.2f}".format(invoice.total_cost) }}</td>
+                    <td class="text-end">{{ "{:,.2f}".format(invoice.total_cost) }}</td>
                     <td>
                         <div class="btn-group" role="group" aria-label="Action buttons">
                             <a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-success btn-sm" title="Preview Invoice">
