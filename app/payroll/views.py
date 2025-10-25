@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from app import db
 from app.payroll.forms import PayPeriodForm, PayRateForm
 from app.models import Employee, Intervention, PayRate, PayStub, PayStubItem, Client
@@ -138,28 +138,77 @@ def view_paystub(id):
 @payroll_bp.route('/paystubs/<int:id>/pdf')
 @login_required
 def export_paystub_pdf(id):
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
-        flash('Unauthorized', 'danger')
-        return redirect(url_for('home'))
-    
-    paystub = PayStub.query.get_or_404(id)
-    
-    # Generate PDF using WeasyPrint
-    html = render_template('view_paystub.html', paystub=paystub)
-    
-    # Create a temporary file for the PDF
-    temp_dir = tempfile.mkdtemp()
-    pdf_path = os.path.join(temp_dir, f'paystub_{id}.pdf')
-    
-    # Generate PDF from HTML
-    HTML(string=html, base_url=request.url_root).write_pdf(pdf_path)
-    
-    # Send the PDF file
-    return send_file(
-        pdf_path,
-        as_attachment=True,
-        download_name=f'paystub_{paystub.period_start.strftime("%Y%m%d")}_{paystub.employee.lastname}.pdf'
-    )
+    try:
+        if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+            flash('Unauthorized', 'danger')
+            return redirect(url_for('home'))
+        
+        paystub = PayStub.query.get_or_404(id)
+        
+        # Get logo path or base64 data. Prefer configured LOGO_PATH (or env var),
+        # otherwise fall back to app static favicon as a base64-embedded image.
+        logo_b64 = None
+        logo_path = None
+        try:
+            # check configuration first (support both config and environment variable)
+            configured_logo = current_app.config.get('LOGO_PATH') or os.environ.get('LOGO_PATH')
+            configured_logo_url = current_app.config.get('LOGO_URL') or os.environ.get('LOGO_URL')
+
+            if configured_logo:
+                # if relative path, resolve against app root
+                lp = configured_logo
+                if not os.path.isabs(lp):
+                    lp = os.path.join(current_app.root_path, lp)
+                if os.path.exists(lp):
+                    logo_path = lp
+            elif configured_logo_url:
+                # provide a URL to the template if present
+                logo_url = configured_logo_url
+            else:
+                # fallback to static favicon embedded as base64
+                static_logo = os.path.join(current_app.static_folder, 'images', 'favicon.ico')
+                if os.path.exists(static_logo):
+                    import base64
+                    with open(static_logo, 'rb') as f:
+                        logo_b64 = f'data:image/x-icon;base64,{base64.b64encode(f.read()).decode()}'
+        except Exception as e:
+            current_app.logger.warning(f'Logo loading failed: {str(e)}')
+
+        # Get organization details from config or environment (support ORG_* names in .env)
+        org_name = current_app.config.get('ORG_NAME') or current_app.config.get('ORGANIZATION_NAME') or os.environ.get('ORG_NAME') or 'ABA Services'
+        org_phone = current_app.config.get('ORG_PHONE') or current_app.config.get('ORGANIZATION_PHONE') or os.environ.get('ORG_PHONE') or ''
+        org_email = current_app.config.get('ORG_EMAIL') or current_app.config.get('ORGANIZATION_EMAIL') or os.environ.get('ORG_EMAIL') or ''
+        org_address = current_app.config.get('ORG_ADDRESS') or current_app.config.get('ORGANIZATION_ADDRESS') or os.environ.get('ORG_ADDRESS') or ''
+        
+        # Generate PDF using WeasyPrint with the new template
+        # render the template from this blueprint's templates folder
+        html = render_template('paystub_pdf.html',
+                           paystub=paystub,
+                           logo_b64=logo_b64,
+                           logo_path=logo_path if 'logo_path' in locals() else None,
+                           logo_url=locals().get('logo_url', None),
+                           org_name=org_name,
+                           org_phone=org_phone,
+                           org_email=org_email,
+                           org_address=org_address)
+        
+        # Create a temporary file for the PDF
+        temp_dir = tempfile.mkdtemp()
+        pdf_path = os.path.join(temp_dir, f'paystub_{id}.pdf')
+        
+        # Generate PDF from HTML with custom styles
+        HTML(string=html, base_url=request.url_root).write_pdf(pdf_path)
+        
+        # Send the PDF file
+        return send_file(
+            pdf_path,
+            as_attachment=True,
+            download_name=f'paystub_{paystub.period_start.strftime("%Y%m%d")}_{paystub.employee.lastname}.pdf'
+        )
+    except Exception as e:
+        current_app.logger.error(f'PDF generation failed: {str(e)}')
+        flash('Error generating PDF. Please try again or contact support.', 'danger')
+        return redirect(url_for('payroll.view_paystub', id=id))
 
 
 @payroll_bp.route('/paystubs/<int:id>/delete', methods=['POST'])

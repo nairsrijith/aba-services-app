@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pay Stub - {{ paystub.employee.firstname }} {{ paystub.employee.lastname }}</title>
+    <style>
+        /* Slightly wider margins to avoid clipping and improve layout */
+        @page { size: A4; margin: 12mm; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.4; }
+        .container { margin: 0 auto; width: 100%; padding: 6px 6px 12px 6px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .header img { height: 48px; margin-right: 10px; }
+        .header h2 { margin: 0; color: #0d6efd; }
+        .row { display: flex; gap: 16px; }
+        .col-md-6 { width: 50%; }
+        .info-section { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+        .info-section h3 { color: #0d6efd; margin: 0 0 8px 0; font-size: 13pt; }
+        .info-section p { margin: 4px 0; }
+
+        /* Use styles similar to invoice PDF for consistent look */
+        .invoice-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 12px; font-size: 11px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-radius: 8px; overflow: hidden; border: 0.5px solid #e0e0e0; }
+        .invoice-table th { background: #0d6efd; color: #fff; font-weight: 600; padding: 10px 8px; border: none; text-align: left; }
+        .invoice-table td { border: 0.5px solid #e0e0e0; padding: 8px 8px; text-align: left; vertical-align: middle; }
+        .invoice-table tr:nth-child(even) td { background: #f8f9fa; }
+        .invoice-table tr:nth-child(odd) td { background: #fff; }
+        .invoice-table tr.total-row td { background: #e9ecef; font-weight: bold; color: #0d6efd; }
+        .invoice-table th:first-child, .invoice-table td:first-child { border-top-left-radius: 8px; }
+        .invoice-table th:last-child, .invoice-table td:last-child { border-top-right-radius: 8px; }
+
+        /* Numeric alignment helper */
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                {% if logo_b64 %}
+                    <img src="{{ logo_b64 }}" alt="LOGO">
+                {% elif logo_url %}
+                    <img src="{{ logo_url }}" alt="LOGO">
+                {% elif logo_path %}
+                    <img src="file://{{ logo_path }}" alt="LOGO">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="LOGO">
+                {% endif %}
+            </div>
+            <div style="text-align: right;">
+                <h2>{{ org_name }}</h2>
+                <small>{{ org_address }}<br><small>Phone: {{ org_phone }} &emsp; Email: {{ org_email }}</small></small>
+            </div>
+        </div>
+        <hr>
+
+        <div class="row">
+            <div class="col-md-6 info-section">
+                <h3>Employee Information</h3>
+                <p><strong>Name:</strong> {{ paystub.employee.firstname }} {{ paystub.employee.lastname }}</p>
+                <p><strong>Position:</strong> {{ paystub.employee.position }}</p>
+                {% if paystub.employee.rba_number %}
+                <p><strong>RBA Number:</strong> {{ paystub.employee.rba_number }}</p>
+                {% endif %}
+            </div>
+            <div class="col-md-6 info-section">
+                <h3>Pay Period</h3>
+                <p><strong>From:</strong> {{ paystub.period_start.strftime('%B %d, %Y') }}</p>
+                <p><strong>To:</strong> {{ paystub.period_end.strftime('%B %d, %Y') }}</p>
+                <p><strong>Generated:</strong> {{ paystub.generated_date.strftime('%B %d, %Y') }}</p>
+            </div>
+        </div>
+
+        <h3>Sessions</h3>
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Client</th>
+                    <th class="text-end">Hours</th>
+                    <th class="text-end">Rate</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in paystub.items %}
+                <tr>
+                    <td>{{ item.intervention.date.strftime('%B %d, %Y') }}</td>
+                    <td style="text-align: left;">{{ item.client.firstname }} {{ item.client.lastname }}</td>
+                    <td class="text-end">{{ "%.2f"|format(item.hours|float) }}</td>
+                    <td class="text-end">${{ "%.2f"|format(item.rate|float) }}/hr</td>
+                    <td class="text-end">${{ "%.2f"|format(item.amount|float) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="2" style="text-align: right;">Total:</td>
+                    <td class="text-end">{{ "%.2f"|format(paystub.total_hours|float) }}</td>
+                    <td></td>
+                    <td class="text-end">${{ "%.2f"|format(paystub.total_amount|float) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        {% if paystub.notes %}
+        <div class="info-section">
+            <h3>Notes</h3>
+            <p>{{ paystub.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

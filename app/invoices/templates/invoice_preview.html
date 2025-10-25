@@ -73,9 +73,9 @@
                 <tr>
                     <th>#</th>
                     <th>Details</th>
-                    <th>Duration</th>
-                    <th>Rate/Hr</th>
-                    <th>Cost</th>
+                    <th class="text-end">Duration</th>
+                    <th class="text-end">Rate/Hr</th>
+                    <th class="text-end">Cost</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,9 +86,9 @@
                     <td style="text-align: left;"><strong>{{ i.intervention_type }}</strong> conducted by <strong><em>{{ i.employee.firstname }} {{ i.employee.lastname }}</em></strong><br>
                         <small>{{ i.date }} ({{ i.start_time }}-{{ i.end_time }})</small>
                     </td>
-                    <td style="text-align: right;">{{ "{:,.2f}".format(i.duration) }}</td>
-                    <td style="text-align: right;">{{ "{:,.2f}".format(i.rate) }}</td>
-                    <td style="text-align: right;">{{ "{:,.2f}".format(i.cost) }}</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
+                    <td style="text-align: right;">${{ "%.2f"|format(i.rate|float) }}</td>
+                    <td style="text-align: right;">${{ "%.2f"|format(i.cost|float) }}</td>
                 </tr>
                 {% set ns.total = ns.total + i.cost %}
                 {% endfor %}
@@ -96,7 +96,7 @@
             <tbody>
                 <tr>
                     <td colspan="4" style="text-align: right;"><strong>Total:</strong></td>
-                    <td style="text-align: right;"><strong>{{ "{:,.2f}".format(ns.total) }}</strong></td>
+                    <td style="text-align: right;"><strong>${{ "%.2f"|format(ns.total|float) }}</strong></td>
                 </tr>
             </tbody>
         </table>

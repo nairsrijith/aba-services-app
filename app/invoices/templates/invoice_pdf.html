@@ -146,15 +146,15 @@
                     <strong>{{ i.intervention_type }}</strong> by <strong><em>{{ i.employee.firstname }} {{ i.employee.lastname }}</em></strong><br>
                     <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time }}-{{ i.end_time }})</small>
                 </td>
-                <td style="text-align: right;">{{ "{:,.2f}".format(i.duration) }}</td>
-                <td style="text-align: right;">{{ "{:,.2f}".format(i.rate) }}</td>
-                <td style="text-align: right;">{{ "{:,.2f}".format(i.cost) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
+                <td style="text-align: right;">${{ "%.2f"|format(i.rate|float) }}</td>
+                <td style="text-align: right;">${{ "%.2f"|format(i.cost|float) }}</td>
             </tr>
             {% set ns.total = ns.total + i.cost %}
             {% endfor %}
             <tr class="total-row">
                 <td colspan="4" style="text-align: right;">Total:</td>
-                <td style="text-align: right;">{{ "{:,.2f}".format(ns.total) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(ns.total|float) }}</td>
             </tr>
         </tbody>
     </table>

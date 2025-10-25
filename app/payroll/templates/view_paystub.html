@@ -33,9 +33,9 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Client</th>
-                                <th>Hours</th>
-                                <th>Rate</th>
-                                <th>Amount</th>
+                                <th class="text-end">Hours</th>
+                                <th class="text-end">Rate</th>
+                                <th class="text-end">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -43,18 +43,18 @@
                             <tr>
                                 <td>{{ item.intervention.date.strftime('%B %d, %Y') }}</td>
                                 <td>{{ item.client.firstname }} {{ item.client.lastname }}</td>
-                                <td>{{ "%.2f"|format(item.hours) }}</td>
-                                <td>${{ "%.2f"|format(item.rate) }}/hr</td>
-                                <td>${{ "%.2f"|format(item.amount) }}</td>
+                                <td class="text-end">{{ "%.2f"|format(item.hours|float) }}</td>
+                                <td class="text-end">${{ "%.2f"|format(item.rate|float) }}/hr</td>
+                                <td class="text-end">${{ "%.2f"|format(item.amount|float) }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                         <tfoot>
                             <tr>
                                 <th colspan="2">Totals</th>
-                                <th>{{ "%.2f"|format(paystub.total_hours) }}</th>
+                                <th class="text-end">{{ "%.2f"|format(paystub.total_hours|float) }}</th>
                                 <th></th>
-                                <th>${{ "%.2f"|format(paystub.total_amount) }}</th>
+                                <th class="text-end">${{ "%.2f"|format(paystub.total_amount|float) }}</th>
                             </tr>
                         </tfoot>
                     </table>

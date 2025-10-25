@@ -99,7 +99,7 @@
                             <td class="text-end">{{ intervention.date.strftime('%Y-%m-%d') }}</td>
                             <td class="text-end">{{ intervention.start_time.strftime('%H:%M') }}</td>
                             <td class="text-end">{{ intervention.end_time.strftime('%H:%M') }}</td>
-                            <td class="text-end">{{ '%.2f' % intervention.duration }}</td>
+                            <td class="text-end">{{ "%.2f"|format(intervention.duration|float) }}</td>
                             <td>{{ intervention.invoice_number if intervention.invoice_number else 'N/A' }}</td>
                             <td>
                                 <div class="btn-group" role="group" aria-label="Action buttons">
