@@ -44,7 +44,7 @@ class Employee(db.Model):
     firstname = db.Column(db.String(51), nullable=False)
     lastname = db.Column(db.String(51))
     position = db.Column(db.String(51), db.ForeignKey('designations.designation'), nullable=False)
-    rba_number = db.Column(db.String(25), unique=True)
+    rba_number = db.Column(db.String(25), nullable=True, unique=True)
     email = db.Column(db.String(120), nullable=False)
     cell = db.Column(db.String(10), nullable=False)
     address1 = db.Column(db.String(120))

@@ -5,11 +5,45 @@
             <h2>Update Employee Record</h2>
             <form method="POST">
                 {{ form.hidden_tag() }}
+                {{ form.employee_id(type="hidden") }}
                 <div class="row mb-3">
                     <div>{{ form.firstname.label(class="col-form-label") }}{{ form.firstname(size=51, class="form-control", placeholder="First Name") }}</div>
                     <div>{{ form.lastname.label(class="col-form-label") }}{{ form.lastname(size=51, class="form-control", placeholder="Last Name") }}</div>
-                    <div>{{ form.position.label(class="col-form-label") }}{{ form.position(class="form-select", placeholder="Designation") }}</div>
-                    <div>{{ form.rba_number.label(class="col-form-label") }}{{ form.rba_number(size=25, class="form-control", placeholder="RBA Number") }}
+                    <div>
+                        {{ form.position.label(class="col-form-label") }}
+                        {{ form.position(class="form-select", placeholder="Designation") }}
+                        {% for error in form.position.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        {{ form.rba_number.label(class="col-form-label") }}
+                        {{ form.rba_number(size=25, class="form-control", placeholder="RBA Number", disabled=True) }}
+                        {% for error in form.rba_number.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const positionSelect = document.querySelector('select[name="position"]');
+                            const rbaInput = document.querySelector('input[name="rba_number"]');
+                            
+                            function updateRbaField() {
+                                rbaInput.disabled = positionSelect.value !== 'Behaviour Analyst';
+                                if (rbaInput.disabled && !rbaInput.hasAttribute('data-initial-value')) {
+                                    rbaInput.value = '';
+                                }
+                            }
+                            
+                            // Store initial value if it exists (for update form)
+                            if (rbaInput.value) {
+                                rbaInput.setAttribute('data-initial-value', rbaInput.value);
+                            }
+                            
+                            positionSelect.addEventListener('change', updateRbaField);
+                            updateRbaField(); // Initial state
+                        });
+                    </script>
                 </div>
                 <div class="row mb-3">
                     <div>
@@ -19,7 +53,13 @@
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div>{{ form.cell.label(class="col-form-label") }}{{ form.cell(class="form-control", placeholder="1234567890") }}</div>
+                    <div>
+                        {{ form.cell.label(class="col-form-label") }}
+                        {{ form.cell(class="form-control", type="tel", value=form.cell.data|format_phone) }}
+                        {% for error in form.cell.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
                 <div class="row mb-3">
                     <div>{{ form.address1.label(class="col-form-label") }}{{ form.address1(class="form-control", placeholder="123 King St.") }}</div>

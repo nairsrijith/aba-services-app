@@ -7,8 +7,8 @@
             {{ form.hidden_tag() }}
             <div class="row mb-3">
                 <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select") }}</div>
-                <div>{{ form.date_from.label(class="col-form-label") }}{{ form.date_from(class="form-control", type="date") }}</div>
-                <div>{{ form.date_to.label(class="col-form-label") }}{{ form.date_to(class="form-control", type="date") }}</div>
+                <div>{{ form.date_from.label(class="col-form-label") }}{{ form.date_from(class="form-control", type="date", **{"data-allow-future": ""}) }}</div>
+                <div>{{ form.date_to.label(class="col-form-label") }}{{ form.date_to(class="form-control", type="date", **{"data-allow-future": ""}) }}</div>
             </div>
             <div class="col-auto">
                 {{ form.submit(class="btn btn-outline-primary") }}

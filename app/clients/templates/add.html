@@ -20,7 +20,13 @@
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div>{{ form.parentcell.label(class="col-form-label") }}{{ form.parentcell(class="form-control", placeholder="1234567890") }}</div>
+                    <div>
+                        {{ form.parentcell.label(class="col-form-label") }}
+                        {{ form.parentcell(class="form-control", type="tel", value=form.parentcell.data|format_phone) }}
+                        {% for error in form.parentcell.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
                 <div class="row mb-3">
                     <div>{{ form.address1.label(class="col-form-label") }}{{ form.address1(class="form-control", placeholder="123 Main St") }}</div>

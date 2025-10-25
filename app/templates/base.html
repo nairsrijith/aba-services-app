@@ -79,16 +79,83 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   
   <script>
+    // Phone number validation function
+    function validatePhoneNumber(input) {
+      // Remove all non-digit characters for validation
+      const phone = input.value.replace(/\D/g, '');
+      
+      // Check for exactly 10 digits
+      if (phone.length !== 10) {
+        input.setCustomValidity('Phone number must be exactly 10 digits');
+        return false;
+      }
+      
+      // Check for valid North American format (first digit 2-9)
+      if (!/^[2-9]\d{9}$/.test(phone)) {
+        input.setCustomValidity('Invalid phone number format');
+        return false;
+      }
+      
+      input.setCustomValidity('');
+      return true;
+    }
+
+    // Format phone number as user types
+    function formatPhoneNumber(input) {
+      let phone = input.value.replace(/\D/g, '');
+      
+      if (phone.length > 0) {
+        if (phone.length <= 3) {
+          input.value = phone;
+        } else if (phone.length <= 6) {
+          input.value = `${phone.slice(0,3)}-${phone.slice(3)}`;
+        } else {
+          input.value = `${phone.slice(0,3)}-${phone.slice(3,6)}-${phone.slice(6,10)}`;
+        }
+      }
+      
+      validatePhoneNumber(input);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-      // Initialize Flatpickr for all date inputs
-      flatpickr('input[type="date"]', {
+      // Initialize phone number inputs
+      document.querySelectorAll('input[type="tel"], input[name$="cell"]').forEach(input => {
+        input.setAttribute('pattern', '[0-9-]{12}');
+        input.setAttribute('maxlength', '12');
+        input.setAttribute('placeholder', '123-456-7890');
+        input.addEventListener('input', (e) => formatPhoneNumber(e.target));
+        input.addEventListener('blur', (e) => validatePhoneNumber(e.target));
+      });
+
+      // Default Flatpickr configuration - blocks future dates
+      const defaultDateConfig = {
         dateFormat: "Y-m-d",
         allowInput: true,
         disableMobile: true, // Disable mobile native picker
+        maxDate: "today",
         locale: {
           firstDayOfWeek: 1 // Start week on Monday
         }
+      };
+
+      // Initialize regular date inputs (no future dates)
+      flatpickr('input[type="date"]:not([data-allow-future])', defaultDateConfig);
+
+      // Initialize date inputs that allow future dates (for filters)
+      flatpickr('input[type="date"][data-allow-future]', {
+        ...defaultDateConfig,
+        maxDate: null // Allow future dates
       });
+
+      // Initialize all toasts
+      var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+      var toastList = toastElList.map(function(toastEl) {
+        return new bootstrap.Toast(toastEl, {
+          autohide: true,
+          delay: 5000
+        });
+      });
+      toastList.forEach(toast => toast.show());
     });
   </script>
 
@@ -118,7 +185,7 @@
           </li>
           <li class="{% if request.endpoint.startswith('clients.') %}active{% endif %}">
             <a href="{{ url_for('clients.list_clients') }}">
-              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="200 -880 600 800" width="24px" fill="currentColor"><path d="M480-880q50 0 85 35t35 85q0 50-35 85t-85 35q-50 0-85-35t-35-85q0-50 35-85t85-35Zm0 280q47 0 93 11t83 31q38 19 61 45t23 57v232q0 17-8 33.5T710-160q-14 14-32.5 26T636-112v-90q0-38-52.5-62T480-288q-50 0-96.5 20.5T326-214q38 15 78 21t82 7h34v104q-7 2-14.5 2H490q-36 0-82.5-8T319-113q-42-17-70.5-44.5T220-224v-232q0-31 23-57t60-45q38-20 84-31t93-11Zm0 240q33 0 56.5-23.5T560-440q0-33-23.5-56.5T480-520q-33 0-56.5 23.5T400-440q0 33 23.5 56.5T480-360Z"/></svg>
               <span>Client</span>
             </a>
           </li>
@@ -126,7 +193,7 @@
         {% if current_user.user_type == "admin" or current_user.user_type == "user" %}
           <li class="{% if request.endpoint.startswith('interventions.') %}active{% endif %}">
             <a href="{{ url_for('interventions.list_interventions') }}">
-              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="200 -880 600 800" width="24px" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-160 0q-17 0-28.5-11.5T280-280q0-17 11.5-28.5T320-320q17 0 28.5 11.5T360-280q0 17-11.5 28.5T320-240Zm320 0q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z"/></svg>
               <span>Session</span>
             </a>
           </li>
@@ -134,7 +201,7 @@
         {% if current_user.user_type == "admin" %}
           <li class="{% if request.endpoint.startswith('invoices.') %}active{% endif %}">
             <a href="{{ url_for('invoices.list_invoices') }}">
-              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="200 -880 600 800" width="24px" fill="currentColor"><path d="M240-80q-50 0-85-35t-35-85v-120h120v-560l60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60v680q0 50-35 85t-85 35H240Zm480-80q17 0 28.5-11.5T760-200v-560H320v440h360v120q0 17 11.5 28.5T720-160ZM360-600v-80h240v80H360Zm0 120v-80h240v80H360Zm320-120q-17 0-28.5-11.5T640-640q0-17 11.5-28.5T680-680q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600Zm0 120q-17 0-28.5-11.5T640-520q0-17 11.5-28.5T680-560q17 0 28.5 11.5T720-520q0 17-11.5 28.5T680-480ZM240-160h360v-80H200v40q0 17 11.5 28.5T240-160Zm-40 0v-80 80Z"/></svg>
               <span>Invoice</span>
             </a>
           </li>

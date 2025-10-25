@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, DateField, FloatField
-from wtforms.validators import DataRequired, Email
+from wtforms.validators import DataRequired, Email, length
+from app.utils.validators import validate_phone_number
 
 
 class AddClientForm(FlaskForm):
@@ -15,7 +16,7 @@ class AddClientForm(FlaskForm):
     address2 = StringField('Address 2')
     city = StringField('City', validators=[DataRequired()])
     state = SelectField('State', validators=[DataRequired()], default='ON')
-    zipcode = StringField('Zipcode', validators=[DataRequired()])
+    zipcode = StringField('Zipcode', validators=[DataRequired(), length(max=6)])
     supervisor_id = SelectField('Supervisor', coerce=int, validators=[DataRequired()])
     cost_supervision = FloatField('Supervision Cost', default=0.0)
     cost_therapy = FloatField('Therapy Cost', default=0.0)
@@ -35,7 +36,7 @@ class UpdateClientForm(FlaskForm):
     address2 = StringField('Address 2')
     city = StringField('City', validators=[DataRequired()])
     state = SelectField('State', validators=[DataRequired()])
-    zipcode = StringField('Zipcode', validators=[DataRequired()])
+    zipcode = StringField('Zipcode', validators=[DataRequired(), length(max=6)])
     supervisor_id = SelectField('Supervisor', coerce=int, validators=[DataRequired()])
     cost_supervision = FloatField('Supervision Cost', default=0.0)
     cost_therapy = FloatField('Therapy Cost', default=0.0)

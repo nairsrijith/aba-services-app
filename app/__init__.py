@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+import re
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -17,6 +18,21 @@ def allowed_file(filename):
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_app_super_secret_key'
+
+
+def _format_phone(value):
+    """Format a digits-only phone number as XXX-XXX-XXXX for display.
+
+    If the value contains exactly 10 digits, return formatted string. Otherwise
+    return the original value (or empty string for falsy values).
+    """
+    if not value:
+        return ''
+    s = str(value)
+    digits = re.sub(r'\D', '', s)
+    if len(digits) == 10:
+        return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
+    return s
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -70,6 +86,9 @@ app.register_blueprint(manage_bp, url_prefix='/manage')
 from app.error_pages.handlers import error_pages
 app.register_blueprint(error_pages)
 
+# Register Jinja filters on the global `app` instance
+app.jinja_env.filters['format_phone'] = _format_phone
+
 
 def create_app():
     """Application factory used by Flask CLI and by the container entrypoint."""
@@ -104,6 +123,9 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'login'
+
+    # Register Jinja filter for factory-created app
+    app.jinja_env.filters['format_phone'] = _format_phone
 
     # register blueprints (import at runtime to avoid circular import issues)
     from app.clients.views import clients_bp

@@ -4,6 +4,7 @@ from app.models import Client, Employee, Intervention
 from app.clients.forms import AddClientForm, UpdateClientForm
 from flask_login import login_required, current_user
 import os
+import re
 
 clients_bp = Blueprint('clients', __name__, template_folder='templates')
 
@@ -30,13 +31,16 @@ def add_client():
         form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
         form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst').all()]
         if form.validate_on_submit():
+            # Normalize parent phone number to digits-only before storing
+            normalized_parentcell = re.sub(r'\D', '', (form.parentcell.data or ''))
+
             new_client = Client(firstname=form.firstname.data.title(),
                                 lastname=form.lastname.data.title(),
                                 dob=form.dob.data,
                                 gender=form.gender.data.title(),
                                 parentname=form.parentname.data.title(),
                                 parentemail=form.parentemail.data,
-                                parentcell=form.parentcell.data,
+                                parentcell=normalized_parentcell,
                                 address1=form.address1.data.title(),
                                 address2=form.address2.data.title(),
                                 city=form.city.data.title(),
@@ -108,7 +112,7 @@ def update_client(client_id):
             client.gender = form.gender.data.title()
             client.parentname = form.parentname.data.title()
             client.parentemail = form.parentemail.data
-            client.parentcell = form.parentcell.data
+            client.parentcell = re.sub(r'\D', '', (form.parentcell.data or ''))
             client.address1 = form.address1.data.title()
             client.address2 = form.address2.data.title()
             client.city = form.city.data

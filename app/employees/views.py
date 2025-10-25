@@ -4,6 +4,7 @@ from app.models import Employee, Designation, Intervention, Client
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
 import os
+import re
 
 employees_bp = Blueprint('employees', __name__, template_folder='templates')
 
@@ -22,20 +23,40 @@ def add_employee():
                             ("NU", "Nunavut"), ("YT", "Yukon")]
 
         if form.validate_on_submit():
-            new_employee = Employee(firstname=form.firstname.data.title(),
+            try:
+                # Set rba_number to None if position is not Behaviour Analyst
+                rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
+                
+                # Validate RBA number requirement for Behaviour Analyst
+                if form.position.data == 'Behaviour Analyst' and not rba_number:
+                    form.rba_number.errors.append('RBA Number is required for Behaviour Analysts')
+                    return render_template('add_emp.html', form=form, org_name=org_name)
+                
+                # Normalize phone number to digits-only before storing (DB column is String(10))
+                normalized_cell = re.sub(r'\D', '', (form.cell.data or ''))
+
+                new_employee = Employee(firstname=form.firstname.data.title(),
                                     lastname=form.lastname.data.title(),
                                     position=form.position.data.title(),
-                                    rba_number=form.rba_number.data,
+                                    rba_number=rba_number,
                                     email=form.email.data,
-                                    cell=form.cell.data,
+                                    cell=normalized_cell,
                                     address1=form.address1.data.title(),
                                     address2=form.address2.data.title(),
                                     city=form.city.data.title(),
                                     state=form.state.data,
                                     zipcode=form.zipcode.data.upper())
-            db.session.add(new_employee)
-            db.session.commit()
-            return redirect(url_for('employees.list_employees'))
+                db.session.add(new_employee)
+                db.session.commit()
+                flash('Employee added successfully!', 'success')
+                return redirect(url_for('employees.list_employees'))
+            except Exception as e:
+                db.session.rollback()
+                if 'employees_rba_number_key' in str(e):
+                    form.rba_number.errors.append('This RBA Number is already in use')
+                    return render_template('add_emp.html', form=form, org_name=org_name)
+                flash('Error adding employee. Please check the form and try again.', 'danger')
+                return render_template('add_emp.html', form=form, org_name=org_name)
         return render_template('add_emp.html', form=form, org_name=org_name)
     else:
         abort(403)
@@ -85,8 +106,7 @@ def update_employee(employee_id):
     if current_user.is_authenticated and current_user.user_type == "admin":
         employee = Employee.query.get_or_404(employee_id)
         form = UpdateEmployeeForm(obj=employee)
-        
-        form.populate_obj(employee)
+        form.employee_id.data = str(employee_id)  # Set the employee_id field
         form.position.choices = [(d.designation, d.designation) for d in Designation.query.all()]
         form.state.choices = [("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),
                             ("NB", "New Brunswick"), ("NL", "Newfoundland and Labrador"),
@@ -94,19 +114,30 @@ def update_employee(employee_id):
                             ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
                             ("NU", "Nunavut"), ("YT", "Yukon")]
 
-        if request.method == 'POST':
-            employee.firstname = form.firstname.data.title()
-            employee.lastname = form.lastname.data.title()
-            employee.position = form.position.data.title()
-            employee.email = form.email.data
-            employee.cell = form.cell.data
-            employee.address1 = form.address1.data.title()
-            employee.address2 = form.address2.data.title()
-            employee.city = form.city.data.title()
-            employee.state = form.state.data
-            employee.zipcode = form.zipcode.data.upper()
-            db.session.commit()
-            return redirect(url_for('employees.list_employees'))
+        if form.validate_on_submit():
+            try:
+                # Set rba_number to None if position is not Behaviour Analyst
+                rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
+                
+                employee.firstname = form.firstname.data.title()
+                employee.lastname = form.lastname.data.title()
+                employee.position = form.position.data.title()
+                employee.rba_number = rba_number
+                employee.email = form.email.data
+                # Store digits-only phone number to match DB column
+                employee.cell = re.sub(r'\D', '', (form.cell.data or ''))
+                employee.address1 = form.address1.data.title()
+                employee.address2 = form.address2.data.title()
+                employee.city = form.city.data.title()
+                employee.state = form.state.data
+                employee.zipcode = form.zipcode.data.upper()
+                db.session.commit()
+                flash('Employee updated successfully!', 'success')
+                return redirect(url_for('employees.list_employees'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Error updating employee. Please check the form and try again.', 'danger')
+                return render_template('update_emp.html', form=form, employee=employee, org_name=org_name)
         return render_template('update_emp.html', form=form, employee=employee, org_name=org_name)
     else:
         abort(403)

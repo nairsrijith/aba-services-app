@@ -9,6 +9,10 @@
   --accent-back-clr: #272836;
   --secondary-text-clr: #626986;
   --text-clr-brightness: 1; /* For dark theme, invert icons */
+  /* Action colors */
+  --danger-clr: #dc3545; /* red for delete */
+  --action-blue: #0dcaf0; /* aqua for edit/view/download */
+  --success-clr: #198754; /* green for success */
 }
 
 html {
@@ -1025,6 +1029,75 @@ html.light-mode .flatpickr-day.selected:focus {
   color: var(--secondary-text-clr) !important;
   opacity: 0.5 !important;
 }
+
+/* Action button color rules: ensure enabled delete buttons are red and edit/view/download are blue */
+/* Delete buttons (enabled) */
+.btn-danger:not(:disabled):not(.disabled),
+a.btn-danger:not(.disabled) {
+  background-color: var(--danger-clr) !important;
+  border-color: var(--danger-clr) !important;
+  color: #fff !important;
+}
+.btn-danger:disabled,
+.btn-danger.disabled {
+  background-color: rgba(0,0,0,0.12) !important;
+  border-color: var(--line-clr) !important;
+  color: var(--text-clr) !important;
+  opacity: 0.6 !important;
+}
+
+/* Edit / View / Download actions -> blue */
+.btn-info:not(:disabled):not(.disabled),
+.btn-primary:not(:disabled):not(.disabled),
+a.btn-info:not(.disabled),
+a.btn-primary:not(.disabled) {
+  background-color: var(--action-blue) !important;
+  border-color: var(--action-blue) !important;
+  color: #fff !important;
+}
+.btn-info:disabled,
+.btn-primary:disabled,
+.btn-info.disabled,
+.btn-primary.disabled {
+  background-color: rgba(0,0,0,0.12) !important;
+  border-color: var(--line-clr) !important;
+  color: var(--text-clr) !important;
+  opacity: 0.6 !important;
+}
+
+/* Success (green) buttons */
+.btn-success:not(:disabled):not(.disabled),
+a.btn-success:not(.disabled) {
+  background-color: var(--success-clr) !important;
+  border-color: var(--success-clr) !important;
+  color: #fff !important;
+}
+.btn-success:disabled,
+.btn-success.disabled {
+  background-color: rgba(0,0,0,0.12) !important;
+  border-color: var(--line-clr) !important;
+  color: var(--text-clr) !important;
+  opacity: 0.6 !important;
+}
+
+/* Ensure small size success inherits */
+.btn-sm.btn-success:not(:disabled):not(.disabled) {
+  color: #fff !important;
+}
+
+/* Ensure small size variants inherit the colors */
+.btn-sm.btn-danger:not(:disabled):not(.disabled),
+.btn-sm.btn-info:not(:disabled):not(.disabled),
+.btn-sm.btn-primary:not(:disabled):not(.disabled) {
+  color: #fff !important;
+}
+
+/* Links styled as buttons should also reflect enabled/disabled states */
+a.btn[disabled], a.btn.disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 
 
 
