@@ -60,19 +60,15 @@
                             <td>{{ employee.city }}</td>
                             <td>{{ employee.state }}</td>
                             <td>
-                                <div class="btn-group" role="group" aria-label="Action buttons">
-                                    <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
-                                    </a>
-                                    <button type="button" class="btn btn-warning btn-sm" title="Deactivate Employee"
-                                        data-bs-toggle="modal" data-bs-target="#deactivateModal"
-                                        data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
-                                    </button>
-                                </div>
+                                <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">Edit</a>
+                                <button type="button" class="btn btn-danger btn-sm" title="Deactivate Employee"
+                                    data-bs-toggle="modal" data-bs-target="#deactivateModal"
+                                    data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
+                                    Deactivate
+                                </button>
+                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
+                                    Delete
+                                </button>
                             </td>
                         </tr>
                     {% endfor %}
@@ -90,19 +86,15 @@
                                 <td>{{ employee.city }}</td>
                                 <td>{{ employee.state }}</td>
                                 <td>
-                                    <div class="btn-group" role="group" aria-label="Action buttons">
-                                        <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">
-                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
-                                        </a>
-                                        <button type="button" class="btn btn-success btn-sm" title="Reactivate Employee"
-                                            data-bs-toggle="modal" data-bs-target="#reactivateModal"
-                                            data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
-                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
-                                        </button>
-                                    </div>
+                                    <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">Edit</a>
+                                    <button type="button" class="btn btn-success btn-sm" title="Reactivate Employee"
+                                        data-bs-toggle="modal" data-bs-target="#reactivateModal"
+                                        data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
+                                        Reactivate
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
+                                        Delete
+                                    </button>
                                 </td>
                             </tr>
                         {% endfor %}
