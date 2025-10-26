@@ -26,11 +26,11 @@ def add_intervention():
             return redirect(url_for('clients.list_clients'))
         
         form = AddInterventionForm()
-        form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.all()]
+        form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).all()]
         if current_user.user_type == "admin":
-            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.all()]
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).all()]
         else:
-            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(email=current_user.email)]
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(email=current_user.email, is_active=True).all()]
         form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
 
         if form.validate_on_submit():
@@ -177,11 +177,22 @@ def update_intervention(intervention_id):
             flash('This session cannot be edited because it is either invoiced or already paid.', 'warning')
             return redirect(url_for('interventions.list_interventions'))
         form = UpdateInterventionForm(obj=intervention)
-        form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.all()]
+        # Include the current client and employee in choices even if inactive
+        client_choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).all()]
+        if intervention.client_id:
+            client_choices.extend([(c.id, f"{c.firstname} {c.lastname} (Inactive)") 
+                                 for c in Client.query.filter_by(id=intervention.client_id, is_active=False).all()])
+        form.client_id.choices = client_choices
+
         if current_user.user_type == "admin":
-            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.all()]
+            emp_choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).all()]
+            if intervention.employee_id:
+                emp_choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)")
+                                  for e in Employee.query.filter_by(id=intervention.employee_id, is_active=False).all()])
+            form.employee_id.choices = emp_choices
         else:
-            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(email=current_user.email)]
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") 
+                                      for e in Employee.query.filter_by(email=current_user.email, is_active=True).all()]
         form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
 
         if request.method == 'POST':

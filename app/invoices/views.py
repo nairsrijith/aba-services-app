@@ -47,7 +47,7 @@ def invoice_client_select():
             return redirect(url_for('interventions.list_interventions'))
         
         form = InvoiceClientSelectionForm()
-        form.client_id.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.all()]
+        form.client_id.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).all()]
         if form.validate_on_submit():
             interventions = Intervention.query.filter(and_(Intervention.invoiced == False, Intervention.client_id == form.client_id.data)).all()
             if not interventions:

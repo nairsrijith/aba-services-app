@@ -7,18 +7,32 @@
                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>
             </a>
         </h2>
-        <form method="get" class="mb-3 d-flex align-items-center">
-            <label for="per_page" class="me-2">Rows per page:</label>
-            <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
-                <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
-                <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
-                <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
-            </select>
-            <input type="hidden" name="page" value="{{ pagination.page }}">
-        </form>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <form method="get" class="d-flex align-items-center">
+                <label for="per_page" class="me-2">Rows per page:</label>
+                <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
+                    <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                </select>
+                <input type="hidden" name="page" value="{{ pagination.page }}">
+                <input type="hidden" name="show_inactive" value="{{ request.args.get('show_inactive', '0') }}">
+            </form>
+            <form method="get" class="d-flex align-items-center">
+                <div class="form-check form-switch">
+                    <input type="checkbox" class="form-check-input" id="show_inactive" name="show_inactive" value="1" 
+                        {% if request.args.get('show_inactive') == '1' %}checked{% endif %} 
+                        onchange="this.form.submit()">
+                    <label class="form-check-label" for="show_inactive">Show Inactive</label>
+                </div>
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+            </form>
+        </div>
         <table class="table table-hover">
             <thead>
                 <tr>
+                    <th>Status</th>
                     <th>Client's Name</th>
                     <th>Parent's Name</th>
                     <th>City</th>
@@ -29,11 +43,19 @@
             <tbody>
                 {% if not clients %}
                     <tr>
-                        <td colspan="5" class="text-center">No clients found.</td>
+                        <td colspan="6" class="text-center">No clients found.</td>
                     </tr>
                 {% else %}
-                    {% for client in clients %}
+                    {# Separate active and inactive into two groups for clearer UI #}
+                    {% set active_clients = clients | selectattr('is_active') | list %}
+                    {% set inactive_clients = clients | rejectattr('is_active') | list %}
+
+                    {# Active clients block #}
+                    {% for client in active_clients %}
                         <tr>
+                            <td>
+                                <span class="badge bg-success">Active</span>
+                            </td>
                             <td>{{ client.firstname }} {{ client.lastname }}</td>
                             <td>{{ client.parentname }}</td>
                             <td>{{ client.city }}</td>
@@ -43,6 +65,11 @@
                                     <a href="{{ url_for('clients.update_client', client_id=client.id) }}" class="btn btn-primary btn-sm" title="Edit Client">
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
                                     </a>
+                                    <button type="button" class="btn btn-warning btn-sm" title="Deactivate Client"
+                                        data-bs-toggle="modal" data-bs-target="#deactivateClientModal"
+                                        data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>
+                                    </button>
                                     <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                                     </button>
@@ -50,6 +77,37 @@
                             </td>
                         </tr>
                     {% endfor %}
+
+                    {# Inactive clients separator and block #}
+                    {% if inactive_clients %}
+                        <tr class="table-secondary">
+                            <td colspan="6"><strong>Inactive</strong></td>
+                        </tr>
+                        {% for client in inactive_clients %}
+                            <tr class="text-muted">
+                                <td><span class="badge bg-secondary">Inactive</span></td>
+                                <td>{{ client.firstname }} {{ client.lastname }}</td>
+                                <td>{{ client.parentname }}</td>
+                                <td>{{ client.city }}</td>
+                                <td>{{ client.state }}</td>
+                                <td>
+                                    <div class="btn-group" role="group" aria-label="Action buttons">
+                                        <a href="{{ url_for('clients.update_client', client_id=client.id) }}" class="btn btn-primary btn-sm" title="Edit Client">
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
+                                        </a>
+                                        <button type="button" class="btn btn-success btn-sm" title="Reactivate Client"
+                                            data-bs-toggle="modal" data-bs-target="#reactivateClientModal"
+                                            data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
                 {% endif %}
             </tbody>
         </table>
@@ -96,6 +154,56 @@
     </div>
 </div>
 
+<!-- Deactivate Modal -->
+<div class="modal fade" id="deactivateClientModal" tabindex="-1" aria-labelledby="deactivateClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deactivateClientForm" method="POST">
+                {%- if csrf_token is defined -%}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {%- endif -%}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deactivateClientModalLabel">Confirm Deactivation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to deactivate <strong><span class="client-name"></span></strong>? 
+                    This will hide them from lists and forms but preserve their records.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Deactivate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reactivate Modal -->
+<div class="modal fade" id="reactivateClientModal" tabindex="-1" aria-labelledby="reactivateClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="reactivateClientForm" method="POST">
+                {%- if csrf_token is defined -%}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {%- endif -%}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reactivateClientModalLabel">Confirm Reactivation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to reactivate <strong><span class="client-name"></span></strong>?
+                    This will make them available in lists and forms again.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Reactivate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -118,6 +226,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Delete modal handler
     var deleteModal = document.getElementById('deleteClientModal');
     deleteModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
@@ -126,6 +235,28 @@ document.addEventListener('DOMContentLoaded', function() {
         var form = document.getElementById('deleteClientForm');
         form.action = '/clients/delete/' + clientId;
         document.getElementById('clientName').textContent = clientName;
+    });
+
+    // Deactivate modal handler
+    var deactivateModal = document.getElementById('deactivateClientModal');
+    deactivateModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var clientId = button.getAttribute('data-client-id');
+        var clientName = button.getAttribute('data-client-name');
+        var form = document.getElementById('deactivateClientForm');
+        form.action = '/clients/deactivate/' + clientId;
+        deactivateModal.querySelector('.client-name').textContent = clientName;
+    });
+
+    // Reactivate modal handler
+    var reactivateModal = document.getElementById('reactivateClientModal');
+    reactivateModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var clientId = button.getAttribute('data-client-id');
+        var clientName = button.getAttribute('data-client-name');
+        var form = document.getElementById('reactivateClientForm');
+        form.action = '/clients/reactivate/' + clientId;
+        reactivateModal.querySelector('.client-name').textContent = clientName;
     });
 });
 </script>

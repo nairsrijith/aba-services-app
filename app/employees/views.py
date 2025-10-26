@@ -69,13 +69,54 @@ def add_employee():
         abort(403)
 
 
+@employees_bp.route('/deactivate/<int:employee_id>', methods=['POST'])
+@login_required
+def deactivate_employee(employee_id):
+    if current_user.is_authenticated and current_user.user_type == "admin":
+        employee = Employee.query.get_or_404(employee_id)
+        
+        # Only allow deactivation if employee is not a supervisor for any active clients
+        active_clients = Client.query.filter_by(supervisor_id=employee.id, is_active=True).all()
+        if active_clients:
+            flash('Cannot deactivate employee who is supervising active clients. Please reassign their clients first.', 'danger')
+            return redirect(url_for('employees.list_employees'))
+
+        employee.is_active = False
+        db.session.commit()
+        flash('Employee has been deactivated.', 'success')
+        return redirect(url_for('employees.list_employees'))
+    else:
+        abort(403)
+
+
+@employees_bp.route('/reactivate/<int:employee_id>', methods=['POST'])
+@login_required
+def reactivate_employee(employee_id):
+    if current_user.is_authenticated and current_user.user_type == "admin":
+        employee = Employee.query.get_or_404(employee_id)
+        employee.is_active = True
+        db.session.commit()
+        flash('Employee has been reactivated.', 'success')
+        return redirect(url_for('employees.list_employees'))
+    else:
+        abort(403)
+
+
 @employees_bp.route('/list', methods=['GET', 'POST'])
 @login_required
 def list_employees():
     if current_user.is_authenticated and current_user.user_type == "admin":
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
-        employees_pagination = Employee.query.paginate(page=page, per_page=per_page, error_out=False)
+        # Respect the `show_inactive` toggle: when not set, only show active employees.
+        show_inactive = request.args.get('show_inactive', '0')
+        if show_inactive == '1':
+            # include both active and inactive, active first
+            query = Employee.query.order_by(Employee.is_active.desc(), Employee.firstname, Employee.lastname)
+        else:
+            # only active employees
+            query = Employee.query.filter_by(is_active=True).order_by(Employee.firstname, Employee.lastname)
+        employees_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         return render_template(
             'list_emp.html',
             employees=employees_pagination.items,

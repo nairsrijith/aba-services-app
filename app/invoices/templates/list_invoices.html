@@ -23,7 +23,18 @@
                 <tr>
                     <td>{{ invoice.invoice_number }}</td>
                     <td class="text-end">{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ invoice.status }}</td>
+                    <td>
+                        {%- set st = invoice.status -%}
+                        {%- if st == 'Draft' -%}
+                            <span class="badge bg-info" title="{{ st }}">{{ st }}</span>
+                        {%- elif st == 'Sent' -%}
+                            <span class="badge bg-warning text-dark" title="{{ st }}">{{ st }}</span>
+                        {%- elif st == 'Paid' -%}
+                            <span class="badge bg-success" title="{{ st }}">{{ st }}</span>
+                        {%- else -%}
+                            <span class="badge bg-secondary" title="{{ st }}">{{ st }}</span>
+                        {%- endif -%}
+                    </td>
                     <td>{{ invoice.client.firstname }} {{ invoice.client.lastname }}</td>
                     <td class="text-end">${{ "%.2f"|format(invoice.total_cost|float) }}</td>
                     <td>

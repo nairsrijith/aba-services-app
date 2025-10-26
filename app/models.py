@@ -52,10 +52,11 @@ class Employee(db.Model):
     city = db.Column(db.String(51))
     state = db.Column(db.String(2))
     zipcode = db.Column(db.String(6))
+    is_active = db.Column(db.Boolean, nullable=True, default=True)
 
     designation = db.relationship('Designation', backref='employees')
 
-    def __init__(self, firstname, lastname, position, rba_number, email, cell, address1=None, address2=None, city=None, state=None, zipcode=None):
+    def __init__(self, firstname, lastname, position, rba_number, email, cell, address1=None, address2=None, city=None, state=None, zipcode=None, is_active=True):
         self.firstname = firstname
         self.lastname = lastname
         self.position = position
@@ -67,6 +68,7 @@ class Employee(db.Model):
         self.city = city
         self.state = state
         self.zipcode = zipcode
+        self.is_active = is_active
 
 
 class Client(db.Model):
@@ -87,10 +89,11 @@ class Client(db.Model):
     supervisor_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
     cost_supervision = db.Column(db.Float, nullable=False, default=0.0)
     cost_therapy = db.Column(db.Float, nullable=False, default=0.0)
+    is_active = db.Column(db.Boolean, nullable=True, default=True)
 
     supervisor = db.relationship('Employee', backref='clients')
 
-    def __init__(self, firstname, lastname, dob, gender, parentname, parentemail, parentcell, address1, address2, city, state, zipcode, supervisor_id, cost_supervision=0.0, cost_therapy=0.0):
+    def __init__(self, firstname, lastname, dob, gender, parentname, parentemail, parentcell, address1, address2, city, state, zipcode, supervisor_id, cost_supervision=0.0, cost_therapy=0.0, is_active=True):
         self.firstname = firstname
         self.lastname = lastname
         self.dob = dob
@@ -106,6 +109,7 @@ class Client(db.Model):
         self.supervisor_id = supervisor_id
         self.cost_supervision = cost_supervision
         self.cost_therapy = cost_therapy
+        self.is_active = is_active
 
 
 class Intervention(db.Model):

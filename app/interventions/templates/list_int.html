@@ -112,7 +112,22 @@
                                     <span class="badge bg-secondary">Unpaid</span>
                                 {% endif %}
                             </td>
-                            <td>{{ intervention.invoice_number if intervention.invoice_number else 'N/A' }}</td>
+                            <td>
+                                {%- if intervention.invoice -%}
+                                    {%- set inv_status = intervention.invoice.status -%}
+                                        {%- if inv_status == 'Draft' -%}
+                                            <span class="badge bg-info" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                        {%- elif inv_status == 'Sent' -%}
+                                            <span class="badge bg-warning text-dark" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                        {%- elif inv_status == 'Paid' -%}
+                                            <span class="badge bg-success" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                        {%- else -%}
+                                            <span class="badge bg-secondary" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                    {%- endif -%}
+                                {%- else -%}
+                                    <span class="text-muted">N/A</span>
+                                {%- endif -%}
+                            </td>
                             <td>
                                 <div class="btn-group" role="group" aria-label="Action buttons">
                                     {% if not intervention.invoiced and not intervention.is_paid %}

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, abort, flash, request
 from app import db
-from app.models import Client, Employee, Intervention
+from app.models import Client, Employee, Intervention, Invoice
 from app.clients.forms import AddClientForm, UpdateClientForm
 from flask_login import login_required, current_user
 import os
@@ -17,9 +17,9 @@ org_name = os.environ.get('ORG_NAME', 'My Organization')
 def add_client():
     if current_user.is_authenticated and current_user.user_type == "admin":
         
-        supervisor = Employee.query.filter_by(position='Behaviour Analyst').first()
+        supervisor = Employee.query.filter_by(position='Behaviour Analyst', is_active=True).first()
         if not supervisor:
-            flash('Please add at least one Behaviour Analyst before adding clients.', 'warning')
+            flash('Please add at least one active Behaviour Analyst before adding clients.', 'warning')
             return redirect(url_for('employees.list_employees'))
 
         form = AddClientForm()
@@ -29,7 +29,7 @@ def add_client():
                             ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
                             ("NU", "Nunavut"), ("YT", "Yukon")]
         form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
-        form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst').all()]
+        form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst', is_active=True).all()]
         if form.validate_on_submit():
             # Normalize parent phone number to digits-only before storing
             normalized_parentcell = re.sub(r'\D', '', (form.parentcell.data or ''))
@@ -57,13 +57,58 @@ def add_client():
         abort(403)
 
 
+@clients_bp.route('/deactivate/<int:client_id>', methods=['POST'])
+@login_required
+def deactivate_client(client_id):
+    if current_user.is_authenticated and current_user.user_type == "admin":
+        client = Client.query.get_or_404(client_id)
+        # Check for open/pending invoices before deactivating
+        open_invoices = Invoice.query.filter_by(client_id=client.id).filter(Invoice.status != 'Paid').all()
+        if open_invoices:
+            flash('Cannot deactivate client with unpaid invoices. Please resolve all invoices first.', 'danger')
+            return redirect(url_for('clients.list_clients'))
+            
+        client.is_active = False
+        db.session.commit()
+        flash('Client has been deactivated.', 'success')
+        return redirect(url_for('clients.list_clients'))
+    else:
+        abort(403)
+
+
+@clients_bp.route('/reactivate/<int:client_id>', methods=['POST'])
+@login_required
+def reactivate_client(client_id):
+    if current_user.is_authenticated and current_user.user_type == "admin":
+        client = Client.query.get_or_404(client_id)
+        # Check if supervisor is still active before reactivating
+        if client.supervisor_id and not client.supervisor.is_active:
+            flash('Cannot reactivate client as their supervisor is inactive. Please assign an active supervisor first.', 'warning')
+            return redirect(url_for('clients.update_client', client_id=client.id))
+            
+        client.is_active = True
+        db.session.commit()
+        flash('Client has been reactivated.', 'success')
+        return redirect(url_for('clients.list_clients'))
+    else:
+        abort(403)
+
+
 @clients_bp.route('/list', methods=['GET', 'POST'])
 @login_required
 def list_clients():
     if current_user.is_authenticated and current_user.user_type == "admin":
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)  # default to 10
-        clients_pagination = Client.query.paginate(page=page, per_page=per_page, error_out=False)    
+        # Respect the `show_inactive` toggle: when not set, only show active clients.
+        show_inactive = request.args.get('show_inactive', '0')
+        if show_inactive == '1':
+            # include both active and inactive, active first
+            query = Client.query.order_by(Client.is_active.desc(), Client.firstname, Client.lastname)
+        else:
+            # only active clients
+            query = Client.query.filter_by(is_active=True).order_by(Client.firstname, Client.lastname)
+        clients_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         return render_template(
             'list.html',
             clients=clients_pagination.items,
@@ -104,7 +149,15 @@ def update_client(client_id):
                             ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
                             ("NU", "Nunavut"), ("YT", "Yukon")]
         form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
-        form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst').all()]
+        
+        # Include the current supervisor in choices even if inactive
+        supervisor_choices = [(e.id, f"{e.firstname} {e.lastname}") 
+                         for e in Employee.query.filter_by(position='Behaviour Analyst', is_active=True).all()]
+        if client.supervisor_id:
+            supervisor_choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)") 
+                                 for e in Employee.query.filter_by(id=client.supervisor_id, is_active=False).all()])
+        form.supervisor_id.choices = supervisor_choices
+        
         if request.method == 'POST':
             client.firstname = form.firstname.data.title()
             client.lastname = form.lastname.data.title()

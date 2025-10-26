@@ -39,7 +39,11 @@ def list_paystubs():
         
     # Get results
     paystubs = query.order_by(PayStub.generated_date.desc()).all()
-    employees = Employee.query.order_by(Employee.firstname, Employee.lastname).all()
+    # Include both active and employees with paystubs
+    employee_ids = set(ps.employee_id for ps in paystubs)
+    employees = Employee.query.filter(
+        (Employee.is_active == True) | (Employee.id.in_(employee_ids))
+    ).order_by(Employee.firstname, Employee.lastname).all()
     
     return render_template('list_paystubs.html', paystubs=paystubs, employees=employees)
 
@@ -62,10 +66,10 @@ def add_payrate():
         return redirect(url_for('home'))
     
     form = PayRateForm()
-    form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.order_by(Employee.firstname, Employee.lastname).all()]
+    form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).order_by(Employee.firstname, Employee.lastname).all()]
     # Add a 'Base Rate (All Clients)' option for client_id=None
     client_choices = [("", "Base Rate (All Clients)")]
-    client_choices += [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.order_by(Client.firstname, Client.lastname).all()]
+    client_choices += [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).order_by(Client.firstname, Client.lastname).all()]
     form.client.choices = client_choices
     
     if form.validate_on_submit():
@@ -95,9 +99,23 @@ def edit_payrate(id):
     payrate = PayRate.query.get_or_404(id)
     form = PayRateForm()
     
-    form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.order_by(Employee.firstname, Employee.lastname).all()]
+    # Get current employee and client for this payrate
+    current_employee = Employee.query.get(payrate.employee_id)
+    current_client = Client.query.get(payrate.client_id) if payrate.client_id else None
+
+    # Get all active employees plus the current employee if inactive
+    employee_choices = [(str(e.id), f"{e.firstname} {e.lastname}") 
+                     for e in Employee.query.filter_by(is_active=True).order_by(Employee.firstname, Employee.lastname).all()]
+    if current_employee and not current_employee.is_active:
+        employee_choices.append((str(current_employee.id), f"{current_employee.firstname} {current_employee.lastname} (Inactive)"))
+    form.employee.choices = employee_choices
+
+    # Get all active clients plus the current client if inactive
     client_choices = [("", "Base Rate (All Clients)")]
-    client_choices += [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.order_by(Client.firstname, Client.lastname).all()]
+    client_choices += [(str(c.id), f"{c.firstname} {c.lastname}") 
+                      for c in Client.query.filter_by(is_active=True).order_by(Client.firstname, Client.lastname).all()]
+    if current_client and not current_client.is_active:
+        client_choices.append((str(current_client.id), f"{current_client.firstname} {current_client.lastname} (Inactive)"))
     form.client.choices = client_choices
     
     if form.validate_on_submit():
@@ -249,7 +267,7 @@ def create_paystub():
 
     form = PayPeriodForm()
     # populate employee choices
-    form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.order_by(Employee.firstname, Employee.lastname).all()]
+    form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).order_by(Employee.firstname, Employee.lastname).all()]
 
     preview = None
     missing_rates = []
