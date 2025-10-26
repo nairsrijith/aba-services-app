@@ -75,9 +75,6 @@
 
                     {# Inactive employees separator and block #}
                     {% if inactive_employees %}
-                        <tr class="table-secondary">
-                            <td colspan="6"><strong>Inactive</strong></td>
-                        </tr>
                         {% for employee in inactive_employees %}
                             <tr class="text-muted">
                                 <td><span class="badge bg-secondary">Inactive</span></td>

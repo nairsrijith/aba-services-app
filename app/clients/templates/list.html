@@ -76,9 +76,6 @@
 
                     {# Inactive clients separator and block #}
                     {% if inactive_clients %}
-                        <tr class="table-secondary">
-                            <td colspan="6"><strong>Inactive</strong></td>
-                        </tr>
                         {% for client in inactive_clients %}
                             <tr class="text-muted">
                                 <td><span class="badge bg-secondary">Inactive</span></td>
