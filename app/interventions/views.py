@@ -91,6 +91,8 @@ def list_interventions():
 
         # Use outer joins so interventions aren't excluded if employee/client rows are missing
         query = Intervention.query.outerjoin(Employee).outerjoin(Client)
+        # Ensure each intervention appears only once (joins can introduce duplicates)
+        query = query.distinct(Intervention.id)
 
         # Therapists see only their own sessions; supervisors see sessions for their supervised clients
         if current_user.user_type == "therapist":

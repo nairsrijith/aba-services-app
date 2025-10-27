@@ -60,6 +60,12 @@
             <input type="hidden" name="page" value="1">
         </form>
 
+        <!-- Show pagination summary -->
+        <div class="mb-2">
+            <small class="text-muted">Showing <strong>{{ interventions|length }}</strong> row(s) on this page.
+            {% if pagination %} Total matches: <strong>{{ pagination.total }}</strong>. Page {{ pagination.page }} of {{ pagination.pages }}.{% endif %}</small>
+        </div>
+
         <!-- BULK DELETE FORM AND TABLE -->
         <form method="POST" action="{{ url_for('interventions.bulk_delete') }}">
             <button type="submit" class="btn btn-danger mb-2" id="bulk-delete-btn" disabled onclick="return confirm('Delete selected sessions?')" title="Delete Selected Sessions">
