@@ -88,10 +88,13 @@ def list_interventions():
 
         # Apply filters BEFORE paginating
         invoiced_filter = request.args.get('invoiced')
-        query = Intervention.query.join(Employee).join(Client)
+
+        # Use outer joins so interventions aren't excluded if employee/client rows are missing
+        query = Intervention.query.outerjoin(Employee).outerjoin(Client)
 
         # Therapists see only their own sessions; supervisors see sessions for their supervised clients
         if current_user.user_type == "therapist":
+            # therapists should only see sessions assigned to their employee record
             query = query.filter(Employee.email == current_user.email)
         elif current_user.user_type == 'supervisor':
             emp = Employee.query.filter_by(email=current_user.email).first()
