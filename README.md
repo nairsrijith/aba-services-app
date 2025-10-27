@@ -1,80 +1,189 @@
-# Web App for ABA Services
-I have built this app to help my family member's small business where they provide ABA services to the special needs clients.\
-This Web Application is built to assist the business to manage client records, employee records, session records and invoicing.
 
-## Container deployment by pulling the image from Docker Hub
-Image is available at https://hub.docker.com/r/nairsrijith/abawebapp. \
-This image is packaged and can be deployed to run the webapp using the instruction below:
+# ABA Services Web Application
 
-1) Create a directory in your system from where you want to run the application and store its DB and other data files.
-2) Copy the `docker-compose.yml` file into the directory.
-3) Update the docker file for port that you want to expose the app on specific port and supply values using the environment variables. \
-   Internally application uses port 8080, but you can customize the port for incoming connections to your computer/server.
-   **Note** about the Environment Variable is below.
-4) Once ready, run `docker compose up -d`.
+This web application is designed to help ABA service providers manage their business operations, including client and employee records, session tracking, invoicing, and payroll. It is suitable for small businesses and organizations providing Applied Behavior Analysis (ABA) services to special needs clients.
 
-### Port
-`1234:8080` \
-You can customize the port that server exposes by updating the value for 1234 to any port of your choice. \
-Do not change the second portion of the port i.e. 8080, as that is the port at which application will listent to the incoming requests. \
-That cannot be change unless you want to update the code and modify the parameter and rebuild the image.
+## Features
 
-### Environment Variables
-Following are the environment variables 
+- **Employee Management**
+   - Add, update, activate/deactivate employees
+   - Assign designations and pay rates
+   - Cascade deactivation to supervised clients
+   - Group employees by active/inactive status
+
+- **Client Management**
+   - Onboard new clients with supervision and therapy rates
+   - Assign supervisors (Behavior Analysts)
+   - Activate/deactivate clients (with safety checks for unpaid invoices)
+   - Group clients by active/inactive status
+
+- **Session Management**
+   - Record therapy and supervision sessions
+   - CRUD operations for sessions (admin and user roles)
+   - Categorize sessions by activity type
+
+- **Invoicing**
+   - Generate invoices for clients based on session data and activity rates
+   - Download invoices as PDF
+   - Invoice status workflow: Draft, Sent, Paid
+   - Color-coded status badges and tooltips
+   - Mark invoices as sent/paid, with confirmation modals
+   - Prevent deletion of invoices unless in draft status
+
+- **Payroll & Paystubs**
+   - Manage pay rates for employees
+   - Generate paystubs based on sessions and rates
+   - Download paystubs as PDF
+
+- **Security & Access Control**
+   - User roles: super user, admin, therapist (previously called "user"), supervisor
+   - CSRF protection for all forms
+   - Login and registration with activation key
+
+- **Admin Tools**
+   - CLI script for bulk activation/deactivation (`scripts/manage_activation.py`)
+   - Designation and activity management
+
+- **Data & Reporting**
+   - Persistent storage using SQLite (default)
+   - Data grouped and filtered by active/inactive status
+   - Toggle to show/hide inactive records
+
+## Setup & Deployment
+
+### 1. Pull and Run the Docker Image
+
+The app is available as a pre-built Docker image:
+https://hub.docker.com/r/nairsrijith/abawebapp
+
+#### Steps:
+
+1. **Create a directory** for the app and persistent data:
+    ```sh
+    mkdir abawebapp && cd abawebapp
+    ```
+2. **Copy the `docker-compose.yml` file** into your directory.
+3. **Create an environment file** (optional, recommended):
+    - Create a file named `.env` in the same directory with the following variables:
+       ```env
+       ORG_NAME="Your Organization Name"
+       ORG_ADDRESS="123 Main St, City, State"
+       ORG_PHONE="555-123-4567"
+       ORG_EMAIL="info@yourorg.com"
+       PAYMENT_EMAIL="payments@yourorg.com"
+       ```
+    - These will be used in invoices and branding.
+4. **Edit `docker-compose.yml`** as needed:
+    - Change the host port (left side of `1234:8080`) to your preferred port.
+    - Ensure the volume mapping (`./data:/myapp/app/data`) points to a persistent location.
+5. **Start the app:**
+    ```sh
+    docker compose up -d
+    ```
+
+#### Example `docker-compose.yml` snippet:
+```yaml
+version: '3.8'
+services:
+   abawebapp:
+      image: nairsrijith/abawebapp:latest
+      ports:
+         - "1234:8080"
+      env_file:
+         - .env
+      volumes:
+         - ./data:/myapp/app/data
 ```
-ORG_NAME=""
-ORG_ADDRESS=""
-ORG_PHONE=""
-ORG_EMAIL=""
-PAYMENT_EMAIL=""
+
+### 2. Initial Login
+
+After deployment, access the app in your browser at `http://localhost:1234` (or your chosen port).
+
+Default super user credentials:
 ```
-These variables will be used in the header of the Invoice.\
-Also, ORG_NAME is used as the Brand Name in the side navigation bar in the webapp. 
+username: admin@example.com
+password: Admin1!
+```
+**Change the password immediately after first login.**
 
-### Persistent volume for DB
-`./data:/myapp/app/data` \
-DB and the other supporting files which is reference by the DB is stored in /myapp/app/data, so you can have a docker volume or a local directory used for persistent storage location. \
-Currently DB is SQLite only.
+## User Roles & Permissions
+
+- **Super User**: Can create other accounts and perform full system maintenance.
+- **Admin**: Can manage employees, clients, sessions, invoices, paystubs and system configuration.
+- **Therapist**: (renamed from the old "user" role) Can manage their own sessions and view the parts of the app assigned to therapists.
+- **Supervisor**: A supervisor is typically an employee with the designation "Behaviour Analyst". Supervisors can add and manage sessions for their supervised clients and may assign those sessions to any employee with a Therapist or Senior Therapist designation.
+
+Note: to enable supervisor functionality, create a user account for the supervisor and ensure the account email matches the `email` field on the corresponding `employees` record. The application maps the logged-in user to the employee record by email to determine supervised clients.
+
+## Onboarding Workflow
+
+1. **Add Employees**
+    - Go to Employees section, add new employee, assign designation and pay rate.
+    - Activate/deactivate employees as needed.
+    - Assign employees as supervisors to clients.
+
+2. **Add Clients**
+    - Go to Clients section, onboard new client.
+    - Assign supervisor (Behavior Analyst) and set rates for supervision/therapy.
+    - Activate/deactivate clients as needed.
+
+3. **Add Sessions**
+   - Record sessions for clients, specifying activity type and duration.
+   - Admins can manage sessions for all; Therapists can manage sessions for themselves; Supervisors can create/manage sessions for clients they supervise and assign the delivering employee to any Therapist or Senior Therapist.
+
+4. **Generate Invoices**
+    - Select client and date range to generate invoice based on sessions.
+    - Review invoice, download PDF, and share with client.
+    - Mark invoice as sent/paid; status is shown with color-coded badges.
+    - Only draft invoices can be deleted.
+
+5. **Generate Paystubs**
+    - Go to Payroll section, select employee and date range.
+    - Generate paystub based on sessions and pay rates.
+    - Download paystub as PDF.
+
+## Activation & Deactivation
+
+- Employees and clients can be activated/deactivated from the list views.
+- Deactivation checks for dependencies (e.g., active clients, unpaid invoices).
+
+### Notes about the role rename (existing deployments)
+
+If you are updating an existing deployment, user accounts created previously will have their role stored as the string `user`.
+The application code has been updated to treat that legacy value as the new `therapist` role. To permanently migrate the database rows you can run a small SQL update against the app database before restarting the app:
+
+For SQLite (example):
+
+```sql
+UPDATE users SET user_type = 'therapist' WHERE user_type = 'user';
+```
+
+Or from Python within the app context (quick one-off script):
+
+```py
+from app import app, db
+from app.models import User
+
+with app.app_context():
+   db.session.execute("UPDATE users SET user_type = 'therapist' WHERE user_type = 'user'")
+   db.session.commit()
+```
+
+Make a backup of your database before performing this migration.
 
 
-## After initializing the Web Application
-Web Application initialized with the default super user which is:\
-`username: admin@example.com`\
-`password: Admin1!`
+## Data Persistence
 
-**Note:** Change the password immediately after the initial deployment.
+- All data is stored in SQLite by default, mapped to the `./data` directory (or your chosen volume).
+- Back up the data directory regularly for disaster recovery.
 
-### What admin@example.com user can do?
-Super user can only create other users who can access the webapp.\
-Additionally, super user can add entries to the Designation and Activity table, to start the process for onboarding employees and add session information.\
-<img width="247" height="361" alt="image" src="https://github.com/user-attachments/assets/ae91b198-2e84-4459-afee-38557eacbe71" />
+## Security
 
-**There are two types of users:**
+- All forms are protected with CSRF tokens.
+- User registration requires activation key (admin/super user only).
+- Passwords should be changed after initial setup.
 
-- **admin** - One admin user should be created who should be able to do the same actions like the super user and additionally, can manage employee, client and session records.\
-  Admin should be able to generate the invoices too.
-  They are basically organization admins.\
-  <img width="235" height="549" alt="image" src="https://github.com/user-attachments/assets/16d9324c-8fce-4e71-955c-acd195fa7471" />
+## Support & Customization
 
-- **user** - Normal user will only have access to manage session records for themselves and the access to the parts of webapp is limited.\
-  <img width="233" height="270" alt="image" src="https://github.com/user-attachments/assets/9aef0006-8b71-43a9-b534-cd053a3f8397" />
-
-## Starting to use the Web Application
-1) To begin with there should be at least one **Behaviour Aanalyst** as each client will need one.
-2) Then a new Client can be onboarded. While adding the client you'll be asked to enter the rate for Supervision and Therapy.\
-   Activities will have to be categorized under one of these, so that the invoice will be based on the activity vategory and the rate associated with it.
-3) Then you can add the sessions taken for the client. Normal user will only be able to Create, Read, Update and Delete sessions for themselves but not for other's. Admin should be able to carry out those on behalf of other's.
-4) Admin can generate invoice by selecting the client and date range to pick all the session which meets that criteria.
-5) Once the invoice is generated, it can be downloaded in PDF format to share with the client.\
-   <img width="227" height="97" alt="image" src="https://github.com/user-attachments/assets/84ea0092-d200-4ddd-9156-e643d9e26f11" />
-6) Mark the invoice as sent once done.\
-   <img width="227" height="96" alt="image" src="https://github.com/user-attachments/assets/3aed1d78-0ea2-426c-87d3-d0f32a3d3a15" />
-7) Once the invoice is shared with the client, it cannot be deleted unless sent back to draft.\
-   <img width="233" height="86" alt="image" src="https://github.com/user-attachments/assets/d981629c-3193-4ce6-894d-69773ace6c36" />
-8) Once payment is recieved, mark the invoice as paid.\
-   <img width="233" height="86" alt="image" src="https://github.com/user-attachments/assets/bc52c1f2-1c9e-4373-8dc0-c42dd86f6dd7" />
-9) You can download the invoice and the PDF should have the status changed from pending to paid.\
-   <img width="231" height="84" alt="image" src="https://github.com/user-attachments/assets/a3d66b99-9d79-45c9-b660-67c5c33e548f" /><img width="231" height="99" alt="image" src="https://github.com/user-attachments/assets/41f00c22-80ec-4298-bf13-c0ccc9f3285d" />
-
-
-
+- For advanced configuration, update environment variables in `.env` or `docker-compose.yml`.
+- To use a different database, modify the code and rebuild the Docker image.

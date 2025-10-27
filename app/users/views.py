@@ -28,9 +28,11 @@ def generate_activation_code(length=8):
 @users_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_user():
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    # Only super and admin can add new accounts
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         form = AddUserForm()
-        form.user_type.choices = [("admin", "Admin"), ("user", "User")]
+        # Expose both therapist and supervisor roles to be assigned when creating accounts
+        form.user_type.choices = [("admin", "Admin"), ("therapist", "Therapist"), ("supervisor", "Supervisor")]
         if form.validate_on_submit():
             user = User.query.filter_by(email=form.email.data).first()
             if not user:
@@ -55,7 +57,8 @@ def add_user():
 @users_bp.route('/list', methods=['GET','POST'])
 @login_required
 def list_users():
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    # Only admin and super can list/manage users
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         users_pagination = User.query.filter(~((User.user_type == 'super') | (User.email == current_user.email))).paginate(page=page, per_page=per_page, error_out=False)
@@ -73,7 +76,7 @@ def list_users():
 @users_bp.route('/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_user(id):
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         user = User.query.get_or_404(id)
         db.session.delete(user)
         db.session.commit()
@@ -86,7 +89,7 @@ def delete_user(id):
 @users_bp.route('/lock/<int:id>', methods=['GET', 'POST'])
 @login_required
 def lock_user(id):
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         user = User.query.get_or_404(id)
         user.locked_until = datetime.now() + relativedelta(years=1000)
         user.failed_attempt = -5
@@ -100,7 +103,7 @@ def lock_user(id):
 @users_bp.route('/unlock/<int:id>', methods=['GET', 'POST'])
 @login_required
 def unlock_user(id):
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         user = User.query.get_or_404(id)
         user.locked_until = None
         user.failed_attempt = 1
@@ -114,7 +117,7 @@ def unlock_user(id):
 @users_bp.route('/promote/<int:id>', methods=['GET','POST'])
 @login_required
 def promote_user(id):
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         user = User.query.get_or_404(id)
         user.user_type = "admin"
         db.session.commit()
@@ -127,11 +130,12 @@ def promote_user(id):
 @users_bp.route('/demote/<int:id>', methods=['GET','POST'])
 @login_required
 def demote_user(id):
-    if current_user.is_authenticated and not current_user.user_type == "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         user = User.query.get_or_404(id)
-        user.user_type = "user"
+        # demote to therapist role (previously 'user')
+        user.user_type = "therapist"
         db.session.commit()
-        flash("User account demoted to normal User.", "success")
+        flash("User account demoted to Therapist.", 'success')
         return redirect(url_for('users.list_users'))
     else:
         abort(403)

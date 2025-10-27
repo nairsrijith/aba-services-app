@@ -5,7 +5,8 @@ from wtforms.validators import DataRequired, Email, EqualTo
 
 class AddUserForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    user_type = SelectField('User type', validators=[DataRequired()], default="user")
+    # 'therapist' replaces the previous 'user' role. 'supervisor' can be created by admins if needed.
+    user_type = SelectField('User type', validators=[DataRequired()], default="therapist")
     submit = SubmitField('Add')
 
 

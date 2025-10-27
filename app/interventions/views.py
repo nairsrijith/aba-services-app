@@ -19,17 +19,32 @@ org_name = os.environ.get('ORG_NAME', 'My Organization')
 @interventions_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_intervention():
+    # Allow admin, therapists and supervisors (but not 'super' system user) to add interventions
     if current_user.is_authenticated and not current_user.user_type == "super":
+        # find employee record for current user (if any)
+        emp = Employee.query.filter_by(email=current_user.email).first()
+
+        # Ensure there are clients in the system
         clients = Client.query.all()
         if not clients:
             flash('Please add clients before adding interventions.', 'warning')
             return redirect(url_for('clients.list_clients'))
-        
+
         form = AddInterventionForm()
-        form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).all()]
+        # Supervisor should only be able to pick from their supervised clients
+        if current_user.user_type == 'supervisor' and emp:
+            form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(supervisor_id=emp.id, is_active=True).all()]
+        else:
+            form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).all()]
+
+        # Employee selection:
         if current_user.user_type == "admin":
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).all()]
+        elif current_user.user_type == 'supervisor':
+            # supervisors can choose any therapist or senior therapist
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter(Employee.position.in_(['Therapist','Senior Therapist']), Employee.is_active==True).all()]
         else:
+            # therapists can only create sessions for themselves
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(email=current_user.email, is_active=True).all()]
         form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
 
@@ -73,10 +88,15 @@ def list_interventions():
 
         # Apply filters BEFORE paginating
         invoiced_filter = request.args.get('invoiced')
-        query = Intervention.query.join(Employee)
+        query = Intervention.query.join(Employee).join(Client)
 
-        if current_user.user_type == "user":
+        # Therapists see only their own sessions; supervisors see sessions for their supervised clients
+        if current_user.user_type == "therapist":
             query = query.filter(Employee.email == current_user.email)
+        elif current_user.user_type == 'supervisor':
+            emp = Employee.query.filter_by(email=current_user.email).first()
+            if emp:
+                query = query.filter(Client.supervisor_id == emp.id)
 
         if invoiced_filter == 'yes':
             query = query.filter(Intervention.invoiced == True)
@@ -172,6 +192,15 @@ def update_intervention(intervention_id):
     if current_user.is_authenticated and not current_user.user_type == "super":
         intervention = Intervention.query.get_or_404(intervention_id)
 
+        # enforce edit permissions for therapists and supervisors
+        if current_user.user_type == 'therapist':
+            if not intervention.employee or intervention.employee.email != current_user.email:
+                abort(403)
+        if current_user.user_type == 'supervisor':
+            emp = Employee.query.filter_by(email=current_user.email).first()
+            if not emp or (not intervention.client or intervention.client.supervisor_id != emp.id):
+                abort(403)
+
         # Disallow editing if the session is invoiced or already paid
         if intervention.invoiced or intervention.is_paid:
             flash('This session cannot be edited because it is either invoiced or already paid.', 'warning')
@@ -190,6 +219,11 @@ def update_intervention(intervention_id):
                 emp_choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)")
                                   for e in Employee.query.filter_by(id=intervention.employee_id, is_active=False).all()])
             form.employee_id.choices = emp_choices
+        elif current_user.user_type == 'supervisor':
+            # supervisors can reassign to therapists/senior therapists
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter(Employee.position.in_(['Therapist','Senior Therapist']), Employee.is_active==True).all()]
+            if intervention.employee_id:
+                form.employee_id.choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)") for e in Employee.query.filter_by(id=intervention.employee_id, is_active=False).all()])
         else:
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") 
                                       for e in Employee.query.filter_by(email=current_user.email, is_active=True).all()]

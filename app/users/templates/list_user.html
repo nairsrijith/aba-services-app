@@ -38,12 +38,12 @@
                         <td><input type="checkbox" disabled {% if not user.activation_key %}checked{% endif %}> {{ user.activation_key }}</td>
                         <td>
                             <div class="btn-group" role="group" aria-label="Action buttons">
-                                {% if user.user_type == "user" %}
+                                {% if user.user_type == "therapist" %}
                                     <button class="btn btn-success btn-sm" title="Promote to Admin" data-action="{{ url_for('users.promote_user', id=user.id) }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="m136-240-56-56 296-298 160 160 208-206H640v-80h240v240h-80v-104L536-320 376-480 136-240Z"/></svg>
                                     </button>
                                 {% elif user.user_type == "admin" %}
-                                    <button class="btn btn-danger btn-sm" title="Demote to User" data-action="{{ url_for('users.demote_user', id=user.id) }}">
+                                    <button class="btn btn-danger btn-sm" title="Demote to Therapist" data-action="{{ url_for('users.demote_user', id=user.id) }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M640-240v-80h104L536-526 376-366 80-664l56-56 240 240 160-160 264 264v-104h80v240H640Z"/></svg>
                                     </button>
                                 {% endif %}
@@ -138,7 +138,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                Are you sure you want to lock the user <strong><span id="userEmailLock"></span></strong>?
+                Are you sure you want to lock the account <strong><span id="userEmailLock"></span></strong>?
                 </div>
                 <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -158,7 +158,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                Are you sure you want to unlock the user <strong><span id="userEmailUnlock"></span></strong>?
+                Are you sure you want to unlock the account <strong><span id="userEmailUnlock"></span></strong>?
                 </div>
                 <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

@@ -13,7 +13,7 @@ org_name = os.environ.get('ORG_NAME', 'My Organization')
 @manage_bp.route('/designations', methods=['GET', 'POST'])
 @login_required
 def designations():
-    if current_user.is_authenticated and current_user.user_type != "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         form = DesignationForm()
         if form.validate_on_submit():
             new_designation = Designation(designation=form.name.data.title())
@@ -31,7 +31,7 @@ def designations():
 @manage_bp.route('/activities', methods=['GET', 'POST'])
 @login_required
 def activities():
-    if current_user.is_authenticated and current_user.user_type != "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         form = ActivityForm()
         form.category.choices = [("Therapy", "Therapy"), ("Supervision", "Supervision")]
         if form.validate_on_submit():
@@ -50,7 +50,7 @@ def activities():
 @manage_bp.route('/delete_activity/<string:activity_name>', methods=['POST'])
 @login_required
 def delete_activity(activity_name):
-    if current_user.is_authenticated and current_user.user_type != "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         activity = Activity.query.filter_by(activity_name=activity_name).first()
         # make sure activity is not used in any schedules or other dependencies before deleting
         # still need to implement this check
@@ -68,7 +68,7 @@ def delete_activity(activity_name):
 @manage_bp.route('/delete_designation/<string:designation_name>', methods=['POST'])
 @login_required
 def delete_designation(designation_name):
-    if current_user.is_authenticated and current_user.user_type != "user":
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         designation = Designation.query.filter_by(designation=designation_name).first()
         # make sure designation is not allocated to any employee or other dependencies before deleting
         # still need to implement this check
