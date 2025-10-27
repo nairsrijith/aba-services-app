@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from app import db
-from app.models import User
+from app.models import User, Employee
 from app.users.forms import AddUserForm, UpdatePasswordForm
 from flask_login import login_required, current_user
+from app.utils.utils import manage_user_for_employee
 import secrets
 import string
 from datetime import datetime
@@ -132,10 +133,22 @@ def promote_user(id):
 def demote_user(id):
     if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         user = User.query.get_or_404(id)
-        # demote to therapist role (previously 'user')
-        user.user_type = "therapist"
+        # Find associated employee to determine role
+        employee = Employee.query.filter_by(email=user.email).first()
+        
+        if employee:
+            # Temporarily store the admin status
+            was_admin = user.user_type == 'admin'
+            # Use utility function to set role based on position
+            manage_user_for_employee(employee.email, employee.position, user)
+            if was_admin:
+                flash(f"User account demoted from Admin to {user.user_type.capitalize()}.", 'success')
+        else:
+            # If no employee record found, default to therapist role
+            user.user_type = "therapist"
+            flash("User account demoted to Therapist (no employee record found).", 'warning')
+        
         db.session.commit()
-        flash("User account demoted to Therapist.", 'success')
         return redirect(url_for('users.list_users'))
     else:
         abort(403)
