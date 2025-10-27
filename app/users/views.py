@@ -79,6 +79,12 @@ def list_users():
 def delete_user(id):
     if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         user = User.query.get_or_404(id)
+        # Prevent deleting users that are present in employee records
+        linked_employee = Employee.query.filter_by(email=user.email).first()
+        if linked_employee:
+            flash('Cannot delete user because an employee record exists for this email. Deactivate the employee to remove the user.', 'danger')
+            return redirect(url_for('users.list_users'))
+
         db.session.delete(user)
         db.session.commit()
         flash('User account deleted.', 'success')

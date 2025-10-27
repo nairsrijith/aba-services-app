@@ -89,14 +89,17 @@ def deactivate_employee(employee_id):
             return redirect(url_for('employees.list_employees'))
 
         employee.is_active = False
-        
-        # Lock associated user account if exists
+
+        # Delete associated user account if exists (per new policy)
         associated_user = User.query.filter_by(email=employee.email).first()
         if associated_user:
-            associated_user.locked_until = datetime.now() + relativedelta(years=1000)
-            associated_user.failed_attempt = -5
-            flash('Associated user account has been locked.', 'info')
-        
+            try:
+                db.session.delete(associated_user)
+                flash('Associated user account has been deleted due to employee deactivation.', 'info')
+            except Exception:
+                db.session.rollback()
+                flash('Failed to delete associated user account. Please check logs.', 'danger')
+
         db.session.commit()
         flash('Employee has been deactivated.', 'success')
         return redirect(url_for('employees.list_employees'))
@@ -110,14 +113,17 @@ def reactivate_employee(employee_id):
     if current_user.is_authenticated and current_user.user_type == "admin":
         employee = Employee.query.get_or_404(employee_id)
         employee.is_active = True
-        
-        # Unlock associated user account if exists
+
+        # Recreate user account if it does not exist
         associated_user = User.query.filter_by(email=employee.email).first()
-        if associated_user:
-            associated_user.locked_until = None
-            associated_user.failed_attempt = 0
-            flash('Associated user account has been unlocked.', 'info')
-        
+        if not associated_user:
+            try:
+                manage_user_for_employee(employee.email, employee.position)
+                flash('Associated user account has been recreated for the reactivated employee.', 'info')
+            except Exception:
+                db.session.rollback()
+                flash('Failed to recreate associated user account. Please check logs.', 'danger')
+
         db.session.commit()
         flash('Employee has been reactivated.', 'success')
         return redirect(url_for('employees.list_employees'))
@@ -194,6 +200,8 @@ def update_employee(employee_id):
                 employee.lastname = form.lastname.data.title()
                 employee.position = form.position.data.title()
                 employee.rba_number = rba_number
+                # Keep previous email to find an existing user before we overwrite
+                previous_email = employee.email
                 employee.email = form.email.data
                 # Store digits-only phone number to match DB column
                 employee.cell = re.sub(r'\D', '', (form.cell.data or ''))
@@ -203,8 +211,8 @@ def update_employee(employee_id):
                 employee.state = form.state.data
                 employee.zipcode = form.zipcode.data.upper()
                 
-                # Find and update user account if exists
-                existing_user = User.query.filter_by(email=employee.email).first()
+                # Find and update user account if exists (search by previous email)
+                existing_user = User.query.filter_by(email=previous_email).first()
                 if existing_user:
                     # Update user's email if it changed
                     if existing_user.email != form.email.data:
