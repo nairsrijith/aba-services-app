@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, current_app
 from app import db
 from app.payroll.forms import PayPeriodForm, PayRateForm
 from app.models import Employee, Intervention, PayRate, PayStub, PayStubItem, Client
@@ -8,7 +8,6 @@ from datetime import date
 from weasyprint import HTML
 import tempfile
 import os
-from flask import send_file
 
 payroll_bp = Blueprint('payroll', __name__, template_folder='templates')
 

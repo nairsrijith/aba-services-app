@@ -32,8 +32,8 @@
             <td>{{ ln.client.firstname }} {{ ln.client.lastname }}</td>
             <td>{{ ln.intervention.intervention_type }}</td>
             <td class="text-end">{{ "%.2f"|format(ln.hours|float) }}</td>
-            <td class="text-end">${{ "%.2f"|format(ln.rate|float) }}/hr</td>
-            <td class="text-end">${{ "%.2f"|format(ln.amount|float) }}</td>
+            <td class="text-end">{{ "%.2f"|format(ln.rate|float) }}/hr</td>
+            <td class="text-end">{{ "%.2f"|format(ln.amount|float) }}</td>
           </tr>
         {% endfor %}
       </tbody>

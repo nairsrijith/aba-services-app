@@ -23,7 +23,7 @@
         <td class="text-end">{{ ps.period_start }} - {{ ps.period_end }}</td>
         <td class="text-end">{{ ps.generated_date }}</td>
         <td class="text-end">{{ "%.2f"|format(ps.total_hours|float) }}</td>
-        <td class="text-end">${{ "%.2f"|format(ps.total_amount|float) }}</td>
+        <td class="text-end">{{ "%.2f"|format(ps.total_amount|float) }}</td>
         <td>
           <a href="{{ url_for('payroll.view_paystub', id=ps.id) }}" class="btn btn-sm btn-success">View</a>
           <a href="{{ url_for('payroll.export_paystub_pdf', id=ps.id) }}" class="btn btn-sm btn-info" target="_blank">PDF</a>

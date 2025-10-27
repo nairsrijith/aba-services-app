@@ -47,8 +47,8 @@
                                     {{ item.intervention.date.strftime('%Y-%m-%d') }} ({{ item.intervention.start_time.strftime('%H:%M') }}-{{ item.intervention.end_time.strftime('%H:%M') }})
                                 </td>
                                 <td class="text-end">{{ "%.2f"|format(item.hours|float) }}</td>
-                                <td class="text-end">${{ "%.2f"|format(item.rate|float) }}/hr</td>
-                                <td class="text-end">${{ "%.2f"|format(item.amount|float) }}</td>
+                                <td class="text-end">{{ "%.2f"|format(item.rate|float) }}/hr</td>
+                                <td class="text-end">{{ "%.2f"|format(item.amount|float) }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -57,7 +57,7 @@
                                 <th colspan="2">Totals</th>
                                 <th class="text-end">{{ "%.2f"|format(paystub.total_hours|float) }}</th>
                                 <th></th>
-                                <th class="text-end">${{ "%.2f"|format(paystub.total_amount|float) }}</th>
+                                <th class="text-end">{{ "%.2f"|format(paystub.total_amount|float) }}</th>
                             </tr>
                         </tfoot>
                     </table>

@@ -36,21 +36,29 @@
                         {%- endif -%}
                     </td>
                     <td>{{ invoice.client.firstname }} {{ invoice.client.lastname }}</td>
-                    <td class="text-end">${{ "%.2f"|format(invoice.total_cost|float) }}</td>
+                    <td class="text-end">{{ "%.2f"|format(invoice.total_cost|float) }}</td>
                     <td>
                         <a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-success btn-sm" title="Preview Invoice">View</a>
                         <a href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-info btn-sm" target="_blank" title="Download Invoice">PDF</a>
 
                         {% if invoice.status == 'Draft' %}
-                            <form method="POST" action="{{ url_for('invoices.delete_invoice', invoice_number=invoice.invoice_number) }}" style="display:inline;" title="Delete Invoice">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this invoice?');">Delete</button>
-                            </form>
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal"
+                                    data-invoice-number="{{ invoice.invoice_number }}"
+                                    data-client-name="{{ invoice.client.firstname }} {{ invoice.client.lastname }}"
+                                    data-invoice-date="{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}"
+                                    data-total-cost="{{ "%.2f"|format(invoice.total_cost|float) }}"
+                                    title="Delete Invoice">
+                                Delete
+                            </button>
                         {% else %}
                             <button type="button" class="btn btn-secondary btn-sm" disabled title="Cannot delete a paid invoice">Delete</button>
                         {% endif %}
 
                         {% if invoice.status != 'Draft' %}
                             <form method="POST" action="{{ url_for('invoices.mark_draft', invoice_number=invoice.invoice_number) }}" style="display:inline;">
+                                {%- if csrf_token is defined -%}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {%- endif -%}
                                 <button type="submit" class="btn btn-primary btn-sm" title="Send back to Draft">Draft</button>
                             </form>
                         {% else %}
@@ -59,6 +67,9 @@
 
                         {% if invoice.status == 'Draft' %}
                             <form method="POST" action="{{ url_for('invoices.mark_sent', invoice_number=invoice.invoice_number) }}" style="display:inline;">
+                                {%- if csrf_token is defined -%}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {%- endif -%}
                                 <button type="submit" class="btn btn-primary btn-sm" title="Mark as Sent">Send</button>
                             </form>
                         {% elif invoice.status == 'Sent' %}
@@ -78,6 +89,40 @@
     </div>
 </div>
 
+<!-- Delete Invoice Modal -->
+<div class="modal fade" id="deleteInvoiceModal" tabindex="-1" aria-labelledby="deleteInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteInvoiceModalLabel">Confirm Delete Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this invoice? This will unmark all associated sessions as invoiced.</p>
+                <dl class="row">
+                    <dt class="col-sm-4">Invoice Number:</dt>
+                    <dd class="col-sm-8" id="modalInvoiceNumber"></dd>
+                    <dt class="col-sm-4">Client:</dt>
+                    <dd class="col-sm-8" id="modalClientName"></dd>
+                    <dt class="col-sm-4">Date:</dt>
+                    <dd class="col-sm-8" id="modalInvoiceDate"></dd>
+                    <dt class="col-sm-4">Amount:</dt>
+                    <dd class="col-sm-8">CA$<span id="modalTotalCost"></span></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteInvoiceForm" method="POST" style="display: inline;">
+                    {%- if csrf_token is defined -%}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {%- endif -%}
+                    <button type="submit" class="btn btn-danger">Delete Invoice</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="markPaidModal" tabindex="-1" aria-labelledby="markPaidModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <form method="POST" id="markPaidForm">
@@ -87,6 +132,9 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          {%- if csrf_token is defined -%}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {%- endif -%}
           <input type="hidden" name="invoice_number" id="modalInvoiceNumber">
           <div class="mb-3">
             <label for="paidDate" class="form-label">Paid Date</label>
@@ -107,12 +155,33 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Mark Paid Modal Handler
     var markPaidModal = document.getElementById('markPaidModal');
     markPaidModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
         var invoiceNumber = button.getAttribute('data-invoice');
         document.getElementById('modalInvoiceNumber').value = invoiceNumber;
         document.getElementById('markPaidForm').action = '/invoices/mark_paid/' + invoiceNumber;
+    });
+
+    // Delete Invoice Modal Handler
+    var deleteInvoiceModal = document.getElementById('deleteInvoiceModal');
+    deleteInvoiceModal.addEventListener('show.bs.modal', function(event) {
+        var button = event.relatedTarget;
+        var invoiceNumber = button.getAttribute('data-invoice-number');
+        var clientName = button.getAttribute('data-client-name');
+        var invoiceDate = button.getAttribute('data-invoice-date');
+        var totalCost = button.getAttribute('data-total-cost');
+        
+        // Update modal content
+        document.getElementById('modalInvoiceNumber').textContent = invoiceNumber;
+        document.getElementById('modalClientName').textContent = clientName;
+        document.getElementById('modalInvoiceDate').textContent = invoiceDate;
+        document.getElementById('modalTotalCost').textContent = totalCost;
+        
+        // Update form action
+        var form = document.getElementById('deleteInvoiceForm');
+        form.action = '/invoices/delete_invoice/' + invoiceNumber;
     });
 });
 </script>

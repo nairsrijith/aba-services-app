@@ -147,8 +147,8 @@
                     <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time.strftime('%H:%M') }}-{{ i.end_time.strftime('%H:%M') }})</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
-                <td style="text-align: right;">${{ "%.2f"|format(i.rate|float) }}</td>
-                <td style="text-align: right;">${{ "%.2f"|format(i.cost|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.rate|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.cost|float) }}</td>
             </tr>
             {% set ns.total = ns.total + i.cost %}
             {% endfor %}

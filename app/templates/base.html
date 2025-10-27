@@ -200,25 +200,25 @@
             </a>
           </li>
         {% endif %}
-        {% if current_user.user_type == "admin" %}
-          <li class="{% if request.endpoint and request.endpoint.startswith('invoices.') %}active{% endif %}">
-            <a href="{{ url_for('invoices.list_invoices') }}">
-              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="200 -880 600 800" width="24px" fill="currentColor"><path d="M240-80q-50 0-85-35t-35-85v-120h120v-560l60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60v680q0 50-35 85t-85 35H240Zm480-80q17 0 28.5-11.5T760-200v-560H320v440h360v120q0 17 11.5 28.5T720-160ZM360-600v-80h240v80H360Zm0 120v-80h240v80H360Zm320-120q-17 0-28.5-11.5T640-640q0-17 11.5-28.5T680-680q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600Zm0 120q-17 0-28.5-11.5T640-520q0-17 11.5-28.5T680-560q17 0 28.5 11.5T720-520q0 17-11.5 28.5T680-480ZM240-160h360v-80H200v40q0 17 11.5 28.5T240-160Zm-40 0v-80 80Z"/></svg>
-              <span>Invoice</span>
-            </a>
-          </li>
+        {% if current_user.is_authenticated and current_user.user_type == "admin" %}
+
           <li>
             <button onclick="toggleSubMenu(this)" class="dropdown-btn">
               <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="200 -880 600 800" width="24px" fill="currentColor"><path d="M440-200h80v-40h40q17 0 28.5-11.5T600-280v-120q0-17-11.5-28.5T560-440H440v-40h160v-80h-80v-40h-80v40h-40q-17 0-28.5 11.5T360-520v120q0 17 11.5 28.5T400-360h120v40H360v80h80v40ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-560v-160H240v640h480v-480H520ZM240-800v160-160 640-640Z"/></svg>
-              <span>Payroll</span>
+              <span>Finance</span>
               <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
             </button>
             <ul class="sub-menu">
               <div>
-                {% if current_user.is_authenticated and current_user.user_type == "admin" %}
-                  <li class="{% if request.endpoint and (request.endpoint.startswith('payroll.list_payrates') or request.endpoint.startswith('payroll.add_payrate') or request.endpoint.startswith('payroll.edit_payrate')) %}active{% endif %}"><a href="{{ url_for('payroll.list_payrates') }}">Pay Rates</a></li>
-                  <li class="{% if request.endpoint and (request.endpoint.startswith('payroll.list_paystubs') or request.endpoint.startswith('payroll.view_paystub')) %}active{% endif %}"><a href="{{ url_for('payroll.list_paystubs') }}">Pay Stubs</a></li>
-                {% endif %}
+                  <li class="{% if request.endpoint and request.endpoint.startswith('invoices.') %}active{% endif %}">
+                    <a href="{{ url_for('invoices.list_invoices') }}">Invoice</a>
+                  </li>
+                  <li class="{% if request.endpoint and (request.endpoint.startswith('payroll.list_payrates') or request.endpoint.startswith('payroll.add_payrate') or request.endpoint.startswith('payroll.edit_payrate')) %}active{% endif %}">
+                    <a href="{{ url_for('payroll.list_payrates') }}">Pay Rates</a>
+                  </li>
+                  <li class="{% if request.endpoint and (request.endpoint.startswith('payroll.list_paystubs') or request.endpoint.startswith('payroll.view_paystub')) %}active{% endif %}">
+                    <a href="{{ url_for('payroll.list_paystubs') }}">Pay Stubs</a>
+                  </li>
               </div>
             </ul>
           </li>

@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from app import db
-from app.models import Employee, Designation, Intervention, Client
+from app.models import Employee, Designation, Intervention, Client, PayRate
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
 import os
 import re
+from datetime import date
 
 employees_bp = Blueprint('employees', __name__, template_folder='templates')
 
@@ -51,11 +52,10 @@ def add_employee():
 
                 # Add base pay rate for new employee (client_id=None means base rate)
                 base_rate = 25.0  # Default base rate, can be changed or set via form later
-                from app.models import PayRate
-                base_payrate = PayRate(employee_id=new_employee.id, client_id=None, rate=base_rate, effective_date=None)
+                base_payrate = PayRate(employee_id=new_employee.id, client_id=None, rate=base_rate, effective_date=date.today())
                 db.session.add(base_payrate)
                 db.session.commit()
-                flash('Employee added successfully! Base pay rate set to ${:.2f}.'.format(base_rate), 'success')
+                flash('Employee added successfully! Base pay rate set to CA${:.2f} effective {}.'.format(base_rate, date.today().strftime('%Y-%m-%d')), 'success')
                 return redirect(url_for('employees.list_employees'))
             except Exception as e:
                 db.session.rollback()
