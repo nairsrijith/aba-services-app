@@ -7,3 +7,5 @@ data/
 data/*
 .vscode
 .git
+assets/
+assets/*
