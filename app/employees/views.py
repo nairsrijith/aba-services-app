@@ -163,6 +163,8 @@ def delete_employee(employee_id):
     if current_user.is_authenticated and current_user.user_type == "admin":
         employee = Employee.query.get_or_404(employee_id)
         
+        # Check for critical dependencies first
+        
         # Check for interventions
         interventions = Intervention.query.filter_by(employee_id=employee.id).all()
         if interventions:
@@ -174,24 +176,28 @@ def delete_employee(employee_id):
         if clients:
             flash('Cannot delete employee who is a supervisor for clients. Please reassign clients to another supervisor.', 'danger')
             return redirect(url_for('employees.list_employees'))
-        
-        # Check for pay rates
-        pay_rates = PayRate.query.filter_by(employee_id=employee.id).all()
-        if pay_rates:
-            flash('Cannot delete employee with associated pay rates. Please delete pay rates first.', 'danger')
-            return redirect(url_for('employees.list_employees'))
             
         # Check for pay stubs
         pay_stubs = PayStub.query.filter_by(employee_id=employee.id).all()
         if pay_stubs:
             flash('Cannot delete employee with associated pay stubs. Please delete pay stubs first.', 'danger')
             return redirect(url_for('employees.list_employees'))
-
-        # If no dependencies found, proceed with deletion
+            
+        # If no critical dependencies found, proceed with deletion including pay rates
         try:
+            # Delete associated pay rates first (cascade delete)
+            pay_rates = PayRate.query.filter_by(employee_id=employee.id).all()
+            for pay_rate in pay_rates:
+                db.session.delete(pay_rate)
+                
+            # Now delete the employee
             db.session.delete(employee)
             db.session.commit()
-            flash('Employee deleted successfully.', 'success')
+            
+            if pay_rates:
+                flash(f'Employee and {len(pay_rates)} associated pay rate(s) deleted successfully.', 'success')
+            else:
+                flash('Employee deleted successfully.', 'success')
         except Exception as e:
             db.session.rollback()
             flash('Error deleting employee. Please try again.', 'danger')
