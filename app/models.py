@@ -55,6 +55,12 @@ class Employee(db.Model):
     is_active = db.Column(db.Boolean, nullable=True, default=True)
 
     designation = db.relationship('Designation', backref='employees')
+    pay_rates = db.relationship('PayRate', backref='employee', cascade='all, delete-orphan')
+    user = db.relationship('User', 
+                          primaryjoin="Employee.email == User.email",
+                          backref='employee',
+                          cascade='all, delete-orphan',
+                          single_parent=True)
 
     def __init__(self, firstname, lastname, position, rba_number, email, cell, address1=None, address2=None, city=None, state=None, zipcode=None, is_active=True):
         self.firstname = firstname
@@ -212,7 +218,7 @@ class PayRate(db.Model):
     rate = db.Column(db.Float, nullable=False)  # hourly rate
     effective_date = db.Column(db.Date, nullable=True)
 
-    employee = db.relationship('Employee', backref='payrates')
+    # employee relationship is now defined in Employee class with cascade delete
     client = db.relationship('Client', backref='payrates')
 
     def __repr__(self):

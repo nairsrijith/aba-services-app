@@ -182,22 +182,12 @@ def delete_employee(employee_id):
         if pay_stubs:
             flash('Cannot delete employee with associated pay stubs. Please delete pay stubs first.', 'danger')
             return redirect(url_for('employees.list_employees'))
-            
-        # If no critical dependencies found, proceed with deletion including pay rates
+        # If no critical dependencies found, proceed with deletion
         try:
-            # Delete associated pay rates first (cascade delete)
-            pay_rates = PayRate.query.filter_by(employee_id=employee.id).all()
-            for pay_rate in pay_rates:
-                db.session.delete(pay_rate)
-                
-            # Now delete the employee
+            # The employee deletion will automatically cascade to pay rates and user account
             db.session.delete(employee)
             db.session.commit()
-            
-            if pay_rates:
-                flash(f'Employee and {len(pay_rates)} associated pay rate(s) deleted successfully.', 'success')
-            else:
-                flash('Employee deleted successfully.', 'success')
+            flash("Employee and all associated records deleted successfully.", 'success')
         except Exception as e:
             db.session.rollback()
             flash('Error deleting employee. Please try again.', 'danger')
