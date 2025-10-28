@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from app import db
-from app.models import Employee, Designation, Intervention, Client, PayRate, User
+from app.models import Employee, Designation, Intervention, Client, PayRate, User, PayStub
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
 from app.utils.utils import manage_user_for_employee
@@ -162,16 +162,40 @@ def list_employees():
 def delete_employee(employee_id):
     if current_user.is_authenticated and current_user.user_type == "admin":
         employee = Employee.query.get_or_404(employee_id)
+        
+        # Check for interventions
         interventions = Intervention.query.filter_by(employee_id=employee.id).all()
         if interventions:
             flash('Cannot delete employee with associated interventions. Please reassign or delete interventions first.', 'danger')
             return redirect(url_for('employees.list_employees'))
+        
+        # Check for supervised clients
         clients = Client.query.filter_by(supervisor_id=employee.id).all()
         if clients:
-            flash('Cannot delete employee who is a supervisor for clients. Please reassign client to another supervisor.', 'danger')
+            flash('Cannot delete employee who is a supervisor for clients. Please reassign clients to another supervisor.', 'danger')
             return redirect(url_for('employees.list_employees'))
-        db.session.delete(employee)
-        db.session.commit()
+        
+        # Check for pay rates
+        pay_rates = PayRate.query.filter_by(employee_id=employee.id).all()
+        if pay_rates:
+            flash('Cannot delete employee with associated pay rates. Please delete pay rates first.', 'danger')
+            return redirect(url_for('employees.list_employees'))
+            
+        # Check for pay stubs
+        pay_stubs = PayStub.query.filter_by(employee_id=employee.id).all()
+        if pay_stubs:
+            flash('Cannot delete employee with associated pay stubs. Please delete pay stubs first.', 'danger')
+            return redirect(url_for('employees.list_employees'))
+
+        # If no dependencies found, proceed with deletion
+        try:
+            db.session.delete(employee)
+            db.session.commit()
+            flash('Employee deleted successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error deleting employee. Please try again.', 'danger')
+        
         return redirect(url_for('employees.list_employees'))
     else:
         abort(403)

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, abort, flash, send_from_directory
 from app import db, app, allowed_file
-from app.models import Intervention, Client, Employee, Activity
+from app.models import Intervention, Client, Employee, Activity, PayStubItem
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
 from flask_login import login_required, current_user
 import os
@@ -89,50 +89,53 @@ def list_interventions():
         # Apply filters BEFORE paginating
         invoiced_filter = request.args.get('invoiced')
 
-        # Use outer joins so interventions aren't excluded if employee/client rows are missing
-        query = Intervention.query.outerjoin(Employee).outerjoin(Client)
-        # Ensure each intervention appears only once (joins can introduce duplicates)
-        query = query.distinct(Intervention.id)
+        # Build a subquery that selects distinct Intervention IDs after applying all filters
+        id_subq = db.session.query(Intervention.id).outerjoin(Employee).outerjoin(Client)
 
-        # Therapists see only their own sessions; supervisors see sessions for their supervised clients
+        # Role-based visibility filters applied to the subquery
         if current_user.user_type == "therapist":
-            # therapists should only see sessions assigned to their employee record
-            query = query.filter(Employee.email == current_user.email)
+            id_subq = id_subq.filter(Employee.email == current_user.email)
         elif current_user.user_type == 'supervisor':
             emp = Employee.query.filter_by(email=current_user.email).first()
             if emp:
-                query = query.filter(Client.supervisor_id == emp.id)
+                id_subq = id_subq.filter(Client.supervisor_id == emp.id)
 
+        # invoiced filter
         if invoiced_filter == 'yes':
-            query = query.filter(Intervention.invoiced == True)
+            id_subq = id_subq.filter(Intervention.invoiced == True)
         elif invoiced_filter == 'no':
-            query = query.filter(Intervention.invoiced == False)
-        
+            id_subq = id_subq.filter(Intervention.invoiced == False)
+
+        # client name filter
         client = request.args.get('client')
-        
         if client:
-            query = query.filter(
+            id_subq = id_subq.filter(
                 (Client.firstname.ilike(f"%{client}%")) |
                 (Client.lastname.ilike(f"%{client}%"))
             )
 
+        # date range filters
         date_from = request.args.get('date_from', '')
         if date_from:
-            query = query.filter(Intervention.date >= date_from)
+            id_subq = id_subq.filter(Intervention.date >= date_from)
 
         date_to = request.args.get('date_to', '')
         if date_to:
-            query = query.filter(Intervention.date <= date_to)
+            id_subq = id_subq.filter(Intervention.date <= date_to)
 
+        # intervention type
         intervention_type = request.args.get('intervention_type', '')
         if intervention_type:
-            query = query.filter(Intervention.intervention_type == intervention_type)
+            id_subq = id_subq.filter(Intervention.intervention_type == intervention_type)
 
-        query = query.order_by(Intervention.date.desc(), Intervention.start_time.desc(), Intervention.end_time.asc())
-        
-        
-        # Now paginate the filtered query
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        # finalize subquery: distinct ids
+        id_subq = id_subq.distinct(Intervention.id).subquery()
+
+        # Main query: retrieve Intervention objects for the filtered ids and order them
+        main_query = Intervention.query.filter(Intervention.id.in_(id_subq)).order_by(Intervention.date.desc(), Intervention.start_time.desc(), Intervention.end_time.asc())
+
+        # Paginate the main query
+        pagination = main_query.paginate(page=page, per_page=per_page, error_out=False)
 
         activities = Activity.query.order_by(Activity.activity_name).all()
 
@@ -162,30 +165,49 @@ def bulk_delete():
             to_delete = []
             skipped = []
             for intervention in interventions:
-                # Prevent deletion when invoiced or already paid
+                # Check for invoice and payment status
                 if intervention.invoiced or intervention.is_paid:
                     skipped.append(intervention)
-                else:
-                    to_delete.append(intervention)
+                    continue
+                
+                # Check for PayStubItem association
+                pay_stub_item = PayStubItem.query.filter_by(intervention_id=intervention.id).first()
+                if pay_stub_item:
+                    skipped.append(intervention)
+                    flash(f'Session {intervention.id} has associated pay stub entries and cannot be deleted.', 'danger')
+                    continue
+                
+                to_delete.append(intervention)
 
             if to_delete:
-                for intervention in to_delete:
-                    client_id = intervention.client_id
-                    client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
-                    deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
-                    os.makedirs(deleted_folder, exist_ok=True)
-                    filenames = intervention.get_file_names()
-                    for filename in filenames:
-                        src = os.path.join(client_folder, filename)
-                        dst = os.path.join(deleted_folder, filename)
-                        if os.path.exists(src):
-                            shutil.move(src, dst)
-                    db.session.delete(intervention)
-                db.session.commit()
+                try:
+                    for intervention in to_delete:
+                        client_id = intervention.client_id
+                        client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+                        deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
+                        os.makedirs(deleted_folder, exist_ok=True)
+                        
+                        # Move associated files to deleted folder
+                        filenames = intervention.get_file_names()
+                        for filename in filenames:
+                            src = os.path.join(client_folder, filename)
+                            dst = os.path.join(deleted_folder, filename)
+                            if os.path.exists(src):
+                                shutil.move(src, dst)
+                                
+                        db.session.delete(intervention)
+                    
+                    db.session.commit()
+                    flash(f"Successfully deleted {len(to_delete)} session(s).", "success")
+                except Exception as e:
+                    db.session.rollback()
+                    flash('Error occurred while deleting sessions. Please try again.', 'danger')
+                    return redirect(url_for('interventions.list_interventions'))
 
             if skipped:
                 # Inform the user which sessions were not deleted
-                flash(f"{len(skipped)} selected session(s) were not deleted because they are invoiced or already paid.", "warning")
+                flash(f"{len(skipped)} selected session(s) were not deleted due to dependencies (invoiced, paid, or in pay stubs).", "warning")
+                
         return redirect(url_for('interventions.list_interventions'))
     else:
         abort(403)

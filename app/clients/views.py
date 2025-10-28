@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, abort, flash, request
 from app import db
-from app.models import Client, Employee, Intervention, Invoice
+from app.models import Client, Employee, Intervention, Invoice, PayRate, PayStubItem
 from app.clients.forms import AddClientForm, UpdateClientForm
 from flask_login import login_required, current_user
 import os
@@ -125,13 +125,40 @@ def list_clients():
 def delete_client(client_id):
     if current_user.is_authenticated and current_user.user_type == "admin":
         client = Client.query.get_or_404(client_id)
+        
+        # Check for interventions
         interventions = Intervention.query.filter_by(client_id=client.id).all()
         if interventions:
             flash('Cannot delete client with associated interventions. Please delete interventions first.', 'danger')
             return redirect(url_for('clients.list_clients'))
-        db.session.delete(client)
-        db.session.commit()
-        flash("Client deleted successfully.", "success")
+        
+        # Check for invoices
+        invoices = Invoice.query.filter_by(client_id=client.id).all()
+        if invoices:
+            flash('Cannot delete client with associated invoices. Please delete invoices first.', 'danger')
+            return redirect(url_for('clients.list_clients'))
+            
+        # Check for pay rates
+        pay_rates = PayRate.query.filter_by(client_id=client.id).all()
+        if pay_rates:
+            flash('Cannot delete client with associated pay rates. Please delete pay rates first.', 'danger')
+            return redirect(url_for('clients.list_clients'))
+            
+        # Check for pay stub items
+        pay_stub_items = PayStubItem.query.filter_by(client_id=client.id).all()
+        if pay_stub_items:
+            flash('Cannot delete client with associated pay stubs. Please delete pay stubs first.', 'danger')
+            return redirect(url_for('clients.list_clients'))
+
+        # If no dependencies found, proceed with deletion
+        try:
+            db.session.delete(client)
+            db.session.commit()
+            flash("Client deleted successfully.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash('Error deleting client. Please try again.', 'danger')
+            
         return redirect(url_for('clients.list_clients'))
     else:
         abort(403)
