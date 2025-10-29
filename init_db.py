@@ -1,6 +1,7 @@
 from app import create_app, db
-from app.models import User, Designation, Activity
+from app.models import User, Designation, Activity, Employee, PayRate
 from werkzeug.security import generate_password_hash
+from datetime import date
 import logging
 import sys
 from sqlalchemy import inspect
@@ -45,18 +46,65 @@ def initialize_database():
                 db.session.rollback()
                 raise
 
-        # Check if admin user already exists
-        logger.info("Checking for admin user admin@example.com")
-        admin_user = User.query.filter_by(email='admin@example.com').first()
-        if not admin_user:
-            logger.info("Admin not found — creating admin user")
-            hashed_password = generate_password_hash('Admin1!')
-            super_admin = User(email='admin@example.com', password_hash=hashed_password, user_type="super", failed_attempt=3, activation_key="")
-            db.session.add(super_admin)
+        # First ensure we have the required designation
+        logger.info("Ensuring admin designation exists")
+        admin_designation = "Administrator"
+        existing_designation = Designation.query.filter_by(designation=admin_designation).first()
+        if not existing_designation:
+            logger.info("Creating admin designation")
+            new_designation = Designation(designation=admin_designation)
+            db.session.add(new_designation)
             safe_commit()
-            logger.info("Admin user created")
+
+        # Check if admin employee and user already exist
+        logger.info("Checking for admin user/employee admin@example.com")
+        admin_user = User.query.filter_by(email='admin@example.com').first()
+        admin_employee = Employee.query.filter_by(email='admin@example.com').first()
+
+        if not admin_employee:
+            logger.info("Admin employee not found — creating admin employee")
+            admin_employee = Employee(
+                firstname="System",
+                lastname="Administrator",
+                position=admin_designation,
+                rba_number=None,
+                email='admin@example.com',
+                cell='0000000000',
+                address1='System',
+                city='System',
+                state='ON',
+                zipcode='000000',
+                is_active=True
+            )
+            db.session.add(admin_employee)
+            db.session.flush()  # Get the ID before creating pay rate
+
+            # Add base pay rate for admin
+            base_payrate = PayRate(
+                employee_id=admin_employee.id,
+                client_id=None,
+                rate=0.0,
+                effective_date=date.today()
+            )
+            db.session.add(base_payrate)
+            
+            if not admin_user:
+                logger.info("Admin user not found — creating admin user")
+                hashed_password = generate_password_hash('Admin1!')
+                super_admin = User(
+                    email='admin@example.com',
+                    password_hash=hashed_password,
+                    user_type="super",
+                    failed_attempt=0,
+                    activation_key=None,
+                    locked_until=None
+                )
+                db.session.add(super_admin)
+
+            safe_commit()
+            logger.info("Admin employee and user created with base pay rate")
         else:
-            logger.info("Admin user already exists")
+            logger.info("Admin employee already exists")
 
         # Check designations
         designations = ["Behaviour Analyst", "Senior Therapist", "Therapist"]
@@ -96,7 +144,10 @@ def initialize_database():
             user_count = User.query.count()
             desig_count = Designation.query.count()
             act_count = Activity.query.count()
-            logger.info("Row counts -> User: %s, Designation: %s, Activity: %s", user_count, desig_count, act_count)
+            emp_count = Employee.query.count()
+            payrate_count = PayRate.query.count()
+            logger.info("Row counts -> User: %s, Designation: %s, Activity: %s, Employee: %s, PayRate: %s",
+                       user_count, desig_count, act_count, emp_count, payrate_count)
         except Exception:
             logger.exception("Failed to read row counts")
 
