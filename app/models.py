@@ -2,8 +2,7 @@ from app import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import date
-import json
-
+import json, random, string
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -38,7 +37,7 @@ class Employee(db.Model, UserMixin):
     is_active = db.Column(db.Boolean, nullable=True, default=True)
     
     # User authentication fields
-    password_hash = db.Column(db.String(200), nullable=False)
+    password_hash = db.Column(db.String(200), nullable=True)
     user_type = db.Column(db.String(51), default='therapist', nullable=False)  # super, admin, supervisor, therapist
     locked_until = db.Column(db.DateTime, default=None)
     failed_attempt = db.Column(db.Integer, default=0, nullable=False)
@@ -71,6 +70,13 @@ class Employee(db.Model, UserMixin):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+        
+    def generate_activation_key(self):
+        """Generate a random 8-character activation key"""
+        # Generate a 8-character string of random digits and uppercase letters
+        characters = string.ascii_uppercase + string.digits
+        self.activation_key = ''.join(random.choices(characters, k=8))
+        return self.activation_key
         
     @staticmethod
     def create_super_admin(email, password):

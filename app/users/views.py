@@ -5,7 +5,7 @@ from app.models import Employee
 from app.users.forms import SetRoleForm, UpdatePasswordForm
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import os
+import os, string, secrets
 
 users_bp = Blueprint('users', __name__, template_folder='templates')
 

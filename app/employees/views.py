@@ -56,6 +56,8 @@ def add_employee():
                                     city=form.city.data.title(),
                                     state=form.state.data,
                                     zipcode=form.zipcode.data.upper())
+                # Generate activation key for the new employee
+                activation_key = new_employee.generate_activation_key()
                 db.session.add(new_employee)
                 db.session.flush()  # get new_employee.id before creating pay rate
 
@@ -65,8 +67,8 @@ def add_employee():
                 db.session.add(base_payrate)
                 
                 db.session.commit()
-                flash('Employee added successfully! Base pay rate set to CA${:.2f} effective {}. User account created with activation code.'.format(
-                    base_rate, date.today().strftime('%Y-%m-%d')), 'success')
+                flash('Employee added successfully! Base pay rate set to CA${:.2f} effective {}. User account created with activation code: {}'.format(
+                    base_rate, date.today().strftime('%Y-%m-%d'), activation_key), 'success')
                 return redirect(url_for('employees.list_employees'))
             except Exception as e:
                 db.session.rollback()
