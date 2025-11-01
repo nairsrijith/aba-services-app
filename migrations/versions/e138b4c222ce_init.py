@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 30fac42d4450
+Revision ID: e138b4c222ce
 Revises: 
-Create Date: 2025-10-27 22:52:00.193974
+Create Date: 2025-10-31 23:09:05.457767
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '30fac42d4450'
+revision = 'e138b4c222ce'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,19 +27,6 @@ def upgrade():
     sa.Column('designation', sa.String(length=51), nullable=False),
     sa.PrimaryKeyConstraint('designation')
     )
-    op.create_table('users',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('email', sa.String(length=150), nullable=False),
-    sa.Column('password_hash', sa.String(length=200), nullable=False),
-    sa.Column('user_type', sa.String(length=51), nullable=False),
-    sa.Column('locked_until', sa.DateTime(), nullable=True),
-    sa.Column('failed_attempt', sa.Integer(), nullable=False),
-    sa.Column('activation_key', sa.String(length=15), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_users_email'), ['email'], unique=True)
-
     op.create_table('employees',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('firstname', sa.String(length=51), nullable=False),
@@ -54,10 +41,18 @@ def upgrade():
     sa.Column('state', sa.String(length=2), nullable=True),
     sa.Column('zipcode', sa.String(length=6), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('password_hash', sa.String(length=200), nullable=False),
+    sa.Column('user_type', sa.String(length=51), nullable=False),
+    sa.Column('locked_until', sa.DateTime(), nullable=True),
+    sa.Column('failed_attempt', sa.Integer(), nullable=False),
+    sa.Column('activation_key', sa.String(length=15), nullable=True),
     sa.ForeignKeyConstraint(['position'], ['designations.designation'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('rba_number')
     )
+    with op.batch_alter_table('employees', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_employees_email'), ['email'], unique=True)
+
     op.create_table('clients',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('firstname', sa.String(length=51), nullable=False),
@@ -111,7 +106,7 @@ def upgrade():
     op.create_table('payrates',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('employee_id', sa.Integer(), nullable=False),
-    sa.Column('client_id', sa.Integer(), nullable=False),
+    sa.Column('client_id', sa.Integer(), nullable=True),
     sa.Column('rate', sa.Float(), nullable=False),
     sa.Column('effective_date', sa.Date(), nullable=True),
     sa.ForeignKeyConstraint(['client_id'], ['clients.id'], ),
@@ -161,11 +156,10 @@ def downgrade():
     op.drop_table('invoices')
     op.drop_table('paystubs')
     op.drop_table('clients')
-    op.drop_table('employees')
-    with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_users_email'))
+    with op.batch_alter_table('employees', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_employees_email'))
 
-    op.drop_table('users')
+    op.drop_table('employees')
     op.drop_table('designations')
     op.drop_table('activities')
     # ### end Alembic commands ###

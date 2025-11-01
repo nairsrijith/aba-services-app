@@ -3,11 +3,12 @@ from wtforms import StringField, SubmitField, SelectField, PasswordField
 from wtforms.validators import DataRequired, Email, EqualTo
 
 
-class AddUserForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    # 'therapist' replaces the previous 'user' role. 'supervisor' can be created by admins if needed.
-    user_type = SelectField('User type', validators=[DataRequired()], default="therapist")
-    submit = SubmitField('Add')
+class SetRoleForm(FlaskForm):
+    user_type = SelectField('Role', validators=[DataRequired()], 
+                          choices=[("admin", "Admin"), ("supervisor", "Supervisor"), 
+                                 ("therapist", "Therapist")],
+                          default="therapist")
+    submit = SubmitField('Update Role')
 
 
 class UpdatePasswordForm(FlaskForm):

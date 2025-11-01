@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import SubmitField, StringField, SelectField
 from wtforms.validators import DataRequired, length
-from app.models import User
+from app.models import Employee
 
 
 class DesignationForm(FlaskForm):

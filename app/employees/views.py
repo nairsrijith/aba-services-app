@@ -1,9 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from app import db
-from app.models import Employee, Designation, Intervention, Client, PayRate, User, PayStub
+from app.models import Employee, Designation, Intervention, Client, PayRate, PayStub
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
-from app.utils.utils import manage_user_for_employee
 import os
 import re
 from datetime import date, datetime
@@ -27,6 +26,12 @@ def add_employee():
 
         if form.validate_on_submit():
             try:
+                # First check if an employee with this email already exists
+                existing_employee = Employee.query.filter_by(email=form.email.data).first()
+                if existing_employee:
+                    flash('An employee with this email already exists.', 'danger')
+                    return render_template('add_emp.html', form=form, org_name=org_name)
+
                 # Set rba_number to None if position is not Behaviour Analyst
                 rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
                 
@@ -34,10 +39,12 @@ def add_employee():
                 if form.position.data == 'Behaviour Analyst' and not rba_number:
                     form.rba_number.errors.append('RBA Number is required for Behaviour Analysts')
                     return render_template('add_emp.html', form=form, org_name=org_name)
-                
+
                 # Normalize phone number to digits-only before storing (DB column is String(10))
                 normalized_cell = re.sub(r'\D', '', (form.cell.data or ''))
 
+                # Create new employee with appropriate user type based on position
+                user_type = 'supervisor' if form.position.data == 'Behaviour Analyst' else 'therapist'
                 new_employee = Employee(firstname=form.firstname.data.title(),
                                     lastname=form.lastname.data.title(),
                                     position=form.position.data.title(),
@@ -50,15 +57,12 @@ def add_employee():
                                     state=form.state.data,
                                     zipcode=form.zipcode.data.upper())
                 db.session.add(new_employee)
-                db.session.flush()  # get new_employee.id before commit
+                db.session.flush()  # get new_employee.id before creating pay rate
 
                 # Add base pay rate for new employee (client_id=None means base rate)
                 base_rate = 25.0  # Default base rate, can be changed or set via form later
                 base_payrate = PayRate(employee_id=new_employee.id, client_id=None, rate=base_rate, effective_date=date.today())
                 db.session.add(base_payrate)
-                
-                # Create user account with appropriate role
-                user = manage_user_for_employee(new_employee.email, new_employee.position)
                 
                 db.session.commit()
                 flash('Employee added successfully! Base pay rate set to CA${:.2f} effective {}. User account created with activation code.'.format(
@@ -90,15 +94,10 @@ def deactivate_employee(employee_id):
 
         employee.is_active = False
 
-        # Delete associated user account if exists (per new policy)
-        associated_user = User.query.filter_by(email=employee.email).first()
-        if associated_user:
-            try:
-                db.session.delete(associated_user)
-                flash('Associated user account has been deleted due to employee deactivation.', 'info')
-            except Exception:
-                db.session.rollback()
-                flash('Failed to delete associated user account. Please check logs.', 'danger')
+        # Set employee as inactive and clear authentication fields
+        employee.is_active = False
+        employee.password_hash = None  # Clear password to prevent login
+        flash('Employee has been deactivated and login access removed.', 'info')
 
         db.session.commit()
         flash('Employee has been deactivated.', 'success')
@@ -114,15 +113,10 @@ def reactivate_employee(employee_id):
         employee = Employee.query.get_or_404(employee_id)
         employee.is_active = True
 
-        # Recreate user account if it does not exist
-        associated_user = User.query.filter_by(email=employee.email).first()
-        if not associated_user:
-            try:
-                manage_user_for_employee(employee.email, employee.position)
-                flash('Associated user account has been recreated for the reactivated employee.', 'info')
-            except Exception:
-                db.session.rollback()
-                flash('Failed to recreate associated user account. Please check logs.', 'danger')
+        # Reactivate employee
+        employee.is_active = True
+        # They will need to register/set password again
+        flash('Employee has been reactivated. They will need to register to set their password.', 'info')
 
         db.session.commit()
         flash('Employee has been reactivated.', 'success')
@@ -231,14 +225,9 @@ def update_employee(employee_id):
                 employee.state = form.state.data
                 employee.zipcode = form.zipcode.data.upper()
                 
-                # Find and update user account if exists (search by previous email)
-                existing_user = User.query.filter_by(email=previous_email).first()
-                if existing_user:
-                    # Update user's email if it changed
-                    if existing_user.email != form.email.data:
-                        existing_user.email = form.email.data
-                    # Update role based on position unless they're an admin
-                    manage_user_for_employee(form.email.data, form.position.data, existing_user)
+                # Update user type based on position
+                if employee.user_type != 'admin' and employee.user_type != 'super':  # Don't change admin/super roles
+                    employee.user_type = 'supervisor' if form.position.data == 'Behaviour Analyst' else 'therapist'
                 
                 db.session.commit()
                 flash('Employee and associated user account updated successfully!', 'success')

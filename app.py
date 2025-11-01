@@ -1,5 +1,5 @@
 from app import app, db
-from app.models import User, Employee, Client, Intervention, Invoice
+from app.models import Employee, Client, Intervention, Invoice
 from sqlalchemy import func
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
@@ -97,13 +97,18 @@ def login():
     
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
-        if not user:
-            flash('Your account is not registered. Contact Administrator.')
+        employee = Employee.query.filter_by(email=form.email.data.lower()).first()
+        if not employee:
+            flash('Your account is not registered. Contact Administrator.', 'danger')
+            return render_template('login.html', form=form, org_name=org_name)
         
-        if user.user_type == "super":
-            if user.check_password(form.password.data):
-                login_user(user)
+        if not employee.is_active:
+            flash('Your account has been deactivated. Contact Administrator.', 'danger')
+            return render_template('login.html', form=form, org_name=org_name)
+        
+        if employee.user_type == "super":
+            if employee.check_password(form.password.data):
+                login_user(employee)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
                 if next_page == None or not next_page.startswith('/'):
@@ -113,44 +118,44 @@ def login():
                 flash('Incorrect password! Try again.', 'danger')
                 return render_template('login.html', form=form, org_name=org_name)
         else:
-            if user.activation_key != "" :
-                flash('Your account is not activated. Contact Administrator if you do not have received the activation key.', 'danger')
+            if not employee.password_hash:
+                flash('Your account password has not been set. Contact Administrator.', 'danger')
                 return render_template('login.html', form=form, org_name=org_name)
 
-            if user.failed_attempt == -2:
+            if employee.failed_attempt == -2:
                 flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
                 return render_template('login.html', form=form, org_name=org_name)
             
-            if user.check_password(form.password.data):
-                if user.locked_until and datetime.now() < user.locked_until:
-                    remaining_time = user.locked_until - datetime.now()
+            if employee.check_password(form.password.data):
+                if employee.locked_until and datetime.now() < employee.locked_until:
+                    remaining_time = employee.locked_until - datetime.now()
                     rem_min = int(remaining_time.total_seconds() / 60)
                     rem_sec = int(remaining_time.total_seconds() % 60)
                     flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
                     return render_template('login.html', form=form, org_name=org_name)
 
-                user.failed_attempt = 3
-                user.failed_until = None
+                employee.failed_attempt = 3
+                employee.locked_until = None
                 db.session.commit()
-                login_user(user)
+                login_user(employee)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
                 if next_page == None or not next_page.startswith('/'):
                     next_page = url_for('home')
                 return redirect(next_page)
             else:
-                user.failed_attempt = user.failed_attempt-1
-                if user.failed_attempt <= 0:
-                    if user.failed_attempt == 0:
-                        user.locked_until = datetime.now()
-                    time_to_remain_locked = -(user.failed_attempt - 1)*15
-                    user.locked_until += timedelta(minutes=time_to_remain_locked)
-                    remaining_time = user.locked_until - datetime.now()
+                employee.failed_attempt = employee.failed_attempt-1
+                if employee.failed_attempt <= 0:
+                    if employee.failed_attempt == 0:
+                        employee.locked_until = datetime.now()
+                    time_to_remain_locked = -(employee.failed_attempt - 1)*15
+                    employee.locked_until += timedelta(minutes=time_to_remain_locked)
+                    remaining_time = employee.locked_until - datetime.now()
                     rem_min = int(remaining_time.total_seconds() / 60)
                     rem_sec = int(remaining_time.total_seconds() % 60)
                     flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
                 else:
-                    flash(f"Incorrect password! {user.failed_attempt} remaining attempt(s).", 'danger')
+                    flash(f"Incorrect password! {employee.failed_attempt} remaining attempt(s).", 'danger')
                 db.session.commit()
                 return render_template('login.html', form=form, org_name=org_name)
 
@@ -165,22 +170,22 @@ def register():
     form = RegistrationForm()
 
     if request.method == 'POST':
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and user.email == form.email.data:
-            if user.activation_key == form.activation_key.data: 
-                user.email = form.email.data
-                user.set_password(form.password.data)
-                user.locked_until = None
-                user.failed_attempt = 3
-                user.activation_key = ""
+        employee = Employee.query.filter_by(email=form.email.data).first()
+        if employee:
+            if not employee.password_hash:
+                # First time setting up password
+                employee.email = form.email.data
+                employee.set_password(form.password.data)
+                employee.locked_until = None
+                employee.failed_attempt = 3
                 db.session.commit()
                 flash('Account registration complete.', 'success')
                 return redirect(url_for('login'))
             else:
-                flash('Incorrect activation key. Contact Administrator', 'danger')
+                flash('This account is already registered. Use the login page instead.', 'danger')
                 return render_template('register.html', form=form, org_name=org_name)
         else:
-            flash('This email is not allowed to be registered. Contact Administrator', 'danger')
+            flash('This email is not recognized. You must be an employee to register.', 'danger')
             return render_template('register.html', form=form, org_name=org_name)
     return render_template('register.html', form=form, org_name=org_name)
 

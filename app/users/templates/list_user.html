@@ -2,11 +2,7 @@
 {% block content %}
 
 <div class="container-fluid py-2">
-    <h2>Users
-        <a href="{{ url_for('users.add_user') }}" title="Add New User">
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>
-        </a>
-    </h2>
+    <h2>Users</h2>
     <form method="get" class="mb-3 d-flex align-items-center">
         <label for="per_page" class="me-2">Rows per page:</label>
         <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
@@ -35,7 +31,7 @@
                         <td>{{user.email}}</td>
                         <td>{{user.user_type | upper}}</td>
                         <td><input type="checkbox" disabled {% if user.locked_until %}checked{% endif %}></td>
-                        <td><input type="checkbox" disabled {% if not user.activation_key %}checked{% endif %}> {{ user.activation_key }}</td>
+                        <td><input type="checkbox" disabled {% if user.password_hash %}checked{% endif %}></td>
                         <td>
                             <div class="btn-group" role="group" aria-label="Action buttons">
                                 {% if user.user_type in ['therapist', 'supervisor'] %}
@@ -74,7 +70,7 @@
             {% set _ = prev_args.update({'page': pagination.prev_num, 'per_page': per_page}) %}
             {% if pagination.has_prev %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ url_for('clients.list_clients', **prev_args) }}">Previous</a>
+                    <a class="page-link" href="{{ url_for('users.list_users', **prev_args) }}">Previous</a>
                 </li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">Previous</span></li>

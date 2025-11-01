@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import User, Designation, Activity, Employee, PayRate
+from app.models import Employee, Designation, Activity, PayRate
 from werkzeug.security import generate_password_hash
 from datetime import date
 import logging
@@ -56,53 +56,17 @@ def initialize_database():
             db.session.add(new_designation)
             safe_commit()
 
-        # Check if admin employee and user already exist
-        logger.info("Checking for admin user/employee admin@example.com")
-        admin_user = User.query.filter_by(email='admin@example.com').first()
-        admin_employee = Employee.query.filter_by(email='admin@example.com').first()
-
-        if not admin_employee:
-            logger.info("Admin employee not found — creating admin employee")
-            admin_employee = Employee(
-                firstname="System",
-                lastname="Administrator",
-                position=admin_designation,
-                rba_number=None,
-                email='admin@example.com',
-                cell='0000000000',
-                address1='System',
-                city='System',
-                state='ON',
-                zipcode='000000',
-                is_active=True
-            )
-            db.session.add(admin_employee)
-            db.session.flush()  # Get the ID before creating pay rate
-
-            # Add base pay rate for admin
-            base_payrate = PayRate(
-                employee_id=admin_employee.id,
-                client_id=None,
-                rate=0.0,
-                effective_date=date.today()
-            )
-            db.session.add(base_payrate)
-            
-            if not admin_user:
-                logger.info("Admin user not found — creating admin user")
-                hashed_password = generate_password_hash('Admin1!')
-                super_admin = User(
-                    email='admin@example.com',
-                    password_hash=hashed_password,
-                    user_type="super",
-                    failed_attempt=0,
-                    activation_key=None,
-                    locked_until=None
-                )
-                db.session.add(super_admin)
-
-            safe_commit()
-            logger.info("Admin employee and user created with base pay rate")
+        # Create super admin employee if they don't exist
+        logger.info("Checking for admin employee admin@example.com")
+        admin = Employee.query.filter_by(email='admin@example.com').first()
+        if not admin:
+            logger.info("Admin employee not found — creating")
+            try:
+                Employee.create_super_admin('admin@example.com', 'Admin1!')
+                logger.info("Admin employee created successfully")
+            except Exception as e:
+                logger.exception("Failed to create admin employee: %s", e)
+                raise
         else:
             logger.info("Admin employee already exists")
 
@@ -141,13 +105,12 @@ def initialize_database():
 
         # Final counts to confirm rows exist in the same DB connection
         try:
-            user_count = User.query.count()
+            emp_count = Employee.query.count()
             desig_count = Designation.query.count()
             act_count = Activity.query.count()
-            emp_count = Employee.query.count()
             payrate_count = PayRate.query.count()
-            logger.info("Row counts -> User: %s, Designation: %s, Activity: %s, Employee: %s, PayRate: %s",
-                       user_count, desig_count, act_count, emp_count, payrate_count)
+            logger.info("Row counts -> Employee: %s, Designation: %s, Activity: %s, PayRate: %s",
+                       emp_count, desig_count, act_count, payrate_count)
         except Exception:
             logger.exception("Failed to read row counts")
 

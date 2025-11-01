@@ -7,24 +7,7 @@ import json
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
-class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(150), unique=True, index=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    user_type = db.Column(db.String(51), default=None, nullable=False)
-    locked_until = db.Column(db.DateTime, default=None)
-    failed_attempt = db.Column(db.Integer, default=0, nullable=False)
-    activation_key = db.Column(db.String(15), nullable=True, default=None)
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    return Employee.query.get(int(user_id))
 
 
 class Activity(db.Model):
@@ -38,14 +21,14 @@ class Designation(db.Model):
     designation = db.Column(db.String(51), primary_key=True)
 
 
-class Employee(db.Model):
+class Employee(db.Model, UserMixin):
     __tablename__ = 'employees'
     id = db.Column(db.Integer, primary_key=True)
     firstname = db.Column(db.String(51), nullable=False)
     lastname = db.Column(db.String(51))
     position = db.Column(db.String(51), db.ForeignKey('designations.designation'), nullable=False)
     rba_number = db.Column(db.String(25), nullable=True, unique=True)
-    email = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120), unique=True, index=True, nullable=False)
     cell = db.Column(db.String(10), nullable=False)
     address1 = db.Column(db.String(120))
     address2 = db.Column(db.String(120))
@@ -53,16 +36,20 @@ class Employee(db.Model):
     state = db.Column(db.String(2))
     zipcode = db.Column(db.String(6))
     is_active = db.Column(db.Boolean, nullable=True, default=True)
+    
+    # User authentication fields
+    password_hash = db.Column(db.String(200), nullable=False)
+    user_type = db.Column(db.String(51), default='therapist', nullable=False)  # super, admin, supervisor, therapist
+    locked_until = db.Column(db.DateTime, default=None)
+    failed_attempt = db.Column(db.Integer, default=0, nullable=False)
+    activation_key = db.Column(db.String(15), nullable=True, default=None)
 
     designation = db.relationship('Designation', backref='employees')
     pay_rates = db.relationship('PayRate', backref='employee', cascade='all, delete-orphan')
-    user = db.relationship('User', 
-                          primaryjoin="Employee.email == User.email",
-                          backref='employee',
-                          cascade='all, delete-orphan',
-                          single_parent=True)
 
-    def __init__(self, firstname, lastname, position, rba_number, email, cell, address1=None, address2=None, city=None, state=None, zipcode=None, is_active=True):
+    def __init__(self, firstname, lastname, position, rba_number, email, cell, 
+                 password=None, user_type='therapist', address1=None, address2=None, 
+                 city=None, state=None, zipcode=None, is_active=True):
         self.firstname = firstname
         self.lastname = lastname
         self.position = position
@@ -75,6 +62,58 @@ class Employee(db.Model):
         self.state = state
         self.zipcode = zipcode
         self.is_active = is_active
+        self.user_type = user_type
+        if password:
+            self.set_password(password)
+            
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+        
+    @staticmethod
+    def create_super_admin(email, password):
+        """
+        Creates a super admin employee
+        """
+        # Get or create Administrator designation
+        admin_designation = Designation.query.filter_by(designation="Administrator").first()
+        if not admin_designation:
+            admin_designation = Designation(designation="Administrator")
+            db.session.add(admin_designation)
+            db.session.flush()
+
+        # Create employee record with admin privileges
+        super_admin = Employee(
+            firstname="System",
+            lastname="Administrator",
+            position="Administrator",
+            rba_number=None,
+            email=email,
+            cell='0000000000',
+            password=password,
+            user_type='super',
+            address1='System',
+            city='System',
+            state='ON',
+            zipcode='000000',
+            is_active=True
+        )
+        db.session.add(super_admin)
+        db.session.flush()
+
+        # Create base pay rate
+        base_payrate = PayRate(
+            employee_id=super_admin.id,
+            client_id=None,
+            rate=0.0,
+            effective_date=date.today()
+        )
+        db.session.add(base_payrate)
+        db.session.commit()
+        
+        return super_admin
 
 
 class Client(db.Model):
@@ -214,7 +253,7 @@ class PayRate(db.Model):
     __tablename__ = 'payrates'
     id = db.Column(db.Integer, primary_key=True)
     employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
-    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)  # Allow NULL for base rates
     rate = db.Column(db.Float, nullable=False)  # hourly rate
     effective_date = db.Column(db.Date, nullable=True)
 
