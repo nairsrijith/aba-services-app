@@ -15,7 +15,7 @@ org_name = os.environ.get('ORG_NAME', 'My Organization')
 @clients_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_client():
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         
         supervisor = Employee.query.filter_by(position='Behaviour Analyst', is_active=True).first()
         if not supervisor:
@@ -60,7 +60,7 @@ def add_client():
 @clients_bp.route('/deactivate/<int:client_id>', methods=['POST'])
 @login_required
 def deactivate_client(client_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         client = Client.query.get_or_404(client_id)
         # Check for open/pending invoices before deactivating
         open_invoices = Invoice.query.filter_by(client_id=client.id).filter(Invoice.status != 'Paid').all()
@@ -79,7 +79,7 @@ def deactivate_client(client_id):
 @clients_bp.route('/reactivate/<int:client_id>', methods=['POST'])
 @login_required
 def reactivate_client(client_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         client = Client.query.get_or_404(client_id)
         # Check if supervisor is still active before reactivating
         if client.supervisor_id and not client.supervisor.is_active:
@@ -97,7 +97,7 @@ def reactivate_client(client_id):
 @clients_bp.route('/list', methods=['GET', 'POST'])
 @login_required
 def list_clients():
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)  # default to 10
         # Respect the `show_inactive` toggle: when not set, only show active clients.
@@ -123,7 +123,7 @@ def list_clients():
 @clients_bp.route('/delete/<int:client_id>', methods=['GET', 'POST'])
 @login_required
 def delete_client(client_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         client = Client.query.get_or_404(client_id)
         
         # Check for interventions
@@ -167,7 +167,7 @@ def delete_client(client_id):
 @clients_bp.route('/update/<int:client_id>', methods=['GET', 'POST'])
 @login_required
 def update_client(client_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         client = Client.query.get_or_404(client_id)
         form = UpdateClientForm(obj=client)
         form.state.choices = [("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),

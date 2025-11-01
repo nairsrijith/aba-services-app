@@ -15,7 +15,7 @@ org_name = os.environ.get('ORG_NAME', 'My Organization')
 @employees_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_employee():
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin","super"]:
         form = AddEmployeeForm()
         form.position.choices = [(d.designation, d.designation) for d in Designation.query.all()]
         form.state.choices = [("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),
@@ -83,7 +83,7 @@ def add_employee():
 @employees_bp.route('/deactivate/<int:employee_id>', methods=['POST'])
 @login_required
 def deactivate_employee(employee_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin","super"]:
         employee = Employee.query.get_or_404(employee_id)
         
         # Only allow deactivation if employee is not a supervisor for any active clients
@@ -109,7 +109,7 @@ def deactivate_employee(employee_id):
 @employees_bp.route('/reactivate/<int:employee_id>', methods=['POST'])
 @login_required
 def reactivate_employee(employee_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin","super"]:
         employee = Employee.query.get_or_404(employee_id)
         employee.is_active = True
 
@@ -128,7 +128,7 @@ def reactivate_employee(employee_id):
 @employees_bp.route('/list', methods=['GET', 'POST'])
 @login_required
 def list_employees():
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin","super"]:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         # Respect the `show_inactive` toggle: when not set, only show active employees.
@@ -154,7 +154,7 @@ def list_employees():
 @employees_bp.route('/delete/<int:employee_id>', methods=['GET', 'POST'])
 @login_required
 def delete_employee(employee_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin","super"]:
         employee = Employee.query.get_or_404(employee_id)
         
         # Check for critical dependencies first
@@ -194,7 +194,7 @@ def delete_employee(employee_id):
 @employees_bp.route('/update/<int:employee_id>', methods=['GET', 'POST'])
 @login_required
 def update_employee(employee_id):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         employee = Employee.query.get_or_404(employee_id)
         form = UpdateEmployeeForm(obj=employee)
         form.employee_id.data = str(employee_id)  # Set the employee_id field

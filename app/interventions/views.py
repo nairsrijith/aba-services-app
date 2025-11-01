@@ -20,7 +20,7 @@ org_name = os.environ.get('ORG_NAME', 'My Organization')
 @login_required
 def add_intervention():
     # Allow admin, therapists and supervisors (but not 'super' system user) to add interventions
-    if current_user.is_authenticated and not current_user.user_type == "super":
+    if current_user.is_authenticated:
         # find employee record for current user (if any)
         emp = Employee.query.filter_by(email=current_user.email).first()
 
@@ -82,7 +82,7 @@ def add_intervention():
 @interventions_bp.route('/list', methods=['GET'])
 @login_required
 def list_interventions():
-    if current_user.is_authenticated and not current_user.user_type == "super":
+    if current_user.is_authenticated:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
 
@@ -158,7 +158,7 @@ import json
 @interventions_bp.route('/bulk_delete', methods=['POST'])
 @login_required
 def bulk_delete():
-    if current_user.is_authenticated and not current_user.user_type == "super":
+    if current_user.is_authenticated:
         ids = request.form.getlist('selected_ids')
         if ids:
             interventions = Intervention.query.filter(Intervention.id.in_(ids)).all()
@@ -216,7 +216,7 @@ def bulk_delete():
 @interventions_bp.route('/update/<int:intervention_id>', methods=['GET', 'POST'])
 @login_required
 def update_intervention(intervention_id):
-    if current_user.is_authenticated and not current_user.user_type == "super":
+    if current_user.is_authenticated:
         intervention = Intervention.query.get_or_404(intervention_id)
 
         # enforce edit permissions for therapists and supervisors
@@ -240,7 +240,7 @@ def update_intervention(intervention_id):
                                  for c in Client.query.filter_by(id=intervention.client_id, is_active=False).all()])
         form.client_id.choices = client_choices
 
-        if current_user.user_type == "admin":
+        if current_user.user_type in ["admin", "super"]:
             emp_choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).all()]
             if intervention.employee_id:
                 emp_choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)")

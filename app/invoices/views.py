@@ -30,7 +30,7 @@ def parse_date(val):
 @invoices_bp.route('/list', methods=['GET'])
 @login_required
 def list_invoices():
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoices = Invoice.query.order_by(Invoice.invoiced_date.desc()).all()
         return render_template('list_invoices.html', invoices=invoices, org_name=org_name)
     else:
@@ -40,7 +40,7 @@ def list_invoices():
 @invoices_bp.route('/invoice_client_selection', methods=['GET', 'POST'])
 @login_required
 def invoice_client_select():
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         interventions = Intervention.query.filter_by(invoiced=False).all()
         if not interventions:
             flash('No uninvoiced session available to create an invoice.', 'warning')
@@ -68,7 +68,7 @@ def invoice_client_select():
 @invoices_bp.route('/invoice_preview', methods=['GET', 'POST'])
 @login_required
 def invoice_preview():
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         client_id = request.args.get('ci')
         date_from = parse_date(request.args.get('df'))
         date_to = parse_date(request.args.get('dt'))
@@ -184,7 +184,7 @@ def invoice_preview():
 @invoices_bp.route('/download_invoice/<invoice_number>', methods=['GET'])
 @login_required
 def download_invoice_pdf_by_number(invoice_number):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
         client = invoice.client
         interventions = Intervention.query.filter_by(invoice_number=invoice_number).order_by(Intervention.date, Intervention.start_time).all()
@@ -292,7 +292,7 @@ def download_invoice_pdf_by_number(invoice_number):
 @invoices_bp.route('/preview_invoice/<invoice_number>', methods=['GET'])
 @login_required
 def preview_invoice_by_number(invoice_number):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
         client = invoice.client
         interventions = Intervention.query.filter_by(invoice_number=invoice_number).order_by(Intervention.date, Intervention.start_time).all()
@@ -359,7 +359,7 @@ def preview_invoice_by_number(invoice_number):
 @invoices_bp.route('/delete_invoice/<invoice_number>', methods=['POST'])
 @login_required
 def delete_invoice(invoice_number):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
         interventions = Intervention.query.filter_by(invoice_number=invoice_number).all()
         for intervention in interventions:
@@ -377,7 +377,7 @@ def delete_invoice(invoice_number):
 @invoices_bp.route('/mark_sent/<invoice_number>', methods=['POST'])
 @login_required
 def mark_sent(invoice_number):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
         invoice.status = 'Sent'
         db.session.commit()
@@ -390,7 +390,7 @@ def mark_sent(invoice_number):
 @invoices_bp.route('/mark_draft/<invoice_number>', methods=['POST'])
 @login_required
 def mark_draft(invoice_number):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
         invoice.status = 'Draft'
         invoice.paid_date = None
@@ -405,7 +405,7 @@ def mark_draft(invoice_number):
 @invoices_bp.route('/mark_paid/<invoice_number>', methods=['POST'])
 @login_required
 def mark_paid(invoice_number):
-    if current_user.is_authenticated and current_user.user_type == "admin":
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
         paid_date = datetime.strptime(request.form.get('paid_date'), '%Y-%m-%d').date()
         payment_comments = request.form.get('payment_comments')

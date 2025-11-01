@@ -15,7 +15,7 @@ payroll_bp = Blueprint('payroll', __name__, template_folder='templates')
 @payroll_bp.route('/paystubs')
 @login_required
 def list_paystubs():
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
     
@@ -50,7 +50,7 @@ def list_paystubs():
 @payroll_bp.route('/payrates')
 @login_required
 def list_payrates():
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
     payrates = PayRate.query.order_by(PayRate.employee_id, PayRate.client_id).all()
@@ -60,7 +60,7 @@ def list_payrates():
 @payroll_bp.route('/payrates/add', methods=['GET', 'POST'])
 @login_required
 def add_payrate():
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
     
@@ -91,7 +91,7 @@ def add_payrate():
 @payroll_bp.route('/payrates/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_payrate(id):
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
     
@@ -137,7 +137,7 @@ def edit_payrate(id):
 @payroll_bp.route('/payrates/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_payrate(id):
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
     
@@ -151,7 +151,7 @@ def delete_payrate(id):
 @payroll_bp.route('/paystubs/<int:id>')
 @login_required
 def view_paystub(id):
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
     
@@ -163,7 +163,7 @@ def view_paystub(id):
 @login_required
 def export_paystub_pdf(id):
     try:
-        if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+        if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
             flash('Unauthorized', 'danger')
             return redirect(url_for('home'))
         
@@ -238,7 +238,7 @@ def export_paystub_pdf(id):
 @payroll_bp.route('/paystubs/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_paystub(id):
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
 
@@ -260,7 +260,7 @@ def delete_paystub(id):
 @payroll_bp.route('/paystubs/create', methods=['GET', 'POST'])
 @login_required
 def create_paystub():
-    if not (current_user.is_authenticated and current_user.user_type == 'admin'):
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
 
