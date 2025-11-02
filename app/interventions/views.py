@@ -38,15 +38,32 @@ def add_intervention():
             form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).all()]
 
         # Employee selection:
-        if current_user.user_type == "admin":
+        if current_user.user_type in ["admin", "super"]:
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).all()]
         elif current_user.user_type == 'supervisor':
-            # supervisors can choose any therapist or senior therapist
-            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter(Employee.position.in_(['Therapist','Senior Therapist']), Employee.is_active==True).all()]
+            # supervisors can choose therapists, senior therapists, and themselves
+            current_employee = Employee.query.filter_by(email=current_user.email, is_active=True).first()
+            employees = Employee.query.filter(
+                (Employee.position.in_(['Therapist', 'Senior Therapist']) & Employee.is_active==True) |
+                (Employee.id == current_employee.id if current_employee else False)
+            ).all()
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in employees]
         else:
             # therapists can only create sessions for themselves
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(email=current_user.email, is_active=True).all()]
-        form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
+
+        # Filter activities based on selected employee's position
+        if 'employee_id' in request.form:
+            selected_employee = Employee.query.get(request.form['employee_id'])
+            if selected_employee:
+                if selected_employee.position == 'Behaviour Analyst':
+                    activities = Activity.query.filter_by(activity_category='Supervision').all()
+                else:  # Therapist or Senior Therapist
+                    activities = Activity.query.filter_by(activity_category='Therapy').all()
+                form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in activities]
+        else:
+            # No employee selected yet, show all activities
+            form.intervention_type.choices = []
 
         if form.validate_on_submit():
             client_id = form.client_id.data
@@ -90,7 +107,7 @@ def list_interventions():
         invoiced_filter = request.args.get('invoiced')
 
         # Build a subquery that selects distinct Intervention IDs after applying all filters
-        id_subq = db.session.query(Intervention.id).outerjoin(Employee).outerjoin(Client)
+        id_subq = db.session.query(Intervention.id).join(Employee, Intervention.employee_id == Employee.id).join(Client, Intervention.client_id == Client.id)
 
         # Role-based visibility filters applied to the subquery
         if current_user.user_type == "therapist":
@@ -98,7 +115,13 @@ def list_interventions():
         elif current_user.user_type == 'supervisor':
             emp = Employee.query.filter_by(email=current_user.email).first()
             if emp:
-                id_subq = id_subq.filter(Client.supervisor_id == emp.id)
+                view_type = request.args.get('view_type', 'all')
+                if view_type == 'own':
+                    # Show only supervisor's own sessions
+                    id_subq = id_subq.filter(Employee.email == current_user.email)
+                else:
+                    # Show all sessions for supervised clients (default)
+                    id_subq = id_subq.filter(Client.supervisor_id == emp.id)  # This will include all sessions for supervised clients
 
         # invoiced filter
         if invoiced_filter == 'yes':
@@ -247,14 +270,35 @@ def update_intervention(intervention_id):
                                   for e in Employee.query.filter_by(id=intervention.employee_id, is_active=False).all()])
             form.employee_id.choices = emp_choices
         elif current_user.user_type == 'supervisor':
-            # supervisors can reassign to therapists/senior therapists
-            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter(Employee.position.in_(['Therapist','Senior Therapist']), Employee.is_active==True).all()]
+            # supervisors can reassign to therapists, senior therapists, and themselves
+            current_employee = Employee.query.filter_by(email=current_user.email, is_active=True).first()
+            employees = Employee.query.filter(
+                (Employee.position.in_(['Therapist', 'Senior Therapist']) & Employee.is_active==True) |
+                (Employee.id == current_employee.id if current_employee else False)
+            ).all()
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in employees]
+            # Include the current intervention's employee if inactive
             if intervention.employee_id:
-                form.employee_id.choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)") for e in Employee.query.filter_by(id=intervention.employee_id, is_active=False).all()])
+                form.employee_id.choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)") 
+                                              for e in Employee.query.filter_by(id=intervention.employee_id, is_active=False).all()])
         else:
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") 
                                       for e in Employee.query.filter_by(email=current_user.email, is_active=True).all()]
-        form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in Activity.query.all()]
+        
+        # Filter activities based on selected employee's position
+        if request.method == 'GET':
+            selected_employee = intervention.employee
+        else:
+            selected_employee = Employee.query.get(request.form['employee_id']) if 'employee_id' in request.form else None
+
+        if selected_employee:
+            if selected_employee.position == 'Behaviour Analyst':
+                activities = Activity.query.filter_by(activity_category='Supervision').all()
+            else:  # Therapist or Senior Therapist
+                activities = Activity.query.filter_by(activity_category='Therapy').all()
+            form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in activities]
+        else:
+            form.intervention_type.choices = []
 
         if request.method == 'POST':
             client_id = form.client_id.data
@@ -301,8 +345,25 @@ def update_intervention(intervention_id):
         abort(403)
 
 
+@interventions_bp.route('/get_activities/<int:employee_id>')
+@login_required
+def get_activities(employee_id):
+    employee = Employee.query.get_or_404(employee_id)
+    activities = []
+    
+    if employee.position == 'Behaviour Analyst':
+        activities = Activity.query.filter_by(activity_category='Supervision').all()
+    else:  # Therapist or Senior Therapist
+        activities = Activity.query.filter_by(activity_category='Therapy').all()
+    
+    return app.response_class(
+        response=json.dumps([{'name': a.activity_name, 'id': a.activity_name} for a in activities]),
+        status=200,
+        mimetype='application/json'
+    )
+
 @interventions_bp.route('/download/<int:client_id>/<filename>')
 @login_required
-def download_file(client_id, filename):
+def get_file(client_id, filename):
     client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
     return send_from_directory(client_folder, filename, as_attachment=True)

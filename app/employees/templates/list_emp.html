@@ -47,9 +47,10 @@
                         <td colspan="6" class="text-center">No employees found.</td>
                     </tr>
                 {% else %}
-                    {# Separate active and inactive into two groups for clearer UI #}
-                    {% set active_employees = employees | selectattr('is_active') | list %}
-                    {% set inactive_employees = employees | rejectattr('is_active') | list %}
+                    {# Filter out super users and then separate active and inactive #}
+                    {% set filtered_employees = employees | rejectattr('user_type', 'eq', 'super') | list %}
+                    {% set active_employees = filtered_employees | selectattr('is_active') | list %}
+                    {% set inactive_employees = filtered_employees | rejectattr('is_active') | list %}
 
                     {# Active employees block #}
                     {% for employee in active_employees %}

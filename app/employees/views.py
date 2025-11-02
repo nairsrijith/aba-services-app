@@ -1,11 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from app import db
 from app.models import Employee, Designation, Intervention, Client, PayRate, PayStub
+from datetime import date
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
-import os
-import re
-from datetime import date, datetime
+import os, re
 from dateutil.relativedelta import relativedelta
 
 employees_bp = Blueprint('employees', __name__, template_folder='templates')
@@ -55,7 +54,12 @@ def add_employee():
                                     address2=form.address2.data.title(),
                                     city=form.city.data.title(),
                                     state=form.state.data,
-                                    zipcode=form.zipcode.data.upper())
+                                    zipcode=form.zipcode.data.upper(),
+                                    user_type=user_type,  # Set the user_type explicitly
+                                    is_active=True,  # Employee record is active
+                                    login_enabled=False,  # Login disabled until registration
+                                    failed_attempt=5,  # Start with 5 failed attempts
+                                    locked_until=None)
                 # Generate activation key for the new employee
                 activation_key = new_employee.generate_activation_key()
                 db.session.add(new_employee)
@@ -75,7 +79,7 @@ def add_employee():
                 if 'employees_rba_number_key' in str(e):
                     form.rba_number.errors.append('This RBA Number is already in use')
                     return render_template('add_emp.html', form=form, org_name=org_name)
-                flash('Error adding employee. Please check the form and try again.', 'danger')
+                flash(f'Error adding employee: {str(e)}', 'danger')
                 return render_template('add_emp.html', form=form, org_name=org_name)
         return render_template('add_emp.html', form=form, org_name=org_name)
     else:
@@ -96,13 +100,16 @@ def deactivate_employee(employee_id):
 
         employee.is_active = False
 
-        # Set employee as inactive and clear authentication fields
-        employee.is_active = False
+        # Clear and update authentication fields
         employee.password_hash = None  # Clear password to prevent login
-        flash('Employee has been deactivated and login access removed.', 'info')
-
+        employee.activation_key = None  # Clear any existing activation key
+        employee.locked_until = date(2999, 12, 31)  # Lock until 31-Dec-2999
+        employee.failed_attempt = 5  # Set to 5 failed attempts
+        employee.login_enabled = False  # Disable login access
+        # Note: is_active remains unchanged - employee record stays active
+        
         db.session.commit()
-        flash('Employee has been deactivated.', 'success')
+        flash('Employee has been deactivated and login access removed.', 'success')
         return redirect(url_for('employees.list_employees'))
     else:
         abort(403)
@@ -113,15 +120,21 @@ def deactivate_employee(employee_id):
 def reactivate_employee(employee_id):
     if current_user.is_authenticated and current_user.user_type in ["admin","super"]:
         employee = Employee.query.get_or_404(employee_id)
-        employee.is_active = True
+        # Set user_type based on position if not admin/super
+        if employee.user_type not in ['admin', 'super']:
+            employee.user_type = 'supervisor' if employee.position == 'Behaviour Analyst' else 'therapist'
 
-        # Reactivate employee
-        employee.is_active = True
-        # They will need to register/set password again
-        flash('Employee has been reactivated. They will need to register to set their password.', 'info')
-
+        # Set up for reactivation
+        employee.password_hash = None  # Ensure password is cleared
+        activation_key = employee.generate_activation_key()  # Generate new activation key
+        employee.locked_until = None  # Clear any previous lock
+        employee.failed_attempt = 0  # Reset failed attempts
+        employee.is_active = True  # Set employee record as active
+        employee.login_enabled = False  # Keep login disabled until re-registration completed
+        
         db.session.commit()
-        flash('Employee has been reactivated.', 'success')
+        flash(f'Employee has been prepared for reactivation. Please provide them with the activation code: {activation_key}', 'info')
+        flash('Their account will be activated once they complete the registration process.', 'info')
         return redirect(url_for('employees.list_employees'))
     else:
         abort(403)
@@ -227,8 +240,13 @@ def update_employee(employee_id):
                 employee.state = form.state.data
                 employee.zipcode = form.zipcode.data.upper()
                 
-                # Update user type based on position
-                if employee.user_type != 'admin' and employee.user_type != 'super':  # Don't change admin/super roles
+                # Special handling for position changes with admin/supervisor roles
+                if employee.user_type == 'admin':
+                    # If an admin's position changes to Behaviour Analyst, ensure they keep admin role
+                    # If position changes away from Behaviour Analyst, no change needed - keep admin role
+                    pass  # Maintain admin role regardless of position
+                elif employee.user_type not in ['super']:  # Don't change super roles
+                    # For all other employees, update based on position
                     employee.user_type = 'supervisor' if form.position.data == 'Behaviour Analyst' else 'therapist'
                 
                 db.session.commit()

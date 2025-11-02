@@ -7,10 +7,10 @@
             {{ form.hidden_tag() }}
             <div class="row mb-3">
                 <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select") }}</div>
-                <div>{{ form.employee_id.label(class="col-form-label") }}{{ form.employee_id(class="form-select") }}</div>
+                <div>{{ form.employee_id.label(class="col-form-label") }}{{ form.employee_id(class="form-select", id="employee_id") }}</div>
             </div>
             <div class="row mb-3">
-                <div>{{ form.intervention_type.label(class="col-form-label") }}{{ form.intervention_type(class="form-select") }}</div>
+                <div>{{ form.intervention_type.label(class="col-form-label") }}{{ form.intervention_type(class="form-select", id="intervention_type") }}</div>
                 <div>{{ form.date.label(class="col-form-label") }}{{ form.date(class="form-control", placeholder="YYYY-MM-DD", type="date") }}</div>
                 <div>{{ form.start_time.label(class="col-form-label") }}{{ form.start_time(class="form-control", placeholder="Start Time", id="start_time", type="time") }}</div>
                 <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", placeholder="End Time", id="end_time", type="time") }}</div>
@@ -28,6 +28,7 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/duration.js') }}"></script>
+<script src="{{ url_for('static', filename='js/intervention.js') }}"></script>
 <script>
     setupDurationCalculation('start_time', 'end_time', 'duration');
 </script>

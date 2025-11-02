@@ -41,6 +41,15 @@
                     <option value="yes" {% if request.args.get('invoiced', '') == 'yes' %}selected{% endif %}>Yes</option>
                 </select>
             </div>
+            {% if current_user.user_type == 'supervisor' %}
+            <div class="col-md-2">
+                <label for="view_type" class="form-label">View:</label>
+                <select name="view_type" id="view_type" class="form-select">
+                    <option value="all" {% if request.args.get('view_type', 'all') == 'all' %}selected{% endif %}>All Client Sessions</option>
+                    <option value="own" {% if request.args.get('view_type', 'all') == 'own' %}selected{% endif %}>My Sessions Only</option>
+                </select>
+            </div>
+            {% endif %}
             <div class="col-md-1">
                 <label for="per_page" class="form-label">Rows:</label>
                 <select name="per_page" id="per_page" class="form-select w-auto" onchange="this.form.submit()">
@@ -82,15 +91,17 @@
                         <th class="text-end">Start Time</th>
                         <th class="text-end">End Time</th>
                         <th class="text-end">Duration(hrs)</th>
-                        <th class="text-center">Payroll State</th>
-                        <th>Invoice Number</th>
+                        {% if current_user.user_type in ['admin', 'super'] %}
+                            <th class="text-center">Payroll State</th>
+                            <th>Invoice Number</th>
+                        {% endif %}
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                 {% if not interventions %}
                         <tr>
-                        <td colspan="11" class="text-center">No sessions found.</td>
+                        <td colspan="{% if current_user.user_type in ['admin', 'super'] %}11{% else %}9{% endif %}" class="text-center">No sessions found.</td>
                     </tr>
                 {% else %}
                     {% for intervention in interventions %}
@@ -111,29 +122,31 @@
                             <td class="text-end">{{ intervention.start_time.strftime('%H:%M') }}</td>
                             <td class="text-end">{{ intervention.end_time.strftime('%H:%M') }}</td>
                             <td class="text-end">{{ "%.2f"|format(intervention.duration|float) }}</td>
-                            <td class="text-center">
-                                {% if intervention.is_paid %}
-                                    <span class="badge bg-success">Paid</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Unpaid</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {%- if intervention.invoice -%}
-                                    {%- set inv_status = intervention.invoice.status -%}
-                                        {%- if inv_status == 'Draft' -%}
-                                            <span class="badge bg-info" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
-                                        {%- elif inv_status == 'Sent' -%}
-                                            <span class="badge bg-warning text-dark" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
-                                        {%- elif inv_status == 'Paid' -%}
-                                            <span class="badge bg-success" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
-                                        {%- else -%}
-                                            <span class="badge bg-secondary" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                            {% if current_user.user_type in ['admin', 'super'] %}
+                                <td class="text-center">
+                                    {% if intervention.is_paid %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Unpaid</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {%- if intervention.invoice -%}
+                                        {%- set inv_status = intervention.invoice.status -%}
+                                            {%- if inv_status == 'Draft' -%}
+                                                <span class="badge bg-info" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                            {%- elif inv_status == 'Sent' -%}
+                                                <span class="badge bg-warning text-dark" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                            {%- elif inv_status == 'Paid' -%}
+                                                <span class="badge bg-success" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                            {%- else -%}
+                                                <span class="badge bg-secondary" title="{{ inv_status }}">{{ intervention.invoice_number }}</span>
+                                        {%- endif -%}
+                                    {%- else -%}
+                                        <span class="badge bg-secondary" title="Not invoiced">N/A</span>
                                     {%- endif -%}
-                                {%- else -%}
-                                    <span class="badge bg-secondary" title="Not invoiced">N/A</span>
-                                {%- endif -%}
-                            </td>
+                                </td>
+                            {% endif %}
                             <td>
                                 {% if not intervention.invoiced and not intervention.is_paid %}
                                     <a href="{{ url_for('interventions.update_intervention', intervention_id=intervention.id) }}" class="btn btn-primary btn-sm" title="Edit Session">Edit</a>

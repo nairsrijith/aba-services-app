@@ -12,16 +12,6 @@ users_bp = Blueprint('users', __name__, template_folder='templates')
 
 org_name = os.environ.get('ORG_NAME', 'My Organization')
 
-def generate_activation_code(length=8):
-    """
-    Generates a random alphanumeric activation code of a specified length.
-    """
-    characters = string.ascii_letters + string.digits
-    code = ''.join(secrets.choice(characters) for _ in range(length))
-    return code
-# Example usage:
-# activation_code = generate_activation_code(length=8)
-
 
 @users_bp.route('/set_role/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -135,7 +125,7 @@ def demote_user(id):
         previous_role = employee.user_type
         
         # Determine new role based on position
-        if employee.position == 'Supervisor':
+        if employee.position == 'Behaviour Analyst':
             employee.user_type = 'supervisor'
         else:
             employee.user_type = 'therapist'

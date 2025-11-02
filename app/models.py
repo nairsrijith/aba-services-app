@@ -34,11 +34,12 @@ class Employee(db.Model, UserMixin):
     city = db.Column(db.String(51))
     state = db.Column(db.String(2))
     zipcode = db.Column(db.String(6))
-    is_active = db.Column(db.Boolean, nullable=True, default=True)
+    is_active = db.Column(db.Boolean, nullable=True, default=True)  # Controls if employee record is active in the system
     
     # User authentication fields
     password_hash = db.Column(db.String(200), nullable=True)
     user_type = db.Column(db.String(51), default='therapist', nullable=False)  # super, admin, supervisor, therapist
+    login_enabled = db.Column(db.Boolean, nullable=False, default=False)  # Controls if user can log in
     locked_until = db.Column(db.DateTime, default=None)
     failed_attempt = db.Column(db.Integer, default=0, nullable=False)
     activation_key = db.Column(db.String(15), nullable=True, default=None)
@@ -48,7 +49,8 @@ class Employee(db.Model, UserMixin):
 
     def __init__(self, firstname, lastname, position, rba_number, email, cell, 
                  password=None, user_type='therapist', address1=None, address2=None, 
-                 city=None, state=None, zipcode=None, is_active=True):
+                 city=None, state=None, zipcode=None, is_active=True, failed_attempt=0,
+                 locked_until=None, login_enabled=False):
         self.firstname = firstname
         self.lastname = lastname
         self.position = position
@@ -62,6 +64,9 @@ class Employee(db.Model, UserMixin):
         self.zipcode = zipcode
         self.is_active = is_active
         self.user_type = user_type
+        self.failed_attempt = failed_attempt
+        self.locked_until = locked_until
+        self.login_enabled = login_enabled
         if password:
             self.set_password(password)
             

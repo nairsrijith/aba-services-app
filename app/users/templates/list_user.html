@@ -31,7 +31,7 @@
                         <td>{{user.email}}</td>
                         <td>{{user.user_type | upper}}</td>
                         <td><input type="checkbox" disabled {% if user.locked_until %}checked{% endif %}></td>
-                        <td><input type="checkbox" disabled {% if user.password_hash %}checked{% endif %}></td>
+                        <td><input type="checkbox" disabled {% if user.password_hash %}checked{% endif %}>{{user.activation_key}}</td>
                         <td>
                             <div class="btn-group" role="group" aria-label="Action buttons">
                                 {% if user.user_type in ['therapist', 'supervisor'] %}

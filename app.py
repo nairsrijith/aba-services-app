@@ -102,8 +102,8 @@ def login():
             flash('Your account is not registered. Contact Administrator.', 'danger')
             return render_template('login.html', form=form, org_name=org_name)
         
-        if not employee.is_active:
-            flash('Your account has been deactivated. Contact Administrator.', 'danger')
+        if not employee.login_enabled:
+            flash('Your account has not been activated. Contact Administrator.', 'danger')
             return render_template('login.html', form=form, org_name=org_name)
         
         if employee.user_type == "super":
@@ -173,11 +173,19 @@ def register():
         employee = Employee.query.filter_by(email=form.email.data).first()
         if employee:
             if not employee.password_hash:
+                # Check activation key
+                if not employee.activation_key or employee.activation_key != form.activation_key.data.upper():
+                    flash('Invalid activation key. Please check the key provided by your administrator.', 'danger')
+                    return render_template('register.html', form=form, org_name=org_name)
+                
                 # First time setting up password
                 employee.email = form.email.data
                 employee.set_password(form.password.data)
                 employee.locked_until = None
-                employee.failed_attempt = 3
+                employee.failed_attempt = 0
+                employee.login_enabled = True  # Enable login access
+                # Clear the activation key after successful registration
+                employee.activation_key = None
                 db.session.commit()
                 flash('Account registration complete.', 'success')
                 return redirect(url_for('login'))
