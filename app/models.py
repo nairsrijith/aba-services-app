@@ -41,7 +41,7 @@ class Employee(db.Model, UserMixin):
     user_type = db.Column(db.String(51), default='therapist', nullable=False)  # super, admin, supervisor, therapist
     login_enabled = db.Column(db.Boolean, nullable=False, default=False)  # Controls if user can log in
     locked_until = db.Column(db.DateTime, default=None)
-    failed_attempt = db.Column(db.Integer, default=0, nullable=False)
+    failed_attempt = db.Column(db.Integer, default=-5, nullable=False)
     activation_key = db.Column(db.String(15), nullable=True, default=None)
 
     designation = db.relationship('Designation', backref='employees')
@@ -49,7 +49,7 @@ class Employee(db.Model, UserMixin):
 
     def __init__(self, firstname, lastname, position, rba_number, email, cell, 
                  password=None, user_type='therapist', address1=None, address2=None, 
-                 city=None, state=None, zipcode=None, is_active=True, failed_attempt=0,
+                 city=None, state=None, zipcode=None, is_active=True, failed_attempt=-5,
                  locked_until=None, login_enabled=False):
         self.firstname = firstname
         self.lastname = lastname
@@ -109,7 +109,8 @@ class Employee(db.Model, UserMixin):
             city='System',
             state='ON',
             zipcode='000000',
-            is_active=True
+            is_active=True,
+            login_enabled=True
         )
         db.session.add(super_admin)
         db.session.flush()

@@ -11,6 +11,21 @@ employees_bp = Blueprint('employees', __name__, template_folder='templates')
 
 org_name = os.environ.get('ORG_NAME', 'My Organization')
 
+def determine_user_type(position, current_user_type=None):
+    """
+    Helper function to determine user_type based on position.
+    If current_user_type is 'super', it won't be changed.
+    """
+    if current_user_type == 'super':
+        return 'super'
+    
+    if position == 'Administrator':
+        return 'admin'
+    elif position == 'Behaviour Analyst':
+        return 'supervisor'
+    else:  # Therapist
+        return 'therapist'
+
 @employees_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_employee():
@@ -42,8 +57,9 @@ def add_employee():
                 # Normalize phone number to digits-only before storing (DB column is String(10))
                 normalized_cell = re.sub(r'\D', '', (form.cell.data or ''))
 
-                # Create new employee with appropriate user type based on position
-                user_type = 'supervisor' if form.position.data == 'Behaviour Analyst' else 'therapist'
+                # Set user_type based on position
+                user_type = determine_user_type(form.position.data)
+                
                 new_employee = Employee(firstname=form.firstname.data.title(),
                                     lastname=form.lastname.data.title(),
                                     position=form.position.data.title(),
@@ -58,7 +74,7 @@ def add_employee():
                                     user_type=user_type,  # Set the user_type explicitly
                                     is_active=True,  # Employee record is active
                                     login_enabled=False,  # Login disabled until registration
-                                    failed_attempt=5,  # Start with 5 failed attempts
+                                    failed_attempt=-5,  # Start with -5 failed attempts
                                     locked_until=None)
                 # Generate activation key for the new employee
                 activation_key = new_employee.generate_activation_key()
@@ -104,7 +120,7 @@ def deactivate_employee(employee_id):
         employee.password_hash = None  # Clear password to prevent login
         employee.activation_key = None  # Clear any existing activation key
         employee.locked_until = date(2999, 12, 31)  # Lock until 31-Dec-2999
-        employee.failed_attempt = 5  # Set to 5 failed attempts
+        employee.failed_attempt = -1  # Set to -1 failed attempts
         employee.login_enabled = False  # Disable login access
         # Note: is_active remains unchanged - employee record stays active
         
@@ -120,15 +136,14 @@ def deactivate_employee(employee_id):
 def reactivate_employee(employee_id):
     if current_user.is_authenticated and current_user.user_type in ["admin","super"]:
         employee = Employee.query.get_or_404(employee_id)
-        # Set user_type based on position if not admin/super
-        if employee.user_type not in ['admin', 'super']:
-            employee.user_type = 'supervisor' if employee.position == 'Behaviour Analyst' else 'therapist'
+        # Update user_type based on position
+        employee.user_type = determine_user_type(employee.position, employee.user_type)
 
         # Set up for reactivation
         employee.password_hash = None  # Ensure password is cleared
         activation_key = employee.generate_activation_key()  # Generate new activation key
         employee.locked_until = None  # Clear any previous lock
-        employee.failed_attempt = 0  # Reset failed attempts
+        employee.failed_attempt = -5  # Reset failed attempts
         employee.is_active = True  # Set employee record as active
         employee.login_enabled = False  # Keep login disabled until re-registration completed
         
@@ -240,14 +255,8 @@ def update_employee(employee_id):
                 employee.state = form.state.data
                 employee.zipcode = form.zipcode.data.upper()
                 
-                # Special handling for position changes with admin/supervisor roles
-                if employee.user_type == 'admin':
-                    # If an admin's position changes to Behaviour Analyst, ensure they keep admin role
-                    # If position changes away from Behaviour Analyst, no change needed - keep admin role
-                    pass  # Maintain admin role regardless of position
-                elif employee.user_type not in ['super']:  # Don't change super roles
-                    # For all other employees, update based on position
-                    employee.user_type = 'supervisor' if form.position.data == 'Behaviour Analyst' else 'therapist'
+                # Update user_type based on position
+                employee.user_type = determine_user_type(form.position.data, employee.user_type)
                 
                 db.session.commit()
                 flash('Employee and associated user account updated successfully!', 'success')
