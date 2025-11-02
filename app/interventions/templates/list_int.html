@@ -2,11 +2,8 @@
 {% block content %}
 <div class="p-2 mb-4 rounded-3">
     <div class="container-fluid py-2">
-        <h2>Sessions
-            <a href="{{ url_for('interventions.add_intervention') }}" title="Add New Session">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>
-            </a>
-        </h2>
+        <h2>Sessions</h2>
+        <a href="{{ url_for('interventions.add_intervention') }}" title="Add New Session" class="btn btn-outline-primary mb-3">Add</a>
 
         <!-- FILTERS AND PER PAGE SELECTOR -->
         <form method="GET" class="mb-3 row g-2 align-items-end">
@@ -60,7 +57,7 @@
             </div>
             <div class="col">
                 <button type="submit" class="btn btn-primary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Zm40-308 198-252H282l198 252Zm0 0Z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Zm40-308 198-252H282l198 252Zm0 0Z"/></svg>
                 </button>
                 <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary">
                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M690-240h190v80H610l80-80Zm-500 80-85-85q-23-23-23.5-57t22.5-58l440-456q23-24 56.5-24t56.5 23l199 199q23 23 23 57t-23 57L520-160H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"/></svg>

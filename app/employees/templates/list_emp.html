@@ -2,12 +2,9 @@
 {% block content %}
 <div class="p-2 mb-4 rounded-3">
     <div class="container-fluid py-2">
-        <h2>Employees
-            <a href="{{ url_for('employees.add_employee') }}" title="Add New Employee">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>
-            </a>
-        </h2>
-
+        <h2>Employees</h2>
+        <a href="{{ url_for('employees.add_employee') }}" class="btn btn-outline-primary mb-3" title="Add New Employee">Add</a>
+        
         <div class="d-flex justify-content-between align-items-center mb-3">
             <form method="get" class="d-flex align-items-center">
                 <label for="per_page" class="me-2">Rows per page:</label>
@@ -61,8 +58,8 @@
                             <td>{{ employee.city }}</td>
                             <td>{{ employee.state }}</td>
                             <td>
-                                <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">Edit</a>
-                                <button type="button" class="btn btn-danger btn-sm" title="Deactivate Employee"
+                                <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-info btn-sm" title="Edit Employee">Edit</a>
+                                <button type="button" class="btn btn-warning btn-sm" title="Deactivate Employee"
                                     data-bs-toggle="modal" data-bs-target="#deactivateModal"
                                     data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
                                     Deactivate
@@ -154,7 +151,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                Are you sure you want to delete the record of <strong><span id="employeeName"></span></strong>?
+                    You should only delete an employee if they were added by mistake, otherwise it's better to deactivate them.
+                    <p>Are you sure you want to delete the record of <strong><span id="employeeName"></span></strong>?</p>
                 </div>
                 <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

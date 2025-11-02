@@ -82,7 +82,7 @@ def add_employee():
                 db.session.flush()  # get new_employee.id before creating pay rate
 
                 # Add base pay rate for new employee (client_id=None means base rate)
-                base_rate = 25.0  # Default base rate, can be changed or set via form later
+                base_rate = form.basepay.data  # Default base rate, can be changed or set via form later
                 base_payrate = PayRate(employee_id=new_employee.id, client_id=None, rate=base_rate, effective_date=date.today())
                 db.session.add(base_payrate)
                 

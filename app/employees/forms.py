@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField
-from wtforms.validators import DataRequired, Email, length, ValidationError
+from wtforms import StringField, SubmitField, SelectField, DecimalField
+from wtforms.validators import DataRequired, Email, length, ValidationError, NumberRange
 from app.models import Employee
 from app.utils.validators import validate_phone_number
 
@@ -29,6 +29,7 @@ class AddEmployeeForm(FlaskForm):
     city = StringField('City')
     state = SelectField('State', default='ON')
     zipcode = StringField('Zipcode', validators=[length(max=6)])
+    basepay = DecimalField('Base Pay', validators=[DataRequired()], places=2)
     submit = SubmitField('Add')
 
 
