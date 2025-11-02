@@ -87,7 +87,9 @@
                                     <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">Edit</a>
                                     <button type="button" class="btn btn-success btn-sm" title="Reactivate Employee"
                                         data-bs-toggle="modal" data-bs-target="#reactivateModal"
-                                        data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
+                                        data-employee-id="{{ employee.id }}" 
+                                        data-employee-name="{{ employee.firstname }} {{ employee.lastname }}"
+                                        data-reactivate-url="{{ url_for('employees.reactivate_employee', employee_id=employee.id, next=url_for('employees.list_employees')) }}">
                                         Reactivate
                                     </button>
                                     <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
@@ -241,10 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var reactivateModal = document.getElementById('reactivateModal');
     reactivateModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
-        var employeeId = button.getAttribute('data-employee-id');
         var employeeName = button.getAttribute('data-employee-name');
+        var reactivateUrl = button.getAttribute('data-reactivate-url');
         var form = document.getElementById('reactivateForm');
-        form.action = '/employees/reactivate/' + employeeId;
+        form.action = reactivateUrl;
         reactivateModal.querySelector('.employee-name').textContent = employeeName;
     });
 });

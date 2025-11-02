@@ -264,8 +264,8 @@ td{
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--line-clr);
   border-left: none;
-  padding: 8px;
-  width: 32px;
+  padding: 0;
+  width: 24px;
   height: 32px;
   cursor: pointer;
   z-index: 1000;
@@ -273,7 +273,7 @@ td{
   align-items: center;
   justify-content: center;
   border-radius: 0 4px 4px 0;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  box-shadow: 1px 0 3px rgba(0,0,0,0.1);
   transition: all 0.3s ease;
 }
 

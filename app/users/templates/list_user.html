@@ -15,10 +15,13 @@
     <table class="table table-hover">
         <thead>
             <tr>
-                <th>Email</th>
+                <th>Name</th>
+                <th>Position</th>
                 <th>Role</th>
-                <th>Locked</th>
-                <th>Activated</th>
+                <th class="text-center">Locked</th>
+                <th>Attempts Rem.</th>
+                <th class="text-center">Enabled</th>
+                <th>Activation Key</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -28,31 +31,35 @@
             {% else %}
                 {% for user in users %}
                     <tr>
-                        <td>{{user.email}}</td>
+                        <td>{{user.firstname}} {{user.lastname}}</td>
+                        <td>{{user.position}}</td>
                         <td>{{user.user_type | upper}}</td>
-                        <td><input type="checkbox" disabled {% if user.locked_until %}checked{% endif %}></td>
-                        <td><input type="checkbox" disabled {% if user.password_hash %}checked{% endif %}>{{user.activation_key}}</td>
+                        <td class="text-center"><input type="checkbox" disabled {% if user.locked_until %}checked{% endif %}></td>
+                        <td>{{user.failed_attempt}}</td>
+                        <td class="text-center"><input type="checkbox" disabled {% if user.login_enabled %}checked{% endif %}></td>
+                        <td>{{user.activation_key}}</td>
                         <td>
-                            <div class="btn-group" role="group" aria-label="Action buttons">
-                                {% if user.user_type in ['therapist', 'supervisor'] %}
-                                    <button class="btn btn-success btn-sm" title="Promote to Admin" data-action="{{ url_for('users.promote_user', id=user.id) }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="m136-240-56-56 296-298 160 160 208-206H640v-80h240v240h-80v-104L536-320 376-480 136-240Z"/></svg>
-                                    </button>
-                                {% elif user.user_type == "admin" %}
-                                    <button class="btn btn-danger btn-sm" title="Remove admin privileges (role will be based on position)" data-action="{{ url_for('users.demote_user', id=user.id) }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M640-240v-80h104L536-526 376-366 80-664l56-56 240 240 160-160 264 264v-104h80v240H640Z"/></svg>
-                                    </button>
-                                {% endif %}
-                                {% if user.locked_until %}
-                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M240-160h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM240-160v-400 400Zm0 80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h280v-80q0-83 58.5-141.5T720-920q83 0 141.5 58.5T920-720h-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80h120q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Z"/></svg>
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Lock User">
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>
-                                    </button>
-                                {% endif %}
-                            </div>
+                            {% if user.user_type in ['therapist', 'supervisor'] %}
+                                <button class="btn btn-success btn-sm" title="Promote to Admin" data-action="{{ url_for('users.promote_user', id=user.id) }}">
+                                    Promote
+                                </button>
+                            {% elif user.user_type == "admin" %}
+                                <button class="btn btn-danger btn-sm" title="Remove admin privileges (role will be based on position)" data-action="{{ url_for('users.demote_user', id=user.id) }}" {% if user.position == "Administrator" %}disabled{% else %}enabled{% endif %}>
+                                    Demote
+                                </button>
+                            {% endif %}
+                            {% if user.locked_until %}
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">
+                                    Unlock
+                                </button>
+                            {% else %}
+                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Lock User">
+                                    Lock
+                                </button>
+                            {% endif %}
+                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#reactivateModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" data-reactivate-url="{{ url_for('employees.reactivate_employee', employee_id=user.id, next=url_for('users.list_users')) }}" title="Reactivate User Account">
+                                Reactivate
+                            </button>
                             <form id="roleForm-{{ user.id }}" method="POST" style="display:none;"></form>
                         </td>
                     </tr>
@@ -142,6 +149,27 @@
     </div>
 </div>
 
+<div class="modal fade" id="reactivateModal" tabindex="-1" aria-labelledby="reactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="reactivateForm" method="POST">
+                <div class="modal-header">
+                <h5 class="modal-title" id="reactivateModalLabel">Confirm Reactivation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                Are you sure you want to reactivate the account <strong><span id="userEmailReactivate"></span></strong>?
+                This will clear their password and generate a new activation code.
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-warning">Reactivate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var lockModal = document.getElementById('lockModal');
@@ -161,6 +189,15 @@ document.addEventListener('DOMContentLoaded', function() {
         var form = document.getElementById('unlockForm');
         form.action = '/users/unlock/' + userId;
         document.getElementById('userEmailUnlock').textContent = userEmail;
+    });
+    var reactivateModal = document.getElementById('reactivateModal');
+    reactivateModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userEmail = button.getAttribute('data-user-email');
+        var reactivateUrl = button.getAttribute('data-reactivate-url');
+        var form = document.getElementById('reactivateForm');
+        form.action = reactivateUrl;
+        document.getElementById('userEmailReactivate').textContent = userEmail;
     });
 });
 

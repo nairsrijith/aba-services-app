@@ -4,7 +4,7 @@ from app.models import Employee, Designation, Intervention, Client, PayRate, Pay
 from datetime import date
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
-import os, re
+import os, re, datetime
 from dateutil.relativedelta import relativedelta
 
 employees_bp = Blueprint('employees', __name__, template_folder='templates')
@@ -74,7 +74,7 @@ def add_employee():
                                     user_type=user_type,  # Set the user_type explicitly
                                     is_active=True,  # Employee record is active
                                     login_enabled=False,  # Login disabled until registration
-                                    failed_attempt=-5,  # Start with -5 failed attempts
+                                    failed_attempt=-2,  # Start with -2 failed attempts
                                     locked_until=None)
                 # Generate activation key for the new employee
                 activation_key = new_employee.generate_activation_key()
@@ -119,8 +119,8 @@ def deactivate_employee(employee_id):
         # Clear and update authentication fields
         employee.password_hash = None  # Clear password to prevent login
         employee.activation_key = None  # Clear any existing activation key
-        employee.locked_until = date(2999, 12, 31)  # Lock until 31-Dec-2999
-        employee.failed_attempt = -1  # Set to -1 failed attempts
+        employee.locked_until = datetime.now() + relativedelta(years=1000)  # Lock until 1000 years from now
+        employee.failed_attempt = -2  # Set to -2 failed attempts
         employee.login_enabled = False  # Disable login access
         # Note: is_active remains unchanged - employee record stays active
         
@@ -143,13 +143,18 @@ def reactivate_employee(employee_id):
         employee.password_hash = None  # Ensure password is cleared
         activation_key = employee.generate_activation_key()  # Generate new activation key
         employee.locked_until = None  # Clear any previous lock
-        employee.failed_attempt = -5  # Reset failed attempts
+        employee.failed_attempt = -2  # Reset failed attempts
         employee.is_active = True  # Set employee record as active
         employee.login_enabled = False  # Keep login disabled until re-registration completed
         
         db.session.commit()
         flash(f'Employee has been prepared for reactivation. Please provide them with the activation code: {activation_key}', 'info')
         flash('Their account will be activated once they complete the registration process.', 'info')
+        
+        # Check if there's a next parameter to determine where to redirect
+        next_url = request.args.get('next')
+        if next_url:
+            return redirect(next_url)
         return redirect(url_for('employees.list_employees'))
     else:
         abort(403)

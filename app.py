@@ -146,7 +146,7 @@ def login():
             else:
                 employee.failed_attempt = employee.failed_attempt-1
                 if employee.failed_attempt <= 0:
-                    if employee.failed_attempt == 0:
+                    if not employee.locked_until:
                         employee.locked_until = datetime.now()
                     time_to_remain_locked = -(employee.failed_attempt - 1)*15
                     employee.locked_until += timedelta(minutes=time_to_remain_locked)

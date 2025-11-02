@@ -13,24 +13,6 @@ users_bp = Blueprint('users', __name__, template_folder='templates')
 org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
-@users_bp.route('/set_role/<int:id>', methods=['GET', 'POST'])
-@login_required
-def set_role(id):
-    # Only super and admin can modify roles
-    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
-        employee = Employee.query.get_or_404(id)
-        form = SetRoleForm()
-        form.user_type.choices = [("admin", "Admin"), ("therapist", "Therapist"), ("supervisor", "Supervisor")]
-        if form.validate_on_submit():
-            employee.user_type = form.user_type.data
-            db.session.commit()
-            flash('User role updated.', 'success')
-            return redirect(url_for('users.list_users'))
-        return render_template('set_role.html', form=form, employee=employee, org_name=org_name)
-    else:
-        abort(403)
-
-
 @users_bp.route('/list', methods=['GET','POST'])
 @login_required
 def list_users():
@@ -52,33 +34,13 @@ def list_users():
         abort(403)
     
 
-@users_bp.route('/delete/<int:id>', methods=['GET', 'POST'])
-@login_required
-def delete_user(id):
-    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
-        employee = Employee.query.get_or_404(id)
-        
-        # Cannot delete super users
-        if employee.user_type == 'super':
-            flash('Cannot delete super user accounts.', 'danger')
-            return redirect(url_for('users.list_users'))
-        
-        # Set user as inactive instead of deleting
-        employee.is_active = False
-        db.session.commit()
-        flash('User account deactivated.', 'success')
-        return redirect(url_for('users.list_users'))
-    else:
-        abort(403)
-    
-
 @users_bp.route('/lock/<int:id>', methods=['GET', 'POST'])
 @login_required
 def lock_user(id):
     if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         employee = Employee.query.get_or_404(id)
         employee.locked_until = datetime.now() + relativedelta(years=1000)
-        employee.failed_attempt = -5
+        employee.failed_attempt = -2
         db.session.commit()
         flash("User account locked.", "success")
         return redirect(url_for('users.list_users'))
@@ -98,7 +60,7 @@ def unlock_user(id):
         return redirect(url_for('users.list_users'))
     else:
         abort(403)
-    
+
 
 @users_bp.route('/promote/<int:id>', methods=['GET','POST'])
 @login_required
@@ -108,8 +70,11 @@ def promote_user(id):
         # Keep track of the previous role
         previous_role = employee.user_type
         employee.user_type = "admin"
-        db.session.commit()
-        flash(f"User account promoted from {previous_role.capitalize()} to Admin.", "success")
+        if previous_role != employee.user_type:
+            db.session.commit()
+            flash(f"User account promoted from {previous_role.capitalize()} to Admin.", "success")
+        else:
+            flash(f"User's role is already Admin.", "info")
         return redirect(url_for('users.list_users'))
     else:
         abort(403)
@@ -125,7 +90,9 @@ def demote_user(id):
         previous_role = employee.user_type
         
         # Determine new role based on position
-        if employee.position == 'Behaviour Analyst':
+        if employee.position == 'Administrator':
+            employee.user_type = 'admin'
+        elif employee.position == 'Behaviour Analyst':
             employee.user_type = 'supervisor'
         else:
             employee.user_type = 'therapist'
