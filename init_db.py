@@ -22,11 +22,13 @@ def initialize_database():
     with app.app_context():
         # Enable SQL echo on the engine to see SQL statements (helps confirm commits run)
         try:
-            engine = db.get_engine(app)
+            # Use the new engine property instead of get_engine()
+            engine = db.engine
             logger.info("Engine URL: %s", getattr(engine, "url", "<unknown>"))
-            engine.echo = True
+            # Set echo through SQLAlchemy configuration
+            app.config['SQLALCHEMY_ECHO'] = True
         except Exception as e:
-            logger.warning("Could not enable engine echo: %s", e)
+            logger.warning("Could not configure engine: %s", e)
 
         inspector = inspect(db.engine)
         logger.info("Pre-create_all() tables: %s", inspector.get_table_names())
