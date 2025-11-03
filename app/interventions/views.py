@@ -66,31 +66,61 @@ def add_intervention():
             form.intervention_type.choices = []
 
         if form.validate_on_submit():
-            client_id = form.client_id.data
-            client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
-            os.makedirs(client_folder, exist_ok=True)
-            filenames = []
-            for file_storage in request.files.getlist(form.file_names.name):
-                if file_storage and file_storage.filename and allowed_file(file_storage.filename):
-                    filename = secure_filename(file_storage.filename)
-                    file_storage.save(os.path.join(client_folder, filename))
-                    filenames.append(filename)
-                elif file_storage and file_storage.filename:
-                    flash(f"File type not allowed: {file_storage.filename}", "danger")
+            # Check for overlapping sessions first
+            if not form.validate_session_time():
+                return render_template('add_int.html', form=form, org_name=org_name)
+
+            try:
+                client_id = form.client_id.data
+                client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+                filenames = []
+                
+                try:
+                    # Create upload directory
+                    os.makedirs(client_folder, exist_ok=True)
+                except OSError as e:
+                    flash('Error creating upload directory: ' + str(e), 'error')
+                    return render_template('add_int.html', form=form, org_name=org_name)
+
+                # Handle file uploads
+                for file_storage in request.files.getlist(form.file_names.name):
+                    if file_storage and file_storage.filename:
+                        if allowed_file(file_storage.filename):
+                            try:
+                                filename = secure_filename(file_storage.filename)
+                                file_path = os.path.join(client_folder, filename)
+                                file_storage.save(file_path)
+                                filenames.append(filename)
+                                flash(f"File added: {file_storage.filename}", "success")
+                            except Exception as e:
+                                flash(f'Error uploading file {file_storage.filename}: {str(e)}', 'error')
+                                continue
+                        else:
+                            flash(f"File type not allowed: {file_storage.filename}", "danger")
+                
+                # Create and save new intervention
+                new_intervention = Intervention(
+                    client_id=client_id,
+                    employee_id=form.employee_id.data,
+                    intervention_type=form.intervention_type.data,
+                    date=form.date.data,
+                    start_time=form.start_time.data,
+                    end_time=form.end_time.data,
+                    duration=round(float(form.duration.data), 2),
+                    file_names=json.dumps(filenames)  # Save as JSON string
+                )
+                
+                db.session.add(new_intervention)
+                db.session.commit()
+                flash('Intervention added successfully!', 'success')
+                return redirect(url_for('interventions.list_interventions'))
+
+            except Exception as e:
+                db.session.rollback()
+                flash('Error adding intervention: ' + str(e), 'error')
+                return render_template('add_int.html', form=form, org_name=org_name)
             
-            new_intervention = Intervention(
-                client_id=client_id,
-                employee_id=form.employee_id.data,
-                intervention_type=form.intervention_type.data,
-                date=form.date.data,
-                start_time=form.start_time.data,
-                end_time=form.end_time.data,
-                duration=round(float(form.duration.data), 2),
-                file_names=json.dumps(filenames)  # Save as JSON string
-            )
-            db.session.add(new_intervention)
-            db.session.commit()
-            return redirect(url_for('interventions.list_interventions'))
+        return render_template('add_int.html', form=form, org_name=org_name)
         return render_template('add_int.html', form=form, org_name=org_name)
     else:
         abort(403)
@@ -300,46 +330,95 @@ def update_intervention(intervention_id):
         else:
             form.intervention_type.choices = []
 
-        if request.method == 'POST':
-            client_id = form.client_id.data
-            client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
-            deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
-            os.makedirs(client_folder, exist_ok=True)
-            os.makedirs(deleted_folder, exist_ok=True)
+        if request.method == 'POST' and form.validate():
+            # Pass the intervention_id to the form for validation
+            form.intervention_id = intervention_id
+            if not form.validate_session_time():
+                return render_template('update_int.html', form=form, 
+                                    clients=Client.query.all(), 
+                                    employees=Employee.query.all(), 
+                                    org_name=org_name,
+                                    intervention=intervention)
+            try:
+                client_id = form.client_id.data
+                client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
+                deleted_folder = os.path.join(app.config['DELETE_FOLDER'], str(client_id))
+                os.makedirs(client_folder, exist_ok=True)
+                os.makedirs(deleted_folder, exist_ok=True)
+            except OSError as e:
+                flash('Error creating directories: ' + str(e), 'error')
+                return render_template('update_int.html', form=form,
+                                    clients=Client.query.all(),
+                                    employees=Employee.query.all(),
+                                    org_name=org_name,
+                                    intervention=intervention)
 
-            filenames = intervention.get_file_names()
-            remove_files = request.form.getlist('remove_files')
-            # Move removed files to deleted folder
-            for filename in remove_files:
-                src = os.path.join(client_folder, filename)
-                dst = os.path.join(deleted_folder, filename)
-                if os.path.exists(src):
-                    shutil.move(src, dst)
-            # Remove from filenames list
-            filenames = [f for f in filenames if f not in remove_files]
+            try:
+                filenames = intervention.get_file_names()
+                remove_files = request.form.getlist('remove_files')
+                # Move removed files to deleted folder
+                for filename in remove_files:
+                    try:
+                        src = os.path.join(client_folder, filename)
+                        dst = os.path.join(deleted_folder, filename)
+                        if os.path.exists(src):
+                            shutil.move(src, dst)
+                    except OSError as e:
+                        flash(f'Error moving file {filename}: {str(e)}', 'warning')
+                        continue
+                
+                # Remove from filenames list
+                filenames = [f for f in filenames if f not in remove_files]
 
-            # Handle new uploads
-            for file_storage in request.files.getlist(form.file_names.name):
-                if file_storage and file_storage.filename and allowed_file(file_storage.filename):
-                    filename = secure_filename(file_storage.filename)
-                    file_storage.save(os.path.join(client_folder, filename))
-                    filenames.append(filename)
-                    flash(f"File added: {file_storage.filename}", "success")
-                elif file_storage and file_storage.filename:
-                    flash(f"File type not allowed: {file_storage.filename}", "danger")
+                # Handle new uploads
+                for file_storage in request.files.getlist(form.file_names.name):
+                    if file_storage and file_storage.filename:
+                        if allowed_file(file_storage.filename):
+                            try:
+                                filename = secure_filename(file_storage.filename)
+                                file_path = os.path.join(client_folder, filename)
+                                file_storage.save(file_path)
+                                filenames.append(filename)
+                                flash(f"File added: {file_storage.filename}", "success")
+                            except Exception as e:
+                                flash(f'Error uploading file {file_storage.filename}: {str(e)}', 'error')
+                                continue
+                        else:
+                            flash(f"File type not allowed: {file_storage.filename}", "danger")
 
-            intervention.client_id = client_id
-            intervention.employee_id = form.employee_id.data
-            intervention.intervention_type = form.intervention_type.data
-            intervention.date = form.date.data
-            intervention.start_time = form.start_time.data
-            intervention.end_time = form.end_time.data
-            intervention.duration = round(float(form.duration.data), 2)
-            intervention.invoiced = form.invoiced.data
-            intervention.invoice_number = form.invoice_number.data
-            intervention.file_names = json.dumps(filenames)
-            db.session.commit()
-            return redirect(url_for('interventions.list_interventions'))
+                # Update intervention
+                intervention.client_id = client_id
+                intervention.employee_id = form.employee_id.data
+                intervention.intervention_type = form.intervention_type.data
+                intervention.date = form.date.data
+                intervention.start_time = form.start_time.data
+                intervention.end_time = form.end_time.data
+                intervention.duration = round(float(form.duration.data), 2)
+                intervention.invoiced = form.invoiced.data
+                intervention.invoice_number = form.invoice_number.data
+                intervention.file_names = json.dumps(filenames)
+
+                try:
+                    db.session.commit()
+                    flash('Intervention updated successfully!', 'success')
+                    return redirect(url_for('interventions.list_interventions'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash('Database error: ' + str(e), 'error')
+                    return render_template('update_int.html', form=form,
+                                        clients=Client.query.all(),
+                                        employees=Employee.query.all(),
+                                        org_name=org_name,
+                                        intervention=intervention)
+
+            except Exception as e:
+                db.session.rollback()
+                flash('Unexpected error: ' + str(e), 'error')
+                return render_template('update_int.html', form=form,
+                                    clients=Client.query.all(),
+                                    employees=Employee.query.all(),
+                                    org_name=org_name,
+                                    intervention=intervention)
         return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=org_name, intervention=intervention)
     else:
         abort(403)

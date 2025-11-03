@@ -35,13 +35,14 @@
                     <th>Parent's Name</th>
                     <th>City</th>
                     <th>State</th>
+                    <th>Supervisor</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% if not clients %}
                     <tr>
-                        <td colspan="6" class="text-center">No clients found.</td>
+                        <td colspan="7" class="text-center">No clients found.</td>
                     </tr>
                 {% else %}
                     {# Separate active and inactive into two groups for clearer UI #}
@@ -58,6 +59,13 @@
                             <td>{{ client.parentname }}</td>
                             <td>{{ client.city }}</td>
                             <td>{{ client.state }}</td>
+                            <td>
+                                {% if client.supervisor %}
+                                    {{ client.supervisor.firstname }} {{ client.supervisor.lastname }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
                             <td>
                                 <a href="{{ url_for('clients.update_client', client_id=client.id) }}" class="btn btn-info btn-sm" title="Edit Client">Edit</a>
                                 <button type="button" class="btn btn-warning btn-sm" title="Deactivate Client"
@@ -81,6 +89,13 @@
                                 <td>{{ client.parentname }}</td>
                                 <td>{{ client.city }}</td>
                                 <td>{{ client.state }}</td>
+                                <td>
+                                    {% if client.supervisor %}
+                                        {{ client.supervisor.firstname }} {{ client.supervisor.lastname }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <a href="{{ url_for('clients.update_client', client_id=client.id) }}" class="btn btn-primary btn-sm" title="Edit Client">Edit</a>
                                     <button type="button" class="btn btn-success btn-sm" title="Reactivate Client"

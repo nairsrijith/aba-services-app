@@ -206,6 +206,50 @@ class Intervention(db.Model):
     def set_file_names(self, filenames):
         self.file_names = json.dumps(filenames)
 
+    @classmethod
+    def has_overlap(cls, employee_id, date, start_time, end_time, exclude_id=None):
+        """
+        Check if there's any overlapping session for the given employee at the specified time.
+        
+        Args:
+            employee_id: The ID of the employee to check
+            date: The date of the session
+            start_time: The start time of the session
+            end_time: The end time of the session
+            exclude_id: Optional intervention ID to exclude from the check (for updates)
+            
+        Returns:
+            bool: True if there's an overlap, False otherwise
+        """
+        query = cls.query.filter(
+            cls.employee_id == employee_id,
+            cls.date == date,
+            # Check if either the start or end time falls within an existing session
+            db.or_(
+                # New session starts during an existing session
+                db.and_(
+                    cls.start_time <= start_time,
+                    cls.end_time > start_time
+                ),
+                # New session ends during an existing session
+                db.and_(
+                    cls.start_time < end_time,
+                    cls.end_time >= end_time
+                ),
+                # New session completely contains an existing session
+                db.and_(
+                    cls.start_time >= start_time,
+                    cls.end_time <= end_time
+                )
+            )
+        )
+        
+        # Exclude the current intervention if updating
+        if exclude_id is not None:
+            query = query.filter(cls.id != exclude_id)
+            
+        return query.first() is not None
+
     def __init__(self, client_id, employee_id, intervention_type, date, start_time, end_time, duration, file_names, invoiced=False, invoice_number=None):
         self.client_id = client_id
         self.employee_id = employee_id
