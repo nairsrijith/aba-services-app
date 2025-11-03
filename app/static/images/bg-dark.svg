@@ -23,8 +23,8 @@
 
   <!-- moon and glow (position matches light sun) -->
   <g transform="translate(1180,140)">
-    <circle r="40" fill="#fff9e0" opacity="0.98" />
-    <circle r="120" fill="url(#moonGlow)" opacity="0.55" />
+    <circle r="40" fill="#fff9e0" opacity="0.48" />
+    <circle r="120" fill="url(#moonGlow)" opacity="0.15" />
   </g>
 
   <!-- stars scatter -->
@@ -64,7 +64,7 @@
       <polygon points="0,-22 -30,18 30,18" fill="#2f6a3f" />
     </g>
     <g transform="translate(760,700) scale(1.25)">
-      <rect x="-7" y="22" width="14" height="34" fill="#372219" rx="2" />
+      <rect x="-7" y="22" width="14" height="36" fill="#372219" rx="2" />
       <polygon points="0,-28 -40,24 40,24" fill="#3b5f3e" />
       <polygon points="0,-44 -34,-6 34,-6" fill="#2f6a3f" />
     </g>

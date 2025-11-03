@@ -258,7 +258,7 @@ td{
 #toggle-btn {
   position: fixed;
   top: 0px;
-  left: 220px; /* Same as sidebar width */
+  left: 219px; /* Same as sidebar width, -1 for overlap */
   background: rgba(var(--accent-clr-rgb), 0.02);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -266,7 +266,7 @@ td{
   border-left: none;
   padding: 0;
   width: 24px;
-  height: 32px;
+  height: 60px;
   cursor: pointer;
   z-index: 1000;
   display: flex;
@@ -278,7 +278,7 @@ td{
 }
 
 #sidebar.close + #toggle-btn {
-  left: 60px; /* Same as collapsed sidebar width */
+  left: 59px; /* Same as collapsed sidebar width, -1 for overlap*/
 }
 
 #toggle-btn:hover {
@@ -520,7 +520,7 @@ html.dark-mode .table.table-striped > tbody > tr:nth-of-type(odd) {
 /* Links */
 a {
     color: var(--accent-clr) !important;
-    text-decoration: none;
+    text-decoration: underline;
     transition: all 0.2s ease;
 }
 a:hover {
@@ -683,7 +683,7 @@ html.light-mode .earnings-pending-positive {
   z-index: 1060;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
 }
 
 .theme-toggle-btn {
@@ -697,6 +697,14 @@ html.light-mode .earnings-pending-positive {
   display: flex;
   align-items: center;
   justify-content: center;
+  text-decoration: none !important;
+  color: var(--text-clr) !important;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  opacity: 1;
 }
 
 .theme-toggle-icon {

@@ -24,7 +24,7 @@ services:
       - "8082:8080" # Update the port mapping as needed. Do not change the port number on right side of the ":" (colon).
     volumes:
       - ./data:/myapp/app/data # You can either have a local directory for data persistence or use a named volume.
-      - ./assets/millcreekaba.png:/myapp/app/static/images/logo.png
+      - ./assets/logo.png:/myapp/app/static/images/logo.png
     env_file: .env
     environment:
       ORG_NAME: ${ORG_NAME:-Buzzing Minds}
