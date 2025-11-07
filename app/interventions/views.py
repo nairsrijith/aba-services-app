@@ -25,9 +25,9 @@ def add_intervention():
         emp = Employee.query.filter_by(email=current_user.email).first()
 
         # Ensure there are clients in the system
-        clients = Client.query.all()
+        clients = Client.query.filter_by(is_active=True).all()
         if not clients:
-            flash('Please add clients before adding interventions.', 'warning')
+            flash('Warning: No active client records found.', 'warning')
             return redirect(url_for('interventions.list_interventions'))
 
         form = AddInterventionForm()
@@ -39,7 +39,12 @@ def add_intervention():
 
         # Employee selection:
         if current_user.user_type in ["admin", "super"]:
-            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).all()]
+            # Exclude super users from the employee selection
+            form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") 
+                                      for e in Employee.query.filter(
+                                          Employee.is_active==True,
+                                          Employee.user_type!='super'
+                                      ).all()]
         elif current_user.user_type == 'supervisor':
             # supervisors can choose therapists, senior therapists, and themselves
             current_employee = Employee.query.filter_by(email=current_user.email, is_active=True).first()
@@ -294,10 +299,19 @@ def update_intervention(intervention_id):
         form.client_id.choices = client_choices
 
         if current_user.user_type in ["admin", "super"]:
-            emp_choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).all()]
+            # Exclude super users from the employee selection
+            emp_choices = [(e.id, f"{e.firstname} {e.lastname}") 
+                          for e in Employee.query.filter(
+                              Employee.is_active==True,
+                              Employee.user_type!='super'
+                          ).all()]
             if intervention.employee_id:
                 emp_choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)")
-                                  for e in Employee.query.filter_by(id=intervention.employee_id, is_active=False).all()])
+                                  for e in Employee.query.filter(
+                                      Employee.id==intervention.employee_id,
+                                      Employee.is_active==False,
+                                      Employee.user_type!='super'
+                                  ).all()])
             form.employee_id.choices = emp_choices
         elif current_user.user_type == 'supervisor':
             # supervisors can reassign to therapists, senior therapists, and themselves

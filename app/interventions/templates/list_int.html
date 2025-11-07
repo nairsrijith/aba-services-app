@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+</style>
 <div class="p-2 mb-4 rounded-3">
     <div class="container-fluid py-2">
         <h2>Sessions</h2>
@@ -112,8 +120,20 @@
                                         title="{% if intervention.is_paid %}Paid sessions cannot be deleted{% else %}Invoiced sessions cannot be deleted{% endif %}">
                                 {% endif %}
                             </td>
-                            <td>{{ intervention.client.firstname }} {{ intervention.client.lastname }}</td>
-                            <td>{{ intervention.employee.firstname }} {{ intervention.employee.lastname }}</td>
+                            <td>
+                                <span class="d-inline-flex align-items-center">
+                                    <span class="status-dot me-2 {% if intervention.client.is_active %}bg-success{% else %}bg-secondary{% endif %}" 
+                                          title="{{ 'Active' if intervention.client.is_active else 'Inactive' }} Client"></span>
+                                    {{ intervention.client.firstname }} {{ intervention.client.lastname }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="d-inline-flex align-items-center">
+                                    <span class="status-dot me-2 {% if intervention.employee.is_active %}bg-success{% else %}bg-secondary{% endif %}"
+                                          title="{{ 'Active' if intervention.employee.is_active else 'Inactive' }} Employee"></span>
+                                    {{ intervention.employee.firstname }} {{ intervention.employee.lastname }}
+                                </span>
+                            </td>
                             <td>{{ intervention.intervention_type }}</td>
                             <td class="text-end">{{ intervention.date.strftime('%Y-%m-%d') }}</td>
                             <td class="text-end">{{ intervention.start_time.strftime('%H:%M') }}</td>

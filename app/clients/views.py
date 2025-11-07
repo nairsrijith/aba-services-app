@@ -19,7 +19,7 @@ def add_client():
         
         supervisor = Employee.query.filter_by(position='Behaviour Analyst', is_active=True).first()
         if not supervisor:
-            flash('Please add at least one active Behaviour Analyst before adding clients.', 'warning')
+            flash('Warning: No active Behaviour Analyst available to add a client record.', 'warning')
             return redirect(url_for('employees.list_employees'))
 
         form = AddClientForm()
