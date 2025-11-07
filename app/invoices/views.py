@@ -3,7 +3,7 @@ from app import db
 import json
 import base64
 import os
-from app.models import Invoice, Intervention, Client, Activity, Employee
+from app.models import Invoice, Intervention, Client, Activity, Employee, PayStubItem
 from app.invoices.forms import InvoiceClientSelectionForm
 from datetime import date, timedelta, datetime
 from sqlalchemy import and_
@@ -41,9 +41,13 @@ def list_invoices():
 @login_required
 def invoice_client_select():
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
-        interventions = Intervention.query.filter_by(invoiced=False).all()
+        # Only check if there are any uninvoiced interventions
+        interventions = Intervention.query.filter(
+            Intervention.invoiced == False
+        ).all()
+        
         if not interventions:
-            flash('No uninvoiced session available to create an invoice.', 'warning')
+            flash('No uninvoiced sessions available to create an invoice.', 'warning')
             return redirect(url_for('interventions.list_interventions'))
         
         form = InvoiceClientSelectionForm()
@@ -74,6 +78,8 @@ def invoice_preview():
         date_to = parse_date(request.args.get('dt'))
 
         client = Client.query.get(int(client_id))
+        
+        # Query interventions only checking invoiced status and date range
         interventions = Intervention.query.filter(
             Intervention.client_id == int(client_id),
             Intervention.invoiced == False,
@@ -360,15 +366,56 @@ def preview_invoice_by_number(invoice_number):
 @login_required
 def delete_invoice(invoice_number):
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
-        invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
-        interventions = Intervention.query.filter_by(invoice_number=invoice_number).all()
-        for intervention in interventions:
-            intervention.invoiced = False
-            intervention.invoice_number = None
-            db.session.add(intervention)
-        db.session.delete(invoice)
-        db.session.commit()
-        flash('Invoice and related interventions updated.', 'success')
+        try:
+            invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
+            
+            # Get all intervention IDs from invoice_items
+            intervention_ids = set()  # Using set to avoid duplicates
+            if invoice.invoice_items:
+                try:
+                    items = json.loads(invoice.invoice_items)
+                    intervention_ids.update(item.get('intervention_id') for item in items if item.get('intervention_id'))
+                except json.JSONDecodeError:
+                    flash('Warning: Could not parse invoice items', 'warning')
+            
+            # Also get intervention IDs from linked interventions
+            linked_interventions = Intervention.query.filter_by(invoice_number=invoice_number).all()
+            intervention_ids.update(i.id for i in linked_interventions)
+            
+            if not intervention_ids:
+                flash('Warning: No interventions found for this invoice', 'warning')
+            
+            # Update the interventions
+            updated_count = Intervention.query.filter(Intervention.id.in_(intervention_ids)).update(
+                {
+                    Intervention.invoiced: False,
+                    Intervention.invoice_number: None
+                },
+                synchronize_session=False
+            )
+
+            # Delete the invoice
+            db.session.delete(invoice)
+            db.session.commit()
+
+            # Verify the updates
+            still_linked = Intervention.query.filter(
+                db.or_(
+                    Intervention.invoice_number == invoice_number,
+                    Intervention.id.in_(intervention_ids),
+                    Intervention.invoiced == True
+                )
+            ).all()
+
+            if still_linked:
+                flash(f'Warning: Found {len(still_linked)} sessions that may still be linked. Please check.', 'warning')
+            
+            flash(f'Invoice deleted and {updated_count} sessions were marked as uninvoiced.', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting invoice: {str(e)}', 'error')
+            
         return redirect(url_for('invoices.list_invoices'))
     else:
         abort(403)

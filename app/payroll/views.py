@@ -4,10 +4,10 @@ from app.payroll.forms import PayPeriodForm, PayRateForm
 from app.models import Employee, Intervention, PayRate, PayStub, PayStubItem, Client
 from sqlalchemy import extract
 from flask_login import login_required, current_user
-from datetime import date
+from datetime import date, datetime
 from weasyprint import HTML
-import tempfile
-import os
+import tempfile, os
+
 
 payroll_bp = Blueprint('payroll', __name__, template_folder='templates')
 
@@ -15,19 +15,28 @@ payroll_bp = Blueprint('payroll', __name__, template_folder='templates')
 @payroll_bp.route('/paystubs')
 @login_required
 def list_paystubs():
-    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
-        flash('Unauthorized', 'danger')
+    if not current_user.is_authenticated:
+        flash('Please log in to view paystubs.', 'danger')
         return redirect(url_for('home'))
     
     # Get filters
-    employee_id = request.args.get('employee', type=int)
     month = request.args.get('month', '')
     
-    # Build query
+    # Build query based on user role
     query = PayStub.query
     
-    if employee_id:
-        query = query.filter_by(employee_id=employee_id)
+    if current_user.user_type in ['admin', 'super']:
+        # Admins can see all paystubs and filter by employee
+        employee_id = request.args.get('employee', type=int)
+        if employee_id:
+            query = query.filter_by(employee_id=employee_id)
+    else:
+        # Regular users can only see their own paystubs
+        emp = Employee.query.filter_by(email=current_user.email).first()
+        if not emp:
+            flash('No employee record found for your account.', 'danger')
+            return redirect(url_for('home'))
+        query = query.filter_by(employee_id=emp.id)
         
     if month:  # format: YYYY-MM
         year, month = map(int, month.split('-'))
@@ -38,11 +47,15 @@ def list_paystubs():
         
     # Get results
     paystubs = query.order_by(PayStub.generated_date.desc()).all()
-    # Include both active and employees with paystubs
-    employee_ids = set(ps.employee_id for ps in paystubs)
-    employees = Employee.query.filter(
-        (Employee.is_active == True) | (Employee.id.in_(employee_ids))
-    ).order_by(Employee.firstname, Employee.lastname).all()
+    
+    # Get employee list for filter (only for admin/super)
+    if current_user.user_type in ['admin', 'super']:
+        employee_ids = set(ps.employee_id for ps in paystubs)
+        employees = Employee.query.filter(
+            (Employee.is_active == True) | (Employee.id.in_(employee_ids))
+        ).order_by(Employee.firstname, Employee.lastname).all()
+    else:
+        employees = None
     
     return render_template('list_paystubs.html', paystubs=paystubs, employees=employees)
 
@@ -151,11 +164,19 @@ def delete_payrate(id):
 @payroll_bp.route('/paystubs/<int:id>')
 @login_required
 def view_paystub(id):
-    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
-        flash('Unauthorized', 'danger')
+    if not current_user.is_authenticated:
+        flash('Please log in to view paystubs.', 'danger')
         return redirect(url_for('home'))
     
     paystub = PayStub.query.get_or_404(id)
+    
+    # Check if user has permission to view this paystub
+    if current_user.user_type not in ['admin', 'super']:
+        emp = Employee.query.filter_by(email=current_user.email).first()
+        if not emp or emp.id != paystub.employee_id:
+            flash('Unauthorized access.', 'danger')
+            return redirect(url_for('home'))
+    
     return render_template('view_paystub.html', paystub=paystub)
 
 
@@ -163,11 +184,18 @@ def view_paystub(id):
 @login_required
 def export_paystub_pdf(id):
     try:
-        if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
-            flash('Unauthorized', 'danger')
+        if not current_user.is_authenticated:
+            flash('Please log in to download paystubs.', 'danger')
             return redirect(url_for('home'))
         
         paystub = PayStub.query.get_or_404(id)
+        
+        # Check if user has permission to download this paystub
+        if current_user.user_type not in ['admin', 'super']:
+            emp = Employee.query.filter_by(email=current_user.email).first()
+            if not emp or emp.id != paystub.employee_id:
+                flash('Unauthorized access.', 'danger')
+                return redirect(url_for('home'))
         
         # Get logo path or base64 data. Prefer configured LOGO_PATH (or env var),
         # otherwise fall back to app static favicon as a base64-embedded image.
@@ -204,6 +232,11 @@ def export_paystub_pdf(id):
         org_email = current_app.config.get('ORG_EMAIL') or current_app.config.get('ORGANIZATION_EMAIL') or os.environ.get('ORG_EMAIL') or ''
         org_address = current_app.config.get('ORG_ADDRESS') or current_app.config.get('ORGANIZATION_ADDRESS') or os.environ.get('ORG_ADDRESS') or ''
         
+        # Get current timestamp for download time
+        download_time = datetime.now()
+        formatted_time = download_time.strftime('%Y/%m/%d %H:%M:%S')
+        filename_time = download_time.strftime('%Y%m%d%H%M%S')
+        
         # Generate PDF using WeasyPrint with the new template
         # render the template from this blueprint's templates folder
         html = render_template('paystub_pdf.html',
@@ -214,7 +247,8 @@ def export_paystub_pdf(id):
                            org_name=org_name,
                            org_phone=org_phone,
                            org_email=org_email,
-                           org_address=org_address)
+                           org_address=org_address,
+                           download_time=formatted_time)
         
         # Create a temporary file for the PDF
         temp_dir = tempfile.mkdtemp()
@@ -227,7 +261,7 @@ def export_paystub_pdf(id):
         return send_file(
             pdf_path,
             as_attachment=True,
-            download_name=f'paystub_{paystub.period_start.strftime("%Y%m%d")}_{paystub.employee.lastname}.pdf'
+            download_name=f'paystub_{paystub.period_start.strftime("%Y%m%d")}-{paystub.period_end.strftime("%Y%m%d")}_{paystub.employee.firstname}_{paystub.employee.lastname}_{filename_time}.pdf'
         )
     except Exception as e:
         current_app.logger.error(f'PDF generation failed: {str(e)}')
@@ -238,8 +272,9 @@ def export_paystub_pdf(id):
 @payroll_bp.route('/paystubs/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_paystub(id):
+    # Only admin/super users can delete paystubs
     if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
-        flash('Unauthorized', 'danger')
+        flash('Unauthorized. Only administrators can delete paystubs.', 'danger')
         return redirect(url_for('home'))
 
     paystub = PayStub.query.get_or_404(id)
@@ -279,8 +314,19 @@ def create_paystub():
             flash('Start date must be before end date', 'danger')
             return render_template('create_paystub.html', form=form)
 
-        sessions = Intervention.query.filter(Intervention.employee_id == emp_id, Intervention.date >= start, Intervention.date <= end).order_by(Intervention.date).all()
+        # Query sessions within date range, regardless of invoice status
+        # Get list of interventions that are already in paystubs
+        existing_paystub_sessions = db.session.query(PayStubItem.intervention_id).all()
+        existing_session_ids = [id[0] for id in existing_paystub_sessions]
 
+        # Query sessions within date range, excluding those already in paystubs
+        sessions = Intervention.query.filter(
+            Intervention.employee_id == emp_id,
+            Intervention.date >= start,
+            Intervention.date <= end,
+            ~Intervention.id.in_(existing_session_ids) if existing_session_ids else True
+        ).order_by(Intervention.date).all()
+        
         lines = []
         total_hours = 0.0
         total_amount = 0.0

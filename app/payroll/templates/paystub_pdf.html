@@ -6,20 +6,90 @@
     <style>
         /* Slightly wider margins to avoid clipping and improve layout */
         @page { size: A4; margin: 12mm; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.4; }
-        .container { margin: 0 auto; width: 100%; padding: 6px 6px 12px 6px; }
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-size: 11pt; 
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+        .container { 
+            margin: 0 auto; 
+            width: calc(100% - 16px); /* Account for page margins */
+            box-sizing: border-box;
+            padding: 0;
+        }
+        .header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            margin-bottom: 8px;
+            padding: 0 8px;
+            box-sizing: border-box;
+        }
         .header img { height: 48px; margin-right: 10px; }
         .header h2 { margin: 0; color: #0d6efd; }
-        .row { display: flex; gap: 16px; }
-        .col-md-6 { width: 50%; }
-        .info-section { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+        .row { 
+            display: flex; 
+            width: 100%; 
+            margin: 0;
+            padding: 0 8px;
+            gap: 16px; /* Space between columns */
+            box-sizing: border-box;
+        }
+        .col-md-6 { 
+            flex: 1; /* Equal width columns */
+            box-sizing: border-box;
+        }
+        .info-section { 
+            background: #f8f9fa; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 0.5px solid #e0e0e0;
+            width: 100%; /* Ensure full width within column */
+        }
         .info-section h3 { color: #0d6efd; margin: 0 0 8px 0; font-size: 13pt; }
         .info-section p { margin: 4px 0; }
+        /* Specific alignment for the right column */
+        .info-section.right { text-align: right; }
+        .info-section.right p { text-align: right; }
+        .info-section.right h3 { text-align: right; }
 
-        /* Use styles similar to invoice PDF for consistent look */
-        .invoice-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 12px; font-size: 11px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-radius: 8px; overflow: hidden; border: 0.5px solid #e0e0e0; }
-        .invoice-table th { background: #0d6efd; color: #fff; font-weight: 600; padding: 10px 8px; border: none; text-align: left; }
+        /* Table section styles */
+        h3.section-title {
+            padding: 0 8px;
+            margin: 16px 0 8px 0;
+            color: #0d6efd;
+            box-sizing: border-box;
+        }
+        .table-section {
+            padding: 0 8px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .invoice-table { 
+            width: 100%; 
+            border-collapse: separate; 
+            border-spacing: 0; 
+            margin-top: 0;
+            font-size: 11px; 
+            background: #fff; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 0.5px solid #e0e0e0;
+        }
+        .invoice-table th { 
+            background: #0d6efd; 
+            color: #fff; 
+            font-weight: 600; 
+            padding: 10px 8px; 
+            border: none; 
+            text-align: left; 
+        }
         .invoice-table td { border: 0.5px solid #e0e0e0; padding: 8px 8px; text-align: left; vertical-align: middle; }
         /* Ensure numeric columns align right inside the invoice table (higher specificity) */
         .invoice-table td.text-end,
@@ -35,9 +105,21 @@
         /* Numeric alignment helper */
         .text-end { text-align: right; }
         .text-center { text-align: center; }
+
+        /* Footer styles */
+        @page {
+            @bottom-right {
+                content: "Downloaded: " string(download_time);
+                font-size: 8pt;
+                color: #666;
+                padding-right: 1cm;
+            }
+        }
+        #download_time { string-set: download_time content(); visibility: hidden; }
     </style>
 </head>
 <body>
+    <div id="download_time">{{ download_time }}</div>
     <div class="container">
         <div class="header">
             <div>
@@ -61,8 +143,8 @@
         <div class="row">
             <div class="col-md-6 info-section">
                 <h3>Employee Information</h3>
-                <p><strong>Name:</strong> {{ paystub.employee.firstname }} {{ paystub.employee.lastname }}</p>
-                <p><strong>Position:</strong> {{ paystub.employee.position }}</p>
+                <p><strong>Name:</strong> {{ paystub.employee.firstname | title }} {{ paystub.employee.lastname | title }}</p>
+                <p><strong>Position:</strong> {{ paystub.employee.position | title }}</p>
                 {% if paystub.employee.rba_number %}
                 <p><strong>RBA Number:</strong> {{ paystub.employee.rba_number }}</p>
                 {% endif %}
@@ -75,8 +157,8 @@
             </div>
         </div>
 
-        <h3>Sessions</h3>
-        <table class="invoice-table">
+        <div class="table-section">
+            <table class="invoice-table">
             <thead>
                 <tr>
                     <th>#</th>
@@ -91,7 +173,7 @@
                 <tr>
                     <td>{{ loop.index }}</td>
                     <td style="text-align: left;">
-                        Client: {{ item.client.firstname }} {{ item.client.lastname }}, Session: {{ item.intervention.intervention_type }}<br>
+                        <strong>{{ item.intervention.intervention_type }}</strong> for <strong>{{ item.client.firstname[:3] | upper }}{{ item.client.lastname[:3] | upper }}</strong><br>
                         {{ item.intervention.date.strftime('%Y-%m-%d') }} ({{ item.intervention.start_time.strftime('%H:%M') }}-{{ item.intervention.end_time.strftime('%H:%M') }})
                     </td>
                     <td class="text-end">{{ "%.2f"|format(item.hours|float) }}</td>
@@ -111,9 +193,11 @@
         </table>
 
         {% if paystub.notes %}
-        <div class="info-section">
-            <h3>Notes</h3>
-            <p>{{ paystub.notes }}</p>
+        <div class="table-section">
+            <div class="info-section">
+                <h3>Notes</h3>
+                <p>{{ paystub.notes }}</p>
+            </div>
         </div>
         {% endif %}
     </div>
