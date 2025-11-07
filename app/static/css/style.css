@@ -1086,9 +1086,213 @@ a.btn[disabled], a.btn.disabled {
   opacity: 0.6;
 }
 
+/* PDF Document Styles */
+@page { 
+    size: A4; 
+    margin: 12mm; 
+}
 
+body.pdf-document { 
+    font-family: 'Segoe UI', Arial, sans-serif; 
+    font-size: 11pt; 
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+}
 
+.pdf-container { 
+    margin: 0 auto; 
+    width: calc(100% - 16px);
+    box-sizing: border-box;
+    padding: 0;
+}
 
+.pdf-header { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    margin-bottom: 8px;
+    padding: 0 8px;
+    box-sizing: border-box;
+}
 
+.pdf-header img { 
+    height: 48px; 
+    margin-right: 10px; 
+}
 
+.pdf-header h2 { 
+    margin: 0; 
+    color: #0d6efd; 
+}
 
+.pdf-header .right {
+    text-align: right;
+}
+
+.pdf-row { 
+    display: flex; 
+    width: 100%; 
+    margin: 0;
+    padding: 0 8px;
+    gap: 16px;
+    box-sizing: border-box;
+}
+
+.pdf-col-6 { 
+    flex: 1;
+    box-sizing: border-box;
+}
+
+.pdf-info-section { 
+    background: #f8f9fa; 
+    padding: 12px; 
+    border-radius: 8px; 
+    margin-bottom: 12px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 0.5px solid #e0e0e0;
+    width: 100%;
+}
+
+.pdf-info-section h3, 
+.pdf-section-title { 
+    color: #0d6efd; 
+    margin: 0 0 8px 0; 
+    font-size: 13pt; 
+}
+
+.pdf-info-section p { 
+    margin: 4px 0; 
+}
+
+.pdf-info-section.right { 
+    text-align: right; 
+}
+
+.pdf-info-section.right p { 
+    text-align: right; 
+}
+
+.pdf-info-section.right h3 { 
+    text-align: right; 
+}
+
+.pdf-section-title {
+    padding: 0 8px;
+    margin: 16px 0 8px 0;
+    box-sizing: border-box;
+}
+
+.pdf-table-section {
+    padding: 0 8px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.pdf-table { 
+    width: 100%; 
+    border-collapse: separate; 
+    border-spacing: 0; 
+    margin-top: 0;
+    font-size: 11px; 
+    background: #fff; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+    border-radius: 8px; 
+    overflow: hidden; 
+    border: 0.5px solid #e0e0e0;
+}
+
+.pdf-table th { 
+    background: #0d6efd; 
+    color: #fff; 
+    font-weight: 600; 
+    padding: 10px 8px; 
+    border: none; 
+    text-align: left; 
+}
+
+.pdf-table td { 
+    border: 0.5px solid #e0e0e0; 
+    padding: 8px 8px; 
+    text-align: left; 
+    vertical-align: middle; 
+}
+
+.pdf-table tr:nth-child(even) td { 
+    background: #f8f9fa; 
+}
+
+.pdf-table tr:nth-child(odd) td { 
+    background: #fff; 
+}
+
+.pdf-table tr.total-row td { 
+    background: #e9ecef; 
+    font-weight: bold; 
+    color: #0d6efd; 
+}
+
+.pdf-table th:first-child, 
+.pdf-table td:first-child { 
+    border-top-left-radius: 8px; 
+}
+
+.pdf-table th:last-child, 
+.pdf-table td:last-child { 
+    border-top-right-radius: 8px; 
+}
+
+.pdf-table td.text-end,
+.pdf-table th.text-end {
+    text-align: right;
+}
+
+.pdf-status-paid {
+    background: #056627;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+}
+
+.pdf-status-unpaid {
+    background: #ffc721;
+    color: #212529;
+    border-radius: 4px;
+    padding: 2px 8px;
+}
+
+.pdf-payment-info {
+    margin-top: 16px;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.pdf-payment-info.paid {
+    background: #d1e7dd;
+}
+
+.pdf-payment-info.unpaid {
+    background: #fff3cd;
+}
+
+.pdf-footer-note {
+    margin-top: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+@page {
+    @bottom-right {
+        content: "Downloaded: " string(download_time);
+        font-size: 8pt;
+        color: #666;
+        padding-right: 1cm;
+    }
+}
+
+#download_time { 
+    string-set: download_time content(); 
+    visibility: hidden; 
+}

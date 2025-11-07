@@ -4,91 +4,168 @@
     <meta charset="UTF-8">
     <title>Invoice {{ invoice_number }}</title>
     <style>
-        @page { size: A4; margin: 5mm; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; }
-        .container { margin: 0 auto; width: 100%; }
-        .text-center { text-align: center; }
-        .row { display: flex; gap: 16px; }
-        .col-md-6 { width: 50%; }
-        h2, h3, h4 { color: #0d6efd; }
-        h3 { margin-bottom: 0; }
-        .invoice-details { text-align: left; }  /* <-- Add this line */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #333; padding: 6px; text-align: center; }
-        th { font-weight: 700; background: #eee; color: #000000; }
-        hr { margin: 10px 0; }
-        /* Add this for compact invoice details */
-        .invoice-details p, .invoice-details h4 {
-            margin: 4px 0;
-            line-height: 1.2;
-            text-align: right;  /* <-- Add this line for extra safety */
+        @page { 
+            size: A4; 
+            margin: 12mm;
+            @bottom-right {
+                content: "Downloaded: " string(download_time);
+                font-size: 8pt;
+                color: #666;
+                padding-right: 1cm;
+            }
         }
-        .billing-info p, .billing-info h4 {
-            margin: 4px 0;
-            line-height: 1.2;
-            text-align: left;  /* <-- Add this line for extra safety */
-        }
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        .header img {
-            height: 48px;
-            margin-right: 10px;
-        }
-        .header h2 {
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-size: 11pt; 
+            line-height: 1.4;
             margin: 0;
+            padding: 0;
         }
-        .invoice-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin-top: 20px;
-            font-size: 11px;
-            background: #fff;
+        .pdf-container { 
+            margin: 0 auto; 
+            width: calc(100% - 16px);
+            box-sizing: border-box;
+            padding: 0;
+        }
+        .pdf-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            margin-bottom: 8px;
+            padding: 0 8px;
+            box-sizing: border-box;
+        }
+        .pdf-header img { 
+            height: 48px; 
+            margin-right: 10px; 
+        }
+        .pdf-header h2 { 
+            margin: 0; 
+            color: #0d6efd; 
+        }
+        .pdf-header .right {
+            text-align: right;
+        }
+        .pdf-row { 
+            display: flex; 
+            width: 100%; 
+            margin: 0;
+            padding: 0 8px;
+            gap: 16px;
+            box-sizing: border-box;
+        }
+        .pdf-col-6 { 
+            flex: 1;
+            box-sizing: border-box;
+        }
+        .pdf-info-section { 
+            background: #f8f9fa; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 12px;
+            box-sizing: border-box;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            border-radius: 8px;
-            overflow: hidden;
+            border: 0.5px solid #e0e0e0;
+            width: 100%;
+        }
+        .pdf-info-section h3,
+        .pdf-info-section h4 { 
+            color: #0d6efd; 
+            margin: 0 0 8px 0; 
+            font-size: 13pt; 
+        }
+        .pdf-info-section p { 
+            margin: 4px 0; 
+        }
+        .pdf-info-section.right { 
+            text-align: right; 
+        }
+        .pdf-info-section.right p { 
+            text-align: right; 
+        }
+        .pdf-info-section.right h3,
+        .pdf-info-section.right h4 { 
+            text-align: right; 
+        }
+        .pdf-table { 
+            width: 100%; 
+            border-collapse: separate; 
+            border-spacing: 0; 
+            margin-top: 0;
+            font-size: 11px; 
+            background: #fff; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+            border-radius: 8px; 
+            overflow: hidden; 
             border: 0.5px solid #e0e0e0;
         }
-        .invoice-table th {
-            background: #0d6efd;
+        .pdf-table th { 
+            background: #0d6efd; 
+            color: #fff; 
+            font-weight: 600; 
+            padding: 10px 8px; 
+            border: none; 
+            text-align: left; 
+        }
+        .pdf-table td { 
+            border: 0.5px solid #e0e0e0; 
+            padding: 8px 8px; 
+            text-align: left; 
+            vertical-align: middle; 
+        }
+        .pdf-table tr:nth-child(even) td { 
+            background: #f8f9fa; 
+        }
+        .pdf-table tr:nth-child(odd) td { 
+            background: #fff; 
+        }
+        .pdf-table tr.total-row td { 
+            background: #e9ecef; 
+            font-weight: bold; 
+            color: #0d6efd; 
+        }
+        .pdf-status-paid {
+            background: #056627;
             color: #fff;
-            font-weight: 600;
-            padding: 10px 8px;
-            border: none;
-            text-align: center;
+            border-radius: 4px;
+            padding: 2px 8px;
         }
-        .invoice-table td {
-            border: 0.5px solid #e0e0e0;
-            padding: 8px 8px;
-            text-align: center;
-            vertical-align: middle;
+        .pdf-status-unpaid {
+            background: #ffc721;
+            color: #212529;
+            border-radius: 4px;
+            padding: 2px 8px;
         }
-        .invoice-table tr:nth-child(even) td {
+        .pdf-payment-info {
+            margin-top: 16px;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .pdf-payment-info.paid {
+            background: #d1e7dd;
+        }
+        .pdf-payment-info.unpaid {
+            background: #fff3cd;
+        }
+        .pdf-footer-note {
+            margin-top: 16px;
             background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
         }
-        .invoice-table tr:nth-child(odd) td {
-            background: #fff;
+        .text-end { 
+            text-align: right; 
         }
-        .invoice-table tr.total-row td {
-            background: #e9ecef;
-            font-weight: bold;
-            color: #0d6efd;
-        }
-        .invoice-table th:first-child, .invoice-table td:first-child {
-            border-top-left-radius: 8px;
-        }
-        .invoice-table th:last-child, .invoice-table td:last-child {
-            border-top-right-radius: 8px;
+        #download_time { 
+            string-set: download_time content(); 
+            visibility: hidden; 
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
+    <div id="download_time">{{ download_time }}</div>
+    <div class="pdf-container">
+    <div class="pdf-header">
         <div>
             {% if logo_b64 %}
                 <img src="{{ logo_b64 }}" alt="LOGO">
@@ -100,34 +177,34 @@
                 <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="LOGO">
             {% endif %}
         </div>
-        <div style="text-align: right;">
+        <div class="right">
             <h2>{{ org_name }}</h2>
             <small>{{ org_address }}<br><small>Phone: {{ org_phone }} &emsp; Email: {{ org_email }}</small></small>
         </div>
     </div>
     <hr>
-    <div class="row" style="margin-bottom: 16px;">
-        <div class="col-md-6 billing-info" style="background: #f8f9fa; border-radius: 8px; padding: 12px;">
-            <h4 style="margin-bottom: 8px;"><strong>Billed to:</strong></h4>
-            <p style="margin-bottom: 4px;"><strong>{{ client.parentname }}</strong></p>
-            <p style="margin-bottom: 4px;">
+    <div class="pdf-row">
+        <div class="pdf-col-6 pdf-info-section">
+            <h4><strong>Billed to:</strong></h4>
+            <p><strong>{{ client.parentname }}</strong></p>
+            <p>
                 {{ client.address1 }}{% if client.address2 %}, {{ client.address2 }}{% endif %}, {{ client.city }}, {{ client.state }} {{ client.zipcode }}
             </p>
             <br>
             <p><strong>Client:</strong> {{ client.firstname }} {{ client.lastname }}</p>
         </div>
-        <div class="col-md-6 invoice-details" style="background: #e9ecef; border-radius: 8px; padding: 12px;">
-            <h4 style="margin-bottom: 8px;"><strong>Invoice Details:</strong></h4>
+        <div class="pdf-col-6 pdf-info-section right">
+            <h4><strong>Invoice Details:</strong></h4>
             <p><strong>{{ invoice_number }}</strong></p>
-            <p>Status: <span style="background: {% if status == "Paid" %}#056627; color: #fff{% else %}#ffc721; color: #212529{% endif %}; border-radius: 4px; padding: 2px 8px;">{{ status }}</span></p>
+            <p>Status: <span class="{% if status == 'Paid' %}pdf-status-paid{% else %}pdf-status-unpaid{% endif %}">{{ status }}</span></p>
             <p>Invoice Date: {{ invoice_date }}</p>
             <p>Pay By: {{ payby_date }}</p>
         </div>
     </div>
-    <div style="clear: both;">
+    <div class="pdf-info-section">
         <strong>Supervisor:</strong> {{ supervisor_name }} [ RBA#: {{ supervisor_rba_number }} ]
     </div>
-    <table class="invoice-table">
+    <table class="pdf-table">
         <thead>
             <tr>
                 <th>#</th>
@@ -160,20 +237,20 @@
     </table>
 
     {% if status != "Paid" %}
-        <div style="margin-top: 16px; background: #fff3cd; border-radius: 8px; padding: 12px;">
+        <div class="pdf-payment-info unpaid">
             <strong>Payment is accepted via:</strong>
             Interac e-Transfer to <strong><em>{{ payment_email }}</em></strong>
             <br>
             <em>This is not a confirmation of payment. Payment receipt will be shared once the payment is realised.</em>
         </div>
     {% else %}
-        <div style="margin-top: 16px; background: #d1e7dd; border-radius: 8px; padding: 12px;">
+        <div class="pdf-payment-info paid">
             <strong>Payment received. Thank you!</strong>
             <p>Payment was received on {{ paid_date }}{% if payment_comments %}, via etransfer: {{ payment_comments }}.{% endif %}
         </div>
     {% endif %}
 
-    <div style="margin-top: 16px; background: #f8f9fa; border-radius: 8px; padding: 12px;">
+    <div class="pdf-footer-note">
         <strong>Thank you for your business!</strong><br>
         For feedback or queries write to us at <em>{{ org_email }}</em>.
     </div>

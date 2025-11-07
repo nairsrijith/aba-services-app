@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <title>Pay Stub - {{ paystub.employee.firstname }} {{ paystub.employee.lastname }}</title>
     <style>
-        /* Slightly wider margins to avoid clipping and improve layout */
-        @page { size: A4; margin: 12mm; }
+        @page { 
+            size: A4; 
+            margin: 12mm;
+            @bottom-right {
+                content: "Downloaded: " string(download_time);
+                font-size: 8pt;
+                color: #666;
+                padding-right: 1cm;
+            }
+        }
         body { 
             font-family: 'Segoe UI', Arial, sans-serif; 
             font-size: 11pt; 
@@ -13,13 +21,13 @@
             margin: 0;
             padding: 0;
         }
-        .container { 
+        .pdf-container { 
             margin: 0 auto; 
-            width: calc(100% - 16px); /* Account for page margins */
+            width: calc(100% - 16px);
             box-sizing: border-box;
             padding: 0;
         }
-        .header { 
+        .pdf-header { 
             display: flex; 
             align-items: center; 
             justify-content: space-between; 
@@ -27,21 +35,30 @@
             padding: 0 8px;
             box-sizing: border-box;
         }
-        .header img { height: 48px; margin-right: 10px; }
-        .header h2 { margin: 0; color: #0d6efd; }
-        .row { 
+        .pdf-header img { 
+            height: 48px; 
+            margin-right: 10px; 
+        }
+        .pdf-header h2 { 
+            margin: 0; 
+            color: #0d6efd; 
+        }
+        .pdf-header .right {
+            text-align: right;
+        }
+        .pdf-row { 
             display: flex; 
             width: 100%; 
             margin: 0;
             padding: 0 8px;
-            gap: 16px; /* Space between columns */
+            gap: 16px;
             box-sizing: border-box;
         }
-        .col-md-6 { 
-            flex: 1; /* Equal width columns */
+        .pdf-col-6 { 
+            flex: 1;
             box-sizing: border-box;
         }
-        .info-section { 
+        .pdf-info-section { 
             background: #f8f9fa; 
             padding: 12px; 
             border-radius: 8px; 
@@ -49,28 +66,31 @@
             box-sizing: border-box;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             border: 0.5px solid #e0e0e0;
-            width: 100%; /* Ensure full width within column */
+            width: 100%;
         }
-        .info-section h3 { color: #0d6efd; margin: 0 0 8px 0; font-size: 13pt; }
-        .info-section p { margin: 4px 0; }
-        /* Specific alignment for the right column */
-        .info-section.right { text-align: right; }
-        .info-section.right p { text-align: right; }
-        .info-section.right h3 { text-align: right; }
-
-        /* Table section styles */
-        h3.section-title {
-            padding: 0 8px;
-            margin: 16px 0 8px 0;
-            color: #0d6efd;
-            box-sizing: border-box;
+        .pdf-info-section h3 { 
+            color: #0d6efd; 
+            margin: 0 0 8px 0; 
+            font-size: 13pt; 
         }
-        .table-section {
+        .pdf-info-section p { 
+            margin: 4px 0; 
+        }
+        .pdf-info-section.right { 
+            text-align: right; 
+        }
+        .pdf-info-section.right p { 
+            text-align: right; 
+        }
+        .pdf-info-section.right h3 { 
+            text-align: right; 
+        }
+        .pdf-table-section {
             padding: 0 8px;
             box-sizing: border-box;
             width: 100%;
         }
-        .invoice-table { 
+        .pdf-table { 
             width: 100%; 
             border-collapse: separate; 
             border-spacing: 0; 
@@ -82,7 +102,7 @@
             overflow: hidden; 
             border: 0.5px solid #e0e0e0;
         }
-        .invoice-table th { 
+        .pdf-table th { 
             background: #0d6efd; 
             color: #fff; 
             font-weight: 600; 
@@ -90,38 +110,45 @@
             border: none; 
             text-align: left; 
         }
-        .invoice-table td { border: 0.5px solid #e0e0e0; padding: 8px 8px; text-align: left; vertical-align: middle; }
-        /* Ensure numeric columns align right inside the invoice table (higher specificity) */
-        .invoice-table td.text-end,
-        .invoice-table th.text-end {
+        .pdf-table td { 
+            border: 0.5px solid #e0e0e0; 
+            padding: 8px 8px; 
+            text-align: left; 
+            vertical-align: middle; 
+        }
+        .pdf-table tr:nth-child(even) td { 
+            background: #f8f9fa; 
+        }
+        .pdf-table tr:nth-child(odd) td { 
+            background: #fff; 
+        }
+        .pdf-table tr.total-row td { 
+            background: #e9ecef; 
+            font-weight: bold; 
+            color: #0d6efd; 
+        }
+        .pdf-table th:first-child, 
+        .pdf-table td:first-child { 
+            border-top-left-radius: 8px; 
+        }
+        .pdf-table th:last-child, 
+        .pdf-table td:last-child { 
+            border-top-right-radius: 8px; 
+        }
+        .pdf-table td.text-end,
+        .pdf-table th.text-end {
             text-align: right;
         }
-        .invoice-table tr:nth-child(even) td { background: #f8f9fa; }
-        .invoice-table tr:nth-child(odd) td { background: #fff; }
-        .invoice-table tr.total-row td { background: #e9ecef; font-weight: bold; color: #0d6efd; }
-        .invoice-table th:first-child, .invoice-table td:first-child { border-top-left-radius: 8px; }
-        .invoice-table th:last-child, .invoice-table td:last-child { border-top-right-radius: 8px; }
-
-        /* Numeric alignment helper */
-        .text-end { text-align: right; }
-        .text-center { text-align: center; }
-
-        /* Footer styles */
-        @page {
-            @bottom-right {
-                content: "Downloaded: " string(download_time);
-                font-size: 8pt;
-                color: #666;
-                padding-right: 1cm;
-            }
+        #download_time { 
+            string-set: download_time content(); 
+            visibility: hidden; 
         }
-        #download_time { string-set: download_time content(); visibility: hidden; }
     </style>
 </head>
 <body>
     <div id="download_time">{{ download_time }}</div>
-    <div class="container">
-        <div class="header">
+    <div class="pdf-container">
+        <div class="pdf-header">
             <div>
                 {% if logo_b64 %}
                     <img src="{{ logo_b64 }}" alt="LOGO">
@@ -140,8 +167,8 @@
         </div>
         <hr>
 
-        <div class="row">
-            <div class="col-md-6 info-section">
+        <div class="pdf-row">
+            <div class="pdf-col-6 pdf-info-section">
                 <h3>Employee Information</h3>
                 <p><strong>Name:</strong> {{ paystub.employee.firstname | title }} {{ paystub.employee.lastname | title }}</p>
                 <p><strong>Position:</strong> {{ paystub.employee.position | title }}</p>
@@ -149,7 +176,7 @@
                 <p><strong>RBA Number:</strong> {{ paystub.employee.rba_number }}</p>
                 {% endif %}
             </div>
-            <div class="col-md-6 info-section right">
+            <div class="pdf-col-6 pdf-info-section right">
                 <h3>Pay Period</h3>
                 <p><strong>From:</strong> {{ paystub.period_start.strftime('%Y-%m-%d') }}</p>
                 <p><strong>To:</strong> {{ paystub.period_end.strftime('%Y-%m-%d') }}</p>
@@ -157,8 +184,8 @@
             </div>
         </div>
 
-        <div class="table-section">
-            <table class="invoice-table">
+        <div class="pdf-table-section">
+            <table class="pdf-table">
             <thead>
                 <tr>
                     <th>#</th>
@@ -193,8 +220,8 @@
         </table>
 
         {% if paystub.notes %}
-        <div class="table-section">
-            <div class="info-section">
+        <div class="pdf-table-section">
+            <div class="pdf-info-section">
                 <h3>Notes</h3>
                 <p>{{ paystub.notes }}</p>
             </div>

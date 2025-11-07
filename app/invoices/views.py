@@ -283,13 +283,26 @@ def download_invoice_pdf_by_number(invoice_number):
             org_phone=org_phone,
             logo_b64=logo_b64,
             logo_url=logo_url,
-            logo_path=logo_path_env
+            logo_path=logo_path_env,
+            download_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         )
 
         pdf = HTML(string=html).write_pdf()
+        # Create filename with download time, date range, and client name parts
+        download_time_str = datetime.now().strftime('%Y%m%d%H%M%S')
+        date_range_str = f"{invoice.date_from.strftime('%Y%m%d')}-{invoice.date_to.strftime('%Y%m%d')}"
+        
+        # Get first 3 letters of first and last name in uppercase
+        client = invoice.client
+        first_three = client.firstname[:3].upper() if client.firstname else ''
+        last_three = client.lastname[:3].upper() if client.lastname else ''
+        client_name_code = f"{first_three}{last_three}"
+        
+        filename = f"{invoice.invoice_number}_{date_range_str}_{client_name_code}_{download_time_str}.pdf"
+        
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'attachment; filename={invoice.invoice_number}.pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
         return response
     else:
         abort(403)
