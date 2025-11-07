@@ -28,7 +28,7 @@ def add_intervention():
         clients = Client.query.all()
         if not clients:
             flash('Please add clients before adding interventions.', 'warning')
-            return redirect(url_for('clients.list_clients'))
+            return redirect(url_for('interventions.list_interventions'))
 
         form = AddInterventionForm()
         # Supervisor should only be able to pick from their supervised clients
