@@ -4,17 +4,15 @@
         {% if current_user.is_authenticated %}
             <h1>Home</h1>
             <div class="row g-4">
-                {% if current_user.user_type == "admin" %}
+                {% if current_user.user_type in ["admin", "super"] %}
                 <div class="col-12 col-lg-4">
                     <div class="card custom-card-shadow m-2">
                         <div class="card-body">
-                            <h2 class="card-title card-title-centered">Employee</h2>
                             <div class="flex-container">
                                 <div class="flex-item flex-item-large">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h168q14-36 44-58t68-22q38 0 68 22t44 58h168q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm280-670q13 0 21.5-8.5T510-820q0-13-8.5-21.5T480-850q-13 0-21.5 8.5T450-820q0 13 8.5 21.5T480-790ZM200-246q54-53 125.5-83.5T480-360q83 0 154.5 30.5T760-246v-514H200v514Zm280-194q58 0 99-41t41-99q0-58-41-99t-99-41q-58 0-99 41t-41 99q0 58 41 99t99 41ZM280-200h400v-10q-42-35-93-52.5T480-280q-56 0-107 17.5T280-210v10Zm200-320q-25 0-42.5-17.5T420-580q0-25 17.5-42.5T480-640q25 0 42.5 17.5T540-580q0 25-17.5 42.5T480-520Zm0 17Z"/></svg>
                                 </div>
                                 <div class="flex-item flex-item-right">{{ total_employees }}
-                                    <p class="invisible-text">.</p>
                                 </div>
                             </div>
                         </div>
@@ -23,72 +21,452 @@
                 <div class="col-12 col-lg-4">
                     <div class="card custom-card-shadow m-2">
                         <div class="card-body">
-                            <h2 class="card-title card-title-centered">Client</h2>
                             <div class="flex-container">
                                 <div class="flex-item flex-item-large">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M480-880q50 0 85 35t35 85q0 50-35 85t-85 35q-50 0-85-35t-35-85q0-50 35-85t85-35Zm0 280q47 0 93 11t83 31q38 19 61 45t23 57v232q0 17-8 33.5T710-160q-14 14-32.5 26T636-112v-90q0-38-52.5-62T480-288q-50 0-96.5 20.5T326-214q38 15 78 21t82 7h34v104q-7 2-14.5 2H490q-36 0-82.5-8T319-113q-42-17-70.5-44.5T220-224v-232q0-31 23-57t60-45q38-20 84-31t93-11Zm0 240q33 0 56.5-23.5T560-440q0-33-23.5-56.5T480-520q-33 0-56.5 23.5T400-440q0 33 23.5 56.5T480-360Z"/></svg>
                                 </div>
                                 <div class="flex-item flex-item-right">{{ total_clients }}
-                                    <p class="invisible-text">.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 {% endif %}
-                {% if not current_user.user_type == "super" %}
                 <div class="col-12 col-lg-4">
                     <div class="card custom-card-shadow m-2">
                         <div class="card-body">
-                            <h2 class="card-title card-title-centered">Session</h2>
                             <div class="flex-container flex-container-center">
                                 <div class="flex-item flex-item-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-160 0q-17 0-28.5-11.5T280-280q0-17 11.5-28.5T320-320q17 0 28.5 11.5T360-280q0 17-11.5 28.5T320-240Zm320 0q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z"/></svg>
                                 </div>
-                                <div class="flex-item flex-item-center">{{ user_interventions }}
-                                    <p class="subtle-text">You</p>
+                                <div class="flex-item flex-item-center">{{ total_interventions }}
                                 </div>
-                                {% if current_user.user_type == "admin" %}
-                                    <div class="flex-item flex-item-center">{{ total_interventions }}
-                                        <p class="subtle-text">Overall</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if current_user.user_type in ["admin", "super"] and current_user.position not in ['Therapist', 'Senior Therapist', 'Behaviour Analyst'] %}
+                
+                <!-- Monthly Earnings Graph -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card custom-card-shadow m-2">
+                            <div class="card-body">
+                                <div style="height: 400px;">
+                                    <canvas id="earningsChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const ctx = document.getElementById('earningsChart').getContext('2d');
+                            
+                            function updateChartColors() {
+                                // Get theme from body class
+                                const bodyElement = document.body;
+                                const htmlElement = document.documentElement;
+                                
+                                // Check for dark mode in multiple ways
+                                const isDarkMode = bodyElement.classList.contains('dark-mode') ||
+                                                 htmlElement.classList.contains('dark-mode') ||
+                                                 htmlElement.getAttribute('data-bs-theme') === 'dark';
+                                
+                                console.log('Theme detection:', {
+                                    'body-classes': Array.from(bodyElement.classList),
+                                    'html-classes': Array.from(htmlElement.classList),
+                                    'data-bs-theme': htmlElement.getAttribute('data-bs-theme'),
+                                    'is-dark-mode': isDarkMode
+                                });
+                                
+                                // Define colors based on theme
+                                const colors = {
+                                    light: {
+                                        text: '#000000',
+                                        grid: 'rgba(0, 0, 0, 0.1)',
+                                        background: '#ffffff',
+                                        border: 'rgba(0, 0, 0, 0.1)'
+                                    },
+                                    dark: {
+                                        text: '#ffffff',
+                                        grid: 'rgba(255, 255, 255, 0.1)',
+                                        background: '#333333',
+                                        border: 'rgba(255, 255, 255, 0.2)'
+                                    }
+                                };
+                                
+                                const theme = isDarkMode ? colors.dark : colors.light;
+                                
+                                return {
+                                    color: theme.text,
+                                    borderColor: theme.border,
+                                    gridColor: theme.grid,
+                                    backgroundColor: theme.background
+                                };
+                            }                        function createChart() {
+                            const themeColors = updateChartColors();
+                            console.log('Creating chart with colors:', themeColors);
+                            Chart.defaults.color = themeColors.color;
+                            Chart.defaults.borderColor = themeColors.borderColor;
+                            const chart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: JSON.parse('{{ monthly_labels | tojson | safe }}'),
+                                datasets: [
+                                    {
+                                        label: 'Receivable',
+                                        data: JSON.parse('{{ monthly_total_invoices | tojson | safe }}'),
+                                        borderColor: '#17a2b8',
+                                        backgroundColor: 'rgba(23, 162, 184, 0.5)',
+                                        fill: true,
+                                        tension: 0.4,
+                                        order: 4
+                                    },
+                                    {
+                                        label: 'Received',
+                                        data: JSON.parse('{{ monthly_paid_invoices | tojson | safe }}'),
+                                        borderColor: '#28a745',
+                                        backgroundColor: 'rgba(40, 167, 69, 0.5)',
+                                        fill: true,
+                                        tension: 0.4,
+                                        order: 3
+                                    },
+                                    {
+                                        label: 'Paid',
+                                        data: JSON.parse('{{ monthly_paystubs | tojson | safe }}'),
+                                        borderColor: '#dc3545',
+                                        backgroundColor: 'rgba(220, 53, 69, 0.5)',
+                                        fill: true,
+                                        tension: 0.4,
+                                        order: 2
+                                    },
+                                    {
+                                        label: 'Earning',
+                                        data: JSON.parse('{{ monthly_earnings | tojson | safe }}'),
+                                        borderColor: '#ffc107',
+                                        backgroundColor: 'rgba(255, 193, 7, 0.5)',
+                                        fill: true,
+                                        tension: 0.4,
+                                        order: 1
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                color: themeColors.color,
+                                plugins: {
+                                    tooltip: {
+                                        backgroundColor: themeColors.backgroundColor,
+                                        titleColor: themeColors.color,
+                                        bodyColor: themeColors.color,
+                                        titleFont: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        },
+                                        bodyFont: {
+                                            size: 13
+                                        },
+                                        padding: 12,
+                                        borderColor: themeColors.borderColor,
+                                        borderWidth: 1,
+                                        displayColors: true
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Monthly Financial Overview',
+                                        color: themeColors.color,
+                                        font: {
+                                            size: 18,
+                                            weight: 'bold'
+                                        },
+                                        padding: {
+                                            top: 10,
+                                            bottom: 20
+                                        }
+                                    },
+                                    legend: {
+                                        labels: {
+                                            usePointStyle: true,
+                                            pointStyle: 'line',
+                                            color: themeColors.color,
+                                            font: {
+                                                size: 14
+                                            },
+                                            padding: 15
+                                        }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: themeColors.backgroundColor,
+                                        titleColor: themeColors.color,
+                                        titleFont: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        },
+                                        bodyColor: themeColors.color,
+                                        bodyFont: {
+                                            size: 13
+                                        },
+                                        padding: 12,
+                                        borderColor: themeColors.borderColor,
+                                        borderWidth: 1,
+                                        callbacks: {
+                                            label: function(context) {
+                                                return context.dataset.label + ': CAD ' + context.raw.toLocaleString('en-US', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2
+                                                });
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: 'Month',
+                                            color: themeColors.color,
+                                            font: {
+                                                size: 14,
+                                                weight: 'bold'
+                                            },
+                                            padding: {
+                                                top: 10
+                                            }
+                                        },
+                                        ticks: {
+                                            color: themeColors.color,
+                                            font: {
+                                                size: 12
+                                            }
+                                        },
+                                        grid: {
+                                            color: themeColors.gridColor
+                                        }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Amount (CAD)',
+                                            color: themeColors.color,
+                                            font: {
+                                                size: 14,
+                                                weight: 'bold'
+                                            },
+                                            padding: {
+                                                bottom: 10
+                                            }
+                                        },
+                                        ticks: {
+                                            color: themeColors.color,
+                                            font: {
+                                                size: 12
+                                            },
+                                            callback: function(value) {
+                                                return 'CAD ' + value.toLocaleString('en-US', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2
+                                                });
+                                            }
+                                        },
+                                        grid: {
+                                            color: themeColors.gridColor
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                            return chart;
+                        }
+
+                        let earningsChart = createChart();
+
+                        // Handle theme changes
+                        const themeObserver = new MutationObserver(() => {
+                            console.log('Theme change detected');
+                            const themeColors = updateChartColors();
+                            
+                            // Update chart options
+                            earningsChart.options.plugins.title.color = themeColors.color;
+                            earningsChart.options.plugins.legend.labels.color = themeColors.color;
+                            
+                            // Update scales
+                            earningsChart.options.scales.x.grid.color = themeColors.gridColor;
+                            earningsChart.options.scales.y.grid.color = themeColors.gridColor;
+                            earningsChart.options.scales.x.ticks.color = themeColors.color;
+                            earningsChart.options.scales.y.ticks.color = themeColors.color;
+                            earningsChart.options.scales.x.title.color = themeColors.color;
+                            earningsChart.options.scales.y.title.color = themeColors.color;
+                            
+                            // Update tooltip
+                            earningsChart.options.plugins.tooltip.backgroundColor = themeColors.backgroundColor;
+                            earningsChart.options.plugins.tooltip.titleColor = themeColors.color;
+                            earningsChart.options.plugins.tooltip.bodyColor = themeColors.color;
+                            earningsChart.options.plugins.tooltip.borderColor = themeColors.borderColor;
+                            
+                            // Force chart update
+                            earningsChart.update('none');
+                        });
+
+                        // Watch for theme changes in multiple ways
+                        const updateOnThemeChange = () => {
+                            console.log('Theme change detected');
+                            const themeColors = updateChartColors();
+                            if (earningsChart) {
+                                updateChartTheme(themeColors);
+                            }
+                        };
+
+                        // Observe HTML element
+                        themeObserver.observe(document.documentElement, {
+                            attributes: true,
+                            attributeFilter: ['data-bs-theme', 'class'],
+                            subtree: true
+                        });
+
+                        // Observe body element
+                        const bodyObserver = new MutationObserver(updateOnThemeChange);
+                        bodyObserver.observe(document.body, {
+                            attributes: true,
+                            attributeFilter: ['class'],
+                            subtree: true
+                        });
+
+                        // Listen for Bootstrap's theme change event
+                        document.addEventListener('ThemeChanged', updateOnThemeChange);
+                        
+                        // Listen for color scheme changes
+                        window.matchMedia('(prefers-color-scheme: dark)').addListener(updateOnThemeChange);
+
+                        // Function to update chart theme
+                        function updateChartTheme(themeColors) {
+                            console.log('Updating chart with colors:', themeColors);
+                            
+                            // Update global defaults
+                            Chart.defaults.color = themeColors.color;
+                            Chart.defaults.borderColor = themeColors.borderColor;
+                            
+                            // Update specific chart options
+                            earningsChart.options.color = themeColors.color;
+                            earningsChart.options.borderColor = themeColors.borderColor;
+                            
+                            // Update plugins
+                            earningsChart.options.plugins.title.color = themeColors.color;
+                            earningsChart.options.plugins.legend.labels.color = themeColors.color;
+                            
+                            // Update scales
+                            ['x', 'y'].forEach(axis => {
+                                earningsChart.options.scales[axis].grid.color = themeColors.gridColor;
+                                earningsChart.options.scales[axis].ticks.color = themeColors.color;
+                                earningsChart.options.scales[axis].title.color = themeColors.color;
+                            });
+                            
+                            // Update tooltip
+                            earningsChart.options.plugins.tooltip = {
+                                ...earningsChart.options.plugins.tooltip,
+                                backgroundColor: themeColors.backgroundColor,
+                                titleColor: themeColors.color,
+                                bodyColor: themeColors.color,
+                                borderColor: themeColors.borderColor
+                            };
+                            
+                            // Force a full chart redraw
+                            earningsChart.update('default');
+                        }
+
+                        // Log initial state
+                        console.log('Initial theme state:', {
+                            'data-bs-theme': document.documentElement.getAttribute('data-bs-theme'),
+                            'html-classes': document.documentElement.className,
+                            'body-classes': document.body.className
+                        });
+                    });
+                </script>
+            {% endif %}
+
+            {% if show_org_stats or show_user_stats %}
+            <div class="row g-4">
+                {% if show_org_stats %}
+                <!-- Organization Stats -->
+                <div class="col-12">
+                    <div class="card custom-card-shadow m-2">
+                        <div class="card-body">
+                            <h3 class="card-title card-title-centered">Organization Session Statistics</h3>
+                            <div class="row">
+                                {% for period, stats in org_stats.items() %}
+                                <div class="col-md-4 col-sm-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title card-title-centered">{{ period|replace('_', ' ')|title }}</h5>
+                                            <div class="d-flex justify-content-around align-items-center mt-3">
+                                                <div class="text-center">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <svg class="me-1" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Z"/></svg>
+                                                        <span class="h5 mb-0">{{ stats.sessions }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <svg class="me-1" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M360-840v-80h240v80H360Zm80 440h80v-240h-80v240Zm40 320q-74 0-139.5-28.5T226-186q-49-49-77.5-114.5T120-440q0-74 28.5-139.5T226-694q49-49 114.5-77.5T480-800q62 0 119 20t107 58l56-56 56 56-56 56q38 50 58 107t20 119q0 74-28.5 139.5T734-186q-49 49-114.5 77.5T480-80Zm0-80q116 0 198-82t82-198q0-116-82-198t-198-82q-116 0-198 82t-82 198q0 116 82 198t198 82Zm0-280Z"/></svg>
+                                                        <span class="h5 mb-0">{{ "%.2f"|format(stats.hours) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if show_user_stats %}
+                <!-- User Stats -->
+                <div class="col-12">
+                    <div class="card custom-card-shadow m-2">
+                        <div class="card-body">
+                            <h3 class="card-title card-title-centered">Your Session Statistics</h3>
+                            <div class="row">
+                                {% for period, stats in user_stats.items() %}
+                                <div class="col-md-4 col-sm-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title card-title-centered">{{ period|replace('_', ' ')|title }}</h5>
+                                            <div class="d-flex justify-content-around align-items-center mt-3">
+                                                <div class="text-center">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <svg class="me-1" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Z"/></svg>
+                                                        <span class="h5 mb-0">{{ stats.sessions }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <svg class="me-1" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M360-840v-80h240v80H360Zm80 440h80v-240h-80v240Zm40 320q-74 0-139.5-28.5T226-186q-49-49-77.5-114.5T120-440q0-74 28.5-139.5T226-694q49-49 114.5-77.5T480-800q62 0 119 20t107 58l56-56 56 56-56 56q38 50 58 107t20 119q0 74-28.5 139.5T734-186q-49 49-114.5 77.5T480-80Zm0-80q116 0 198-82t82-198q0-116-82-198t-198-82q-116 0-198 82t-82 198q0 116 82 198t198 82Zm0-280Z"/></svg>
+                                                        <span class="h5 mb-0">{{ "%.2f"|format(stats.hours) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
                 </div>
                 {% endif %}
             </div>
-            {% if current_user.user_type == "admin" %}
-                <div class="my-3 mb-0 large-text">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M240-80q-50 0-85-35t-35-85v-120h120v-560l60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60 60 60 60-60v680q0 50-35 85t-85 35H240Zm480-80q17 0 28.5-11.5T760-200v-560H320v440h360v120q0 17 11.5 28.5T720-160ZM360-600v-80h240v80H360Zm0 120v-80h240v80H360Zm320-120q-17 0-28.5-11.5T640-640q0-17 11.5-28.5T680-680q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600Zm0 120q-17 0-28.5-11.5T640-520q0-17 11.5-28.5T680-560q17 0 28.5 11.5T720-520q0 17-11.5 28.5T680-480ZM240-160h360v-80H200v40q0 17 11.5 28.5T240-160Zm-40 0v-80 80Z"/></svg>
-                    Earnings
-                </div>
-                <div class="row g-4">
-                    {% for period, data in totals.items() %}
-                        <div class="col-sm-12 col-md-6">
-                            <div class="card custom-card-shadow m-2">
-                                <div class="card-body">
-                                    <h2 class="card-title card-title-centered">{{ period.title() }}</h2>
-                                    <div class="flex-container flex-container-center">
-                                        <div class="flex-item stats-number earnings-received">
-                                            <small class="currency-small">CAD</small>{{ "{:15,.2f}".format(data.total_received) }}
-                                            <p class="subtle-text">Received</p>
-                                        </div>
-                                        <div class="flex-item earnings-value {% if data.pending_amount < 0 %}earnings-pending-negative{% else %}earnings-pending-positive{% endif %}">
-                                            <small class="currency-small">CAD</small>{{ "{:15,.2f}".format(data.pending_amount) }}
-                                        </div>
-                                        <div class="flex-item stats-number earnings-total">
-                                            <small class="currency-small">CAD</small>{{ "{:15,.2f}".format(data.total_invoiced) }}
-                                            <p class="subtle-text">Total</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
             {% endif %}
+
         {% else %}
             <div class="container-fluid py-2">
                 <h2>ABA Web Application</h2>

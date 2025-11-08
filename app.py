@@ -1,10 +1,11 @@
 from app import app, db
-from app.models import Employee, Client, Intervention, Invoice
-from sqlalchemy import func
+from app.models import Employee, Client, Intervention, Invoice, PayStub, PayStubItem
+from sqlalchemy import func, case, and_
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time
+from sqlalchemy import and_, extract
 import os
 
 from gevent.pywsgi import WSGIServer
@@ -47,27 +48,145 @@ def get_date_ranges():
     }
 
 
-def get_totals():
-    ranges = get_date_ranges()
-    results = {}
-    for period, (start, end) in ranges.items():
-        total_invoiced = db.session.query(func.sum(Invoice.total_cost))\
-            .filter(Invoice.invoiced_date.between(start, end))\
-            .scalar() or 0.0
-
-        total_received = db.session.query(func.sum(Invoice.total_cost))\
-            .filter(Invoice.invoiced_date.between(start, end))\
-            .filter(Invoice.status == 'Paid')\
-            .scalar() or 0.0
-        
-        pending_amount = total_invoiced - total_received
-
-        results[period] = {
-            'total_invoiced': total_invoiced,
-            'total_received': total_received,
-            'pending_amount': pending_amount
+def get_session_stats(employee_email=None):
+    today = date.today()
+    
+    # Calculate date ranges
+    # Current week (Monday to Sunday)
+    current_week_start = today - timedelta(days=today.weekday())
+    current_week_end = current_week_start + timedelta(days=6)
+    
+    # Last week
+    last_week_start = current_week_start - timedelta(days=7)
+    last_week_end = current_week_start - timedelta(days=1)
+    
+    # Current month
+    current_month_start = today.replace(day=1)
+    next_month = today.replace(day=28) + timedelta(days=4)
+    current_month_end = next_month - timedelta(days=next_month.day)
+    
+    # Last month
+    last_month_end = current_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+    
+    # Year to date
+    year_start = today.replace(month=1, day=1)
+    
+    # Last year
+    last_year_start = date(today.year - 1, 1, 1)
+    last_year_end = date(today.year - 1, 12, 31)
+    
+    # Base query
+    query = db.session.query(
+        func.count(Intervention.id).label('session_count'),
+        func.sum(Intervention._duration).label('total_hours')  # Use the actual column name
+    ).select_from(Intervention)
+    
+    if employee_email:
+        query = query.join(Employee).filter(Employee.email == employee_email)
+    
+    # Function to get stats for a date range
+    def get_stats_for_range(start_date, end_date):
+        result = query.filter(Intervention.date.between(start_date, end_date)).first()
+        return {
+            'sessions': result.session_count or 0,
+            'hours': float(result.total_hours or 0)
         }
-    return results
+    
+    return {
+        'current_week': get_stats_for_range(current_week_start, current_week_end),
+        'last_week': get_stats_for_range(last_week_start, last_week_end),
+        'current_month': get_stats_for_range(current_month_start, current_month_end),
+        'last_month': get_stats_for_range(last_month_start, last_month_end),
+        'year_to_date': get_stats_for_range(year_start, today),
+        'last_year': get_stats_for_range(last_year_start, last_year_end)
+    }
+
+
+
+
+def get_monthly_totals():
+    today = date.today()
+    start_date = date(today.year - 1, today.month, 1)  # 12 months ago
+    
+    # Subquery to get the total duration per invoice
+    total_duration_per_invoice = db.session.query(
+        Intervention.invoice_number,
+        func.sum(Intervention._duration).label('total_duration')
+    ).filter(Intervention.invoiced == True)\
+     .group_by(Intervention.invoice_number)\
+     .subquery()
+
+    # Get monthly data for the past 12 months based on intervention dates with prorated invoice amounts
+    monthly_data = db.session.query(
+        func.date_trunc('month', Intervention.date).label('month'),
+        func.sum(
+            case(
+                (Intervention.invoiced == True,
+                 (Intervention._duration / total_duration_per_invoice.c.total_duration) * Invoice.total_cost)
+            , else_=0)
+        ).label('total_invoiced'),
+        func.sum(
+            case(
+                (and_(Intervention.invoiced == True, Invoice.status == 'Paid'),
+                 (Intervention._duration / total_duration_per_invoice.c.total_duration) * Invoice.total_cost)
+            , else_=0)
+        ).label('total_received')
+    ).join(Invoice, Intervention.invoice_number == Invoice.invoice_number)\
+     .join(total_duration_per_invoice, Intervention.invoice_number == total_duration_per_invoice.c.invoice_number)\
+     .filter(Intervention.date >= start_date)\
+     .group_by('month')\
+     .order_by('month').all()
+    
+    # Get monthly paystub totals based on intervention dates
+    monthly_paystubs = db.session.query(
+        func.date_trunc('month', Intervention.date).label('month'),
+        func.sum(PayStubItem.amount).label('total_amount')
+    ).join(PayStubItem, Intervention.id == PayStubItem.intervention_id)\
+     .filter(Intervention.date >= start_date)\
+     .group_by('month')\
+     .order_by('month').all()
+    
+    # Initialize result lists
+    labels = []
+    total_invoices = []
+    paid_invoices = []
+    paystub_amounts = []
+    earnings = []
+    
+    # Fill in the data for all months
+    current = start_date
+    while current <= today:
+        month_str = current.strftime('%B %Y')
+        labels.append(month_str)
+        
+        # Find invoice data for this month
+        month_data = next((d for d in monthly_data if d.month.year == current.year and d.month.month == current.month), None)
+        total_invoices.append(float(month_data.total_invoiced if month_data else 0))
+        paid_amount = float(month_data.total_received if month_data else 0)
+        paid_invoices.append(paid_amount)
+        
+        # Find paystub data for this month
+        paystub_data = next((d for d in monthly_paystubs if d.month.year == current.year and d.month.month == current.month), None)
+        paystub_amount = float(paystub_data.total_amount if paystub_data else 0)
+        paystub_amounts.append(paystub_amount)
+        
+        # Calculate earnings (paid invoices - paystub amounts)
+        earnings.append(paid_amount - paystub_amount)
+        
+        # Move to next month
+        if current.month == 12:
+            current = date(current.year + 1, 1, 1)
+        else:
+            current = date(current.year, current.month + 1, 1)
+    
+    return {
+        'labels': labels,
+        'total_invoices': total_invoices,
+        'paid_invoices': paid_invoices,
+        'paystub_amounts': paystub_amounts,
+        'earnings': earnings
+    }
 
 
 @app.route('/')
@@ -77,8 +196,53 @@ def home():
         total_clients = Client.query.count()
         total_interventions = Intervention.query.count()
         user_interventions = Intervention.query.join(Employee).filter(Employee.email == current_user.email).count()
-        totals = get_totals()
-        return render_template('home.html', total_employees=total_employees, total_clients=total_clients, user_interventions=user_interventions, total_interventions=total_interventions, totals=totals, org_name=org_name)
+        
+        # Get employee record for role-based stats
+        employee = Employee.query.filter_by(email=current_user.email).first()
+        
+        # Initialize stats
+        org_stats = None
+        user_stats = None
+        
+        # Determine which stats to show based on user type and position
+        show_org_stats = False
+        show_user_stats = False
+        
+        if current_user.user_type in ['admin', 'super'] and employee.position == 'Administrator':
+            # Admin/super with Administrator position - show only org stats
+            show_org_stats = True
+        elif current_user.user_type == 'admin' and employee.position in ['Therapist', 'Senior Therapist', 'Behaviour Analyst']:
+            # Admin with other positions - show both org and personal stats
+            show_org_stats = True
+            show_user_stats = True
+        else:
+            # Regular users (therapists, supervisors) - show only personal stats
+            show_user_stats = True
+        
+        # Get relevant statistics
+        if show_org_stats:
+            org_stats = get_session_stats()
+        if show_user_stats:
+            user_stats = get_session_stats(current_user.email)
+        
+        # Get monthly statistics for the graph
+        monthly_data = get_monthly_totals()
+        
+        return render_template('home.html', 
+                            total_employees=total_employees,
+                            total_clients=total_clients,
+                            user_interventions=user_interventions,
+                            total_interventions=total_interventions,
+                            org_stats=org_stats,
+                            user_stats=user_stats,
+                            show_org_stats=show_org_stats,
+                            show_user_stats=show_user_stats,
+                            org_name=org_name,
+                            monthly_labels=monthly_data['labels'],
+                            monthly_paid_invoices=monthly_data['paid_invoices'],
+                            monthly_total_invoices=monthly_data['total_invoices'],
+                            monthly_paystubs=monthly_data['paystub_amounts'],
+                            monthly_earnings=monthly_data['earnings'])
     return render_template('home.html', org_name=org_name)
 
 

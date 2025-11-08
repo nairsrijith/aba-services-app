@@ -612,65 +612,8 @@ a[title^="Add New"]:hover svg {
     color: #7e7e7e00;
 }
 
-.subtle-text {
-    font-size: .75rem;
-    color: #adadad;
-}
-
-html.light-mode .subtle-text {
-    color: #555555;
-}
-
 .large-text {
     font-size: 2rem;
-}
-
-.stats-number {
-    font-size: 1.5rem;
-    vertical-align: bottom;
-}
-
-.currency-small {
-    font-size: small;
-}
-
-/* Earnings section styling */
-.earnings-received {
-    color: rgba(0, 189, 0, 0.75);
-}
-
-.earnings-total {
-  color: rgba(105, 105, 255, 0.75);
-}
-
-.earnings-pending-negative {
-  color: rgb(255, 93, 93);
-}
-
-.earnings-pending-positive {
-  color: rgb(0, 189, 0);
-}
-
-.earnings-value {
-  font-size: 2rem;
-  vertical-align: bottom;
-}
-
-/* Light-mode overrides for better contrast */
-html.light-mode .earnings-received {
-  color: rgb(0, 120, 0) !important; /* stronger green */
-}
-
-html.light-mode .earnings-total {
-  color: rgb(30, 30, 180) !important; /* stronger blue */
-}
-
-html.light-mode .earnings-pending-negative {
-  color: rgb(180, 30, 30) !important; /* stronger red */
-}
-
-html.light-mode .earnings-pending-positive {
-  color: rgb(0, 120, 0) !important; /* match received */
 }
 
 /* Keep earnings font sizing consistent across themes; only color changes in light mode */
