@@ -56,21 +56,21 @@ def get_session_stats(employee_email=None):
     current_week_start = today - timedelta(days=today.weekday())
     current_week_end = current_week_start + timedelta(days=6)
     
-    # Last week
-    last_week_start = current_week_start - timedelta(days=7)
-    last_week_end = current_week_start - timedelta(days=1)
-    
     # Current month
     current_month_start = today.replace(day=1)
     next_month = today.replace(day=28) + timedelta(days=4)
     current_month_end = next_month - timedelta(days=next_month.day)
     
+    # Year to date
+    year_start = today.replace(month=1, day=1)
+    
+    # Last week
+    last_week_start = current_week_start - timedelta(days=7)
+    last_week_end = current_week_start - timedelta(days=1)
+    
     # Last month
     last_month_end = current_month_start - timedelta(days=1)
     last_month_start = last_month_end.replace(day=1)
-    
-    # Year to date
-    year_start = today.replace(month=1, day=1)
     
     # Last year
     last_year_start = date(today.year - 1, 1, 1)
@@ -95,10 +95,10 @@ def get_session_stats(employee_email=None):
     
     return {
         'current_week': get_stats_for_range(current_week_start, current_week_end),
-        'last_week': get_stats_for_range(last_week_start, last_week_end),
         'current_month': get_stats_for_range(current_month_start, current_month_end),
-        'last_month': get_stats_for_range(last_month_start, last_month_end),
         'year_to_date': get_stats_for_range(year_start, today),
+        'last_week': get_stats_for_range(last_week_start, last_week_end),
+        'last_month': get_stats_for_range(last_month_start, last_month_end),
         'last_year': get_stats_for_range(last_year_start, last_year_end)
     }
 
