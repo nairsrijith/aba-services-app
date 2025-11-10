@@ -220,7 +220,12 @@
             <tr>
                 <td>{{ loop.index }}</td>
                     <td style="text-align: left;">
-                    <strong>{{ i.intervention_type }}</strong> by <strong><em>{{ i.employee.firstname }} {{ i.employee.lastname }}</em></strong><br>
+                    <strong>{{ i.intervention_type }}</strong><br>
+                    Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }})
+                    {% if i.employee.position in ['Therapist', 'Senior Therapist'] %}
+                        , {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }})
+                    {% endif %}
+                    <br>
                     <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time.strftime('%H:%M') }}-{{ i.end_time.strftime('%H:%M') }})</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
