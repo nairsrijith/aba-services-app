@@ -168,13 +168,13 @@
     <div class="pdf-header">
         <div>
             {% if logo_b64 %}
-                <img src="{{ logo_b64 }}" alt="LOGO">
+                <img src="{{ logo_b64 }}" alt="">
             {% elif logo_url %}
-                <img src="{{ logo_url }}" alt="LOGO">
+                <img src="{{ logo_url }}" alt="">
             {% elif logo_path %}
-                <img src="file://{{ logo_path }}" alt="LOGO">
+                <img src="file://{{ logo_path }}" alt="">
             {% else %}
-                <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="LOGO">
+                <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="">
             {% endif %}
         </div>
         <div class="right">
