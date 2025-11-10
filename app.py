@@ -157,7 +157,7 @@ def get_monthly_totals():
     # Fill in the data for all months
     current = start_date
     while current <= today:
-        month_str = current.strftime('%B %Y')
+        month_str = current.strftime('%b %Y')
         labels.append(month_str)
         
         # Find invoice data for this month
