@@ -9,3 +9,4 @@ data/*
 .git
 assets/
 assets/*
+app/static/images/logo.png
