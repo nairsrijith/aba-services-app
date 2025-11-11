@@ -100,14 +100,33 @@ def list_clients():
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)  # default to 10
+        # Search query (client name or parent name/email)
+        q = request.args.get('q', '').strip()
         # Respect the `show_inactive` toggle: when not set, only show active clients.
         show_inactive = request.args.get('show_inactive', '0')
+        # Build base query depending on show_inactive
         if show_inactive == '1':
             # include both active and inactive, active first
-            query = Client.query.order_by(Client.is_active.desc(), Client.firstname, Client.lastname)
+            query = Client.query
         else:
             # only active clients
-            query = Client.query.filter_by(is_active=True).order_by(Client.firstname, Client.lastname)
+            query = Client.query.filter_by(is_active=True)
+
+        # Apply search filter if present
+        if q:
+            like_q = f"%{q}%"
+            query = query.filter(
+                db.or_(
+                    Client.firstname.ilike(like_q),
+                    Client.lastname.ilike(like_q),
+                    Client.parentname.ilike(like_q),
+                    Client.parentemail.ilike(like_q),
+                    Client.city.ilike(like_q)
+                )
+            )
+
+        # Always order results for consistent pagination
+        query = query.order_by(Client.is_active.desc(), Client.firstname, Client.lastname)
         clients_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         return render_template(
             'list.html',

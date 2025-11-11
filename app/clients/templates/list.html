@@ -2,6 +2,7 @@
 {% block content %}
 <div class="p-2 mb-4 rounded-3">
     <div class="container-fluid py-2">
+        
         <h2>Clients</h2>
         <a href="{{ url_for('clients.add_client') }}" title="Add New Client" class="btn btn-outline-primary mb-3">Add</a>
 
@@ -15,16 +16,27 @@
                 </select>
                 <input type="hidden" name="page" value="{{ pagination.page }}">
                 <input type="hidden" name="show_inactive" value="{{ request.args.get('show_inactive', '0') }}">
+                <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
             </form>
-            <form method="get" class="d-flex align-items-center">
-                <div class="form-check form-switch">
-                    <input type="checkbox" class="form-check-input" id="show_inactive" name="show_inactive" value="1" 
-                        {% if request.args.get('show_inactive') == '1' %}checked{% endif %} 
+            <form method="get" class="d-flex align-items-center flex-grow-1 ms-3">
+                <div class="input-group me-2 flex-grow-1">
+                    <input type="text" class="form-control" name="q" placeholder="Search clients (name, parent, city)" value="{{ request.args.get('q','') }}">
+                    <button class="btn btn-outline-secondary" type="submit">Search</button>
+                </div>
+                <div class="form-check form-switch custom-toggle flex-shrink-0 ms-2">
+                    <input type="checkbox" class="form-check-input" id="show_inactive" name="show_inactive" value="1"
+                        {% if request.args.get('show_inactive') == '1' %}checked{% endif %}
                         onchange="this.form.submit()">
-                    <label class="form-check-label" for="show_inactive">Show Inactive</label>
+                    <label class="form-check-label">
+                        <span class="toggle-track" aria-hidden="true">
+                            <span class="toggle-knob" aria-hidden="true" tabindex="0"></span>
+                        </span>
+                        Show Inactive
+                    </label>
                 </div>
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="per_page" value="{{ per_page }}">
+                <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
             </form>
         </div>
         <table class="table table-hover">
@@ -260,6 +272,24 @@ document.addEventListener('DOMContentLoaded', function() {
         var form = document.getElementById('reactivateClientForm');
         form.action = '/clients/reactivate/' + clientId;
         reactivateModal.querySelector('.client-name').textContent = clientName;
+    });
+
+    // Make only the knob clickable for the custom toggle
+    document.querySelectorAll('.custom-toggle').forEach(function(container){
+        var knob = container.querySelector('.toggle-knob');
+        var checkbox = container.querySelector('.form-check-input');
+        if(!knob || !checkbox) return;
+        // ensure only knob handles clicks; label text will not toggle
+        knob.addEventListener('click', function(e){
+            e.stopPropagation();
+            checkbox.click();
+        });
+        knob.addEventListener('keydown', function(e){
+            if(e.key === ' ' || e.key === 'Enter'){
+                e.preventDefault();
+                checkbox.click();
+            }
+        });
     });
 });
 </script>

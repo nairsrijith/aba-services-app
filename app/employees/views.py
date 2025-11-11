@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from app import db
 from app.models import Employee, Designation, Intervention, Client, PayRate, PayStub
+from sqlalchemy import or_
 from datetime import date
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
@@ -168,12 +169,29 @@ def list_employees():
         per_page = request.args.get('per_page', 10, type=int)
         # Respect the `show_inactive` toggle: when not set, only show active employees.
         show_inactive = request.args.get('show_inactive', '0')
+
+        # Optional search query (search by first/last name or city)
+        q = request.args.get('q', '')
+        q = q.strip() if q is not None else ''
+
         if show_inactive == '1':
             # include both active and inactive, active first
             query = Employee.query.order_by(Employee.is_active.desc(), Employee.firstname, Employee.lastname)
         else:
             # only active employees
             query = Employee.query.filter_by(is_active=True).order_by(Employee.firstname, Employee.lastname)
+
+        if q:
+            pattern = f"%{q}%"
+            # case-insensitive search on firstname, lastname or city
+            query = query.filter(
+                or_(
+                    Employee.firstname.ilike(pattern),
+                    Employee.lastname.ilike(pattern),
+                    Employee.city.ilike(pattern)
+                )
+            )
+
         employees_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         return render_template(
             'list_emp.html',

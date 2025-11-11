@@ -1023,11 +1023,119 @@ a.btn-success:not(.disabled) {
   color: #fff !important;
 }
 
+
+
 /* Links styled as buttons should also reflect enabled/disabled states */
 a.btn[disabled], a.btn.disabled {
   pointer-events: none;
   opacity: 0.6;
 }
+
+/* Custom small toggle for "Show Inactive" — matches provided images (cross when off, check when on) */
+.form-check.form-switch.custom-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.form-check.form-switch.custom-toggle .form-check-input {
+  /* visually hidden but accessible checkbox; knob click toggles it via JS */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+.form-check.form-switch.custom-toggle .toggle-track {
+  display: inline-block;
+  width: 3.2rem; /* 51px */
+  height: 2rem; /* 32px */
+  background: rgba(255,255,255,0.12); /* off track */
+  border-radius: 2rem;
+  position: relative;
+  transition: background 0.18s ease;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+  pointer-events: none; /* make track non-interactive; only knob handles clicks */
+}
+
+
+.form-check.form-switch.custom-toggle .toggle-track .toggle-knob {
+  position: absolute;
+  left: 0.12rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.6rem; /* knob size */
+  height: 1.6rem;
+  border-radius: 50%;
+  background: #bfbfbf; /* off knob */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  transition: left 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.form-check.form-switch.custom-toggle .toggle-track .toggle-knob {
+  pointer-events: auto; /* allow knob to receive clicks */
+  cursor: pointer;
+  z-index: 7;
+}
+
+/* Use pseudo-elements inside knob for cross/check icons so we can fade between them */
+.form-check.form-switch.custom-toggle .toggle-track .toggle-knob::before,
+.form-check.form-switch.custom-toggle .toggle-track .toggle-knob::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 0.9rem 0.9rem;
+  transition: opacity 0.12s linear;
+}
+.form-check.form-switch.custom-toggle .toggle-track .toggle-knob::before {
+  /* cross (OFF) */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 3 L9 9 M9 3 L3 9' stroke='%23ffffff' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>");
+  opacity: 1;
+}
+.form-check.form-switch.custom-toggle .toggle-track .toggle-knob::after {
+  /* check (ON) */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2.5 6.5 L4.5 8.5 L9.5 3.5' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>");
+  opacity: 0;
+}
+
+.form-check.form-switch.custom-toggle .form-check-label {
+  margin-bottom: 0;
+  /* Ensure the label's track and text are vertically centered together
+     and that only this custom toggle is affected. */
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  line-height: 1; /* normalize line-height so text centers predictably */
+  vertical-align: middle;
+}
+
+/* Checked state: move knob to right, change track to accent and knob to darker blue with check icon */
+.form-check.form-switch.custom-toggle .form-check-input:checked + .form-check-label .toggle-track {
+  background: var(--accent-clr);
+}
+
+.form-check.form-switch.custom-toggle .form-check-input:checked + .form-check-label .toggle-track .toggle-knob {
+  left: calc(100% - 1.75rem);
+  background: #004b7a; /* darker knob color when checked */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+.form-check.form-switch.custom-toggle .form-check-input:checked + .form-check-label .toggle-track .toggle-knob::before { opacity: 0; }
+.form-check.form-switch.custom-toggle .form-check-input:checked + .form-check-label .toggle-track .toggle-knob::after { opacity: 1; }
+
+@media (max-width: 480px) {
+  .form-check.form-switch.custom-toggle .toggle-track { width: 2.6rem; height: 1.8rem; }
+  .form-check.form-switch.custom-toggle .toggle-track .toggle-knob { width: 1.2rem; height: 1.2rem; left: 0.12rem; }
+  .form-check.form-switch.custom-toggle .form-check-input { width: 1px; height: 1px; }
+  .form-check.form-switch.custom-toggle .form-check-input:checked + .form-check-label .toggle-track .toggle-knob { left: calc(100% - 1.35rem); }
+}
+
 
 /* PDF Document Styles */
 @page { 
@@ -1226,16 +1334,3 @@ body.pdf-document {
     padding: 12px;
 }
 
-@page {
-    @bottom-right {
-        content: "Downloaded: " string(download_time);
-        font-size: 8pt;
-        color: #666;
-        padding-right: 1cm;
-    }
-}
-
-#download_time { 
-    string-set: download_time content(); 
-    visibility: hidden; 
-}

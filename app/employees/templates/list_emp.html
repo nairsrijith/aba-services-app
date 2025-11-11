@@ -16,15 +16,27 @@
                 <input type="hidden" name="page" value="{{ pagination.page }}">
                 <input type="hidden" name="show_inactive" value="{{ request.args.get('show_inactive', '0') }}">
             </form>
-            <form method="get" class="d-flex align-items-center">
-                <div class="form-check form-switch">
-                    <input type="checkbox" class="form-check-input" id="show_inactive" name="show_inactive" value="1" 
-                        {% if request.args.get('show_inactive') == '1' %}checked{% endif %} 
-                        onchange="this.form.submit()">
-                    <label class="form-check-label" for="show_inactive">Show Inactive</label>
+            <form method="get" class="d-flex align-items-center flex-grow-1 ms-3">
+                <div class="input-group me-2 flex-grow-1">
+                    <input type="text" class="form-control" name="q" placeholder="Search employees (name, city)" value="{{ request.args.get('q','') }}">
+                    <button class="btn btn-outline-secondary" type="submit">Search</button>
                 </div>
+
+                <div class="form-check form-switch custom-toggle flex-shrink-0 ms-2">
+                    <input type="checkbox" class="form-check-input" id="show_inactive" name="show_inactive" value="1"
+                        {% if request.args.get('show_inactive') == '1' %}checked{% endif %}
+                        onchange="this.form.submit()">
+                    <label class="form-check-label">
+                        <span class="toggle-track" aria-hidden="true">
+                            <span class="toggle-knob" aria-hidden="true" tabindex="0"></span>
+                        </span>
+                        Show Inactive
+                    </label>
+                </div>
+
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="per_page" value="{{ per_page }}">
+                <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
             </form>
         </div>
         <table class="table table-hover">
@@ -246,6 +258,23 @@ document.addEventListener('DOMContentLoaded', function() {
         var form = document.getElementById('reactivateForm');
         form.action = reactivateUrl;
         reactivateModal.querySelector('.employee-name').textContent = employeeName;
+    });
+
+    // Make only the knob clickable for the custom toggle (employees page)
+    document.querySelectorAll('.custom-toggle').forEach(function(container){
+        var knob = container.querySelector('.toggle-knob');
+        var checkbox = container.querySelector('.form-check-input');
+        if(!knob || !checkbox) return;
+        knob.addEventListener('click', function(e){
+            e.stopPropagation();
+            checkbox.click();
+        });
+        knob.addEventListener('keydown', function(e){
+            if(e.key === ' ' || e.key === 'Enter'){
+                e.preventDefault();
+                checkbox.click();
+            }
+        });
     });
 });
 </script>
