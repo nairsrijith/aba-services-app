@@ -20,6 +20,20 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_app_super_secret_key'
 
 
+# Inject organization-wide variables into every template so individual views
+# don't need to pass them explicitly. This ensures `org_name`, `org_address`,
+# `org_email`, `org_phone` and `payment_email` are always available.
+@app.context_processor
+def _inject_org_globals():
+    return {
+        'org_name': os.environ.get('ORG_NAME', 'My Organization'),
+        'org_address': os.environ.get('ORG_ADDRESS', 'Organization Address'),
+        'org_email': os.environ.get('ORG_EMAIL', 'email@org.com'),
+        'org_phone': os.environ.get('ORG_PHONE', 'Org Phone'),
+        'payment_email': os.environ.get('PAYMENT_EMAIL', 'payments@org.com')
+    }
+
+
 def _format_phone(value):
     """Format a digits-only phone number as XXX-XXX-XXXX for display.
 
@@ -174,6 +188,17 @@ def create_app():
     app.jinja_env.filters['format_phone'] = _format_phone
     app.jinja_env.filters['format_date'] = _format_date
     app.jinja_env.filters['format_time'] = _format_time
+
+    # Also provide org globals for apps created via the factory
+    @app.context_processor
+    def _inject_org_globals_factory():
+        return {
+            'org_name': os.environ.get('ORG_NAME', 'My Organization'),
+            'org_address': os.environ.get('ORG_ADDRESS', 'Organization Address'),
+            'org_email': os.environ.get('ORG_EMAIL', 'email@org.com'),
+            'org_phone': os.environ.get('ORG_PHONE', 'Org Phone'),
+            'payment_email': os.environ.get('PAYMENT_EMAIL', 'payments@org.com')
+        }
 
     # register blueprints (import at runtime to avoid circular import issues)
     from app.clients.views import clients_bp

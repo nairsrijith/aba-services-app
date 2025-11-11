@@ -8,7 +8,6 @@
   <table class="table table-hover">
     <thead>
       <tr>
-        <th>ID</th>
         <th>Employee</th>
         <th class="text-end">Period</th>
         <th class="text-end">Generated</th>
@@ -20,7 +19,6 @@
     <tbody>
       {% for ps in paystubs %}
       <tr>
-        <td>{{ ps.id }}</td>
         <td>{{ ps.employee.firstname }} {{ ps.employee.lastname }}</td>
         <td class="text-end">{{ ps.period_start }} - {{ ps.period_end }}</td>
         <td class="text-end">{{ ps.generated_date }}</td>
@@ -35,7 +33,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="7" class="text-center">No paystubs found.</td></tr>
+      <tr><td colspan="6" class="text-center">No paystubs found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

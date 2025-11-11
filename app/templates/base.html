@@ -21,6 +21,17 @@
     }
     /* Utility class for right alignment used across templates */
     .right { text-align: right; }
+    /* Centered organization name shown on all pages */
+    .app-org-name {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.5rem;
+      margin: 6px 0;
+      color: var(--text-clr, inherit);
+    }
+    @media (max-width: 575.98px) {
+      .app-org-name { font-size: 1rem; margin: 4px 0; }
+    }
   </style>
   <script>
     // Theme logic: apply saved theme on load
@@ -302,6 +313,9 @@
   </div>
 
   <main>
+  <header class="app-org-name" role="banner">
+    {{ org_name if org_name is defined else 'My Organization' }}
+  </header>
   {% block content %}
   {% endblock %}
   </main>
