@@ -78,7 +78,8 @@ class UpdateInterventionForm(FlaskForm):
     start_time = TimeField('Start Time', validators=[DataRequired()])
     end_time = TimeField('End Time', validators=[DataRequired()])
     duration = StringField('Duration', validators=[DataRequired()])  # in hours e.g., '1.5' for 1 hour 30 minutes
-    invoiced = StringField('Invoiced', validators=[DataRequired()])  # e.g., 'Yes' or 'No'
+    # Make invoiced optional for update form; it will be set when the form is submitted if present
+    invoiced = StringField('Invoiced')  # e.g., 'Yes' or 'No'
     invoice_number = StringField('Invoice Number')  # optional field for invoice number if invoiced
     file_names = FileField('File(s) to add')  # optional field for filename if a file is uploaded
     submit = SubmitField('Update')

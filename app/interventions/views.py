@@ -290,7 +290,9 @@ def update_intervention(intervention_id):
         if intervention.invoiced or intervention.is_paid:
             flash('This session cannot be edited because it is either invoiced or already paid.', 'warning')
             return redirect(url_for('interventions.list_interventions'))
-        form = UpdateInterventionForm(obj=intervention)
+
+        # Pass intervention_id to the form so validators (like overlap check) have access
+        form = UpdateInterventionForm(obj=intervention, intervention_id=intervention_id)
         # Include the current client and employee in choices even if inactive
         client_choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).all()]
         if intervention.client_id:
@@ -328,7 +330,7 @@ def update_intervention(intervention_id):
         else:
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") 
                                       for e in Employee.query.filter_by(email=current_user.email, is_active=True).all()]
-        
+
         # Filter activities based on selected employee's position
         if request.method == 'GET':
             selected_employee = intervention.employee
@@ -344,9 +346,9 @@ def update_intervention(intervention_id):
         else:
             form.intervention_type.choices = []
 
+        # Handle POST submission
         if request.method == 'POST' and form.validate():
-            # Pass the intervention_id to the form for validation
-            form.intervention_id = intervention_id
+            # Check for overlapping sessions first
             if not form.validate_session_time():
                 return render_template('update_int.html', form=form, 
                                     clients=Client.query.all(), 
@@ -380,7 +382,7 @@ def update_intervention(intervention_id):
                     except OSError as e:
                         flash(f'Error moving file {filename}: {str(e)}', 'warning')
                         continue
-                
+
                 # Remove from filenames list
                 filenames = [f for f in filenames if f not in remove_files]
 
@@ -433,6 +435,15 @@ def update_intervention(intervention_id):
                                     employees=Employee.query.all(),
                                     org_name=org_name,
                                     intervention=intervention)
+        # If POST but validation failed, surface the form errors to the user
+        if request.method == 'POST' and not form.validate():
+            for field_name, field_errors in form.errors.items():
+                field = getattr(form, field_name, None)
+                label = getattr(field, 'label', None)
+                label_text = label.text if label else field_name
+                for err in field_errors:
+                    flash(f"{label_text}: {err}", 'danger')
+
         return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=org_name, intervention=intervention)
     else:
         abort(403)

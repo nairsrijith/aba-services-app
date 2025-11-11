@@ -5,6 +5,17 @@
             <h2>Update Session Record</h2>
             <form method="POST" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                        {% for field, errors in form.errors.items() %}
+                            {% for error in errors %}
+                                <li><strong>{{ getattr(form, field).label.text if getattr(form, field) else field }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
                 <div class="row mb-3">
                     <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select") }}</div>
                     <div>{{ form.employee_id.label(class="col-form-label") }}{{ form.employee_id(class="form-select", id="employee_id") }}</div>
