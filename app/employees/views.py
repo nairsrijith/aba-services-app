@@ -120,7 +120,7 @@ def deactivate_employee(employee_id):
         employee.password_hash = None  # Clear password to prevent login
         employee.activation_key = None  # Clear any existing activation key
         employee.locked_until = datetime.datetime.now() + relativedelta(years=1000)  # Lock until 1000 years from now
-        employee.failed_attempt = -2  # Set to -2 failed attempts
+        employee.failed_attempt = -5  # Set to -5 failed attempts
         employee.login_enabled = False  # Disable login access
         # Note: is_active remains unchanged - employee record stays active
         

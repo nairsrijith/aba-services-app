@@ -21,7 +21,7 @@ def list_users():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         users_pagination = Employee.query.filter(
-            ~((Employee.user_type == 'super') | (Employee.email == current_user.email))
+            ~((Employee.user_type == 'super') | (Employee.email == current_user.email) | (Employee.failed_attempt <= -5 ))
         ).paginate(page=page, per_page=per_page, error_out=False)
         return render_template(
             'list_user.html',

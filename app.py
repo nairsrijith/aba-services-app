@@ -103,8 +103,6 @@ def get_session_stats(employee_email=None):
     }
 
 
-
-
 def get_monthly_totals():
     today = date.today()
     start_date = date(today.year - 1, today.month, 1)  # 12 months ago
@@ -346,7 +344,7 @@ def register():
                 employee.email = form.email.data
                 employee.set_password(form.password.data)
                 employee.locked_until = None
-                employee.failed_attempt = 0
+                employee.failed_attempt = 3
                 employee.login_enabled = True  # Enable login access
                 # Clear the activation key after successful registration
                 employee.activation_key = None

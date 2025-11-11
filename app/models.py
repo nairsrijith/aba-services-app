@@ -2,11 +2,34 @@ from app import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import date
-import json, random, string
+from datetime import datetime
+import json, string, secrets
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Employee.query.get(int(user_id))
+    try:
+        user = Employee.query.get(int(user_id))
+    except Exception:
+        return None
+
+    # If user record doesn't exist, or login is disabled, or account inactive -> treat as anonymous
+    if not user:
+        return None
+
+    # If login is explicitly disabled or employee marked inactive, don't load the user
+    if not getattr(user, 'login_enabled', False) or not getattr(user, 'is_active', True):
+        return None
+
+    # If account is locked until a future time, don't load
+    if getattr(user, 'locked_until', None):
+        try:
+            if user.locked_until > datetime.utcnow():
+                return None
+        except Exception:
+            # If locked_until is not a datetime for some reason, ignore and continue
+            pass
+
+    return user
 
 
 class Activity(db.Model):
@@ -77,10 +100,10 @@ class Employee(db.Model, UserMixin):
         return check_password_hash(self.password_hash, password)
         
     def generate_activation_key(self):
-        """Generate a random 8-character activation key"""
+        """Generate a 8-character activation key"""
         # Generate a 8-character string of random digits and uppercase letters
-        characters = string.ascii_uppercase + string.digits
-        self.activation_key = ''.join(random.choices(characters, k=8))
+        characters = string.ascii_letters + string.digits
+        self.activation_key = ''.join(secrets.choice(characters) for _ in range(8))
         return self.activation_key
         
     @staticmethod

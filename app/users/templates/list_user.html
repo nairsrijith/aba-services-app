@@ -57,9 +57,6 @@
                                     Lock
                                 </button>
                             {% endif %}
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#reactivateModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" data-reactivate-url="{{ url_for('employees.reactivate_employee', employee_id=user.id, next=url_for('users.list_users')) }}" title="Reactivate User Account">
-                                Reactivate
-                            </button>
                             <form id="roleForm-{{ user.id }}" method="POST" style="display:none;"></form>
                         </td>
                     </tr>
@@ -149,26 +146,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="reactivateModal" tabindex="-1" aria-labelledby="reactivateModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="reactivateForm" method="POST">
-                <div class="modal-header">
-                <h5 class="modal-title" id="reactivateModalLabel">Confirm Reactivation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                Are you sure you want to reactivate the account <strong><span id="userEmailReactivate"></span></strong>?
-                <p>This will clear their password and generate a new activation code.</p>
-                </div>
-                <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-warning">Reactivate</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -189,15 +166,6 @@ document.addEventListener('DOMContentLoaded', function() {
         var form = document.getElementById('unlockForm');
         form.action = '/users/unlock/' + userId;
         document.getElementById('userEmailUnlock').textContent = userEmail;
-    });
-    var reactivateModal = document.getElementById('reactivateModal');
-    reactivateModal.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        var userEmail = button.getAttribute('data-user-email');
-        var reactivateUrl = button.getAttribute('data-reactivate-url');
-        var form = document.getElementById('reactivateForm');
-        form.action = reactivateUrl;
-        document.getElementById('userEmailReactivate').textContent = userEmail;
     });
 });
 
