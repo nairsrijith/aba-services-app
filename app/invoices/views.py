@@ -181,7 +181,11 @@ def invoice_preview():
             supervisor_name=supervisor_name,
             supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
-            org_name=org_name
+            org_name=org_name,
+            org_address=org_address,
+            org_email=org_email,
+            org_phone=org_phone,
+            payment_email=payment_email
         )
     else:
         abort(403)
@@ -369,7 +373,11 @@ def preview_invoice_by_number(invoice_number):
             supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
             total_cost=invoice.total_cost,
-            org_name=org_name
+            org_name=org_name,
+            org_address=org_address,
+            org_email=org_email,
+            org_phone=org_phone,
+            payment_email=payment_email
         )
     else:
         abort(403)

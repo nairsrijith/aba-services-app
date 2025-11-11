@@ -1,115 +1,138 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-    body { font-family: Arial, sans-serif; font-size: 11pt; }
-    .container { margin: 0 auto; width: 100%; }
-    .text-center { text-align: center; }
-    .row { display: flex; }
-    .col-md-6 { width: 50%; }
-    .invoice-details { text-align: left; }  /* <-- Add this line */
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #333; padding: 6px; text-align: center; }
-    th {
-        background-color: rgba(255,255,255,0.85); /* white translucent for light mode */
-        color: #212529;
-        font-weight: 600;
-    }
-    html.dark-mode th {
-        background-color: rgba(0,0,0,0.85); /* black translucent for dark mode */
-        color: #f8f9fa;
-    }
-    td {
-        background-color: rgba(255,255,255,0.7);
-        color: #212529;
-    }
-    html.dark-mode td {
-        background-color: rgba(0,0,0,0.7);
-        color: #f8f9fa;
-    }
-    h3 { margin-bottom: 0; }
-    hr { margin: 10px 0; }
-    /* Add this for compact invoice details */
-    .invoice-details p, .invoice-details h4 {
-        margin: 4px 0;
-        line-height: 1.2;
-        text-align: right;  /* <-- Add this line for extra safety */
-    }
-    .billing-info p, .billing-info h4 {
-        margin: 4px 0;
-        line-height: 1.2;
-        text-align: left;  /* <-- Add this line for extra safety */
-    }
+    /* Reuse the PDF visual styling (sans @page and PDF-only features) so preview matches PDF output */
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; }
+    .pdf-container { margin: 0 auto; width: calc(100% - 16px); box-sizing: border-box; padding: 0; }
+    .pdf-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 8px; box-sizing: border-box; }
+    .pdf-header img { height: 48px; margin-right: 10px; }
+    .pdf-header h2 { margin: 0; color: #0d6efd; }
+    .pdf-header .right { text-align: right; }
+    .pdf-row { display: flex; width: 100%; margin: 0; padding: 0 8px; gap: 16px; box-sizing: border-box; }
+    .pdf-col-6 { flex: 1; box-sizing: border-box; }
+    .pdf-info-section { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 0.5px solid #e0e0e0; width: 100%; }
+    .pdf-info-section h3, .pdf-info-section h4 { color: #0d6efd; margin: 0 0 8px 0; font-size: 13pt; }
+    .pdf-info-section p { margin: 4px 0; }
+    .pdf-info-section.right { text-align: right; }
+    table.pdf-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 0; font-size: 11px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-radius: 8px; overflow: hidden; border: 0.5px solid #e0e0e0; }
+    .pdf-table th { background: #0d6efd; color: #fff; font-weight: 600; padding: 10px 8px; border: none; text-align: left; }
+    .pdf-table td { border: 0.5px solid #e0e0e0; padding: 8px 8px; text-align: left; vertical-align: middle; }
+    .pdf-table tr:nth-child(even) td { background: #f8f9fa; }
+    .pdf-table tr:nth-child(odd) td { background: #fff; }
+    .pdf-table tr.total-row td { background: #e9ecef; font-weight: bold; color: #0d6efd; }
+    .pdf-status-paid { background: #056627; color: #fff; border-radius: 4px; padding: 2px 8px; }
+    .pdf-status-unpaid { background: #ffc721; color: #212529; border-radius: 4px; padding: 2px 8px; }
+    .pdf-payment-info { margin-top: 16px; border-radius: 8px; padding: 12px; }
+    .pdf-payment-info.paid { background: #d1e7dd; }
+    .pdf-payment-info.unpaid { background: #fff3cd; }
+    .pdf-footer-note { margin-top: 16px; background: #f8f9fa; border-radius: 8px; padding: 12px; }
+    .text-end { text-align: right; }
+    /* Compact info spacing for preview */
+    .billing-info p, .billing-info h4, .invoice-details p, .invoice-details h4 { margin: 4px 0; line-height: 1.2; }
 </style>
-<div class="container mt-4">
-    <h2>Invoice Preview</h2>
-    <div class="container mt-4">
-        <h3 class="text-center">{{ org_name }}</h3>
-        <hr>
-        <div class="row">
-            <div class="col-md-6 billing-info">
-                <h4><strong>Billed to:</strong></h4>
-                <p>{{ client.parentname }}</p>
-                <p>
-                    {{ client.address1 }}{% if client.address2 %}, {{ client.address2 }}{% endif %}<br>
-                    {{ client.city }}, {{ client.state }} {{ client.zipcode }}
-                </p>
-                <br>
-                <p><strong>Client:</strong> {{ client.firstname }} {{ client.lastname }}</p>
-            </div>
-            <div class="col-md-6 invoice-details">
-                <h4><strong>Invoice Details:</strong></h4>
-                <p><strong>{{ invoice_number }}</strong></p>
-                <p>Status: <span class="badge {% if status != "Paid" %}bg-danger{% else %}bg-success{% endif %}">{{ status }}</span></p>
-                <p>Invoice Date: {{ invoice_date }}</p>
-                <p>Pay By: {{ payby_date }}</p>
-            </div>
+
+<div class="pdf-container mt-3">
+    <div class="pdf-header">
+        <div>
+            {% if logo_b64 %}
+                <img src="{{ logo_b64 }}" alt="">
+            {% elif logo_url %}
+                <img src="{{ logo_url }}" alt="">
+            {% elif logo_path %}
+                <img src="file://{{ logo_path }}" alt="">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="">
+            {% endif %}
         </div>
-        <br>
-        <div style="clear: both;">
-            <strong>Supervisor:</strong> {{ supervisor_name }} [ RBA#: {{ supervisor_rba_number }} ]
+        <div class="right">
+            <h2>{{ org_name }}</h2>
+            <small>{{ org_address }}<br><small>Phone: {{ org_phone }} &emsp; Email: {{ org_email }}</small></small>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Details</th>
-                    <th class="text-end">Duration</th>
-                    <th class="text-end">Rate/Hr</th>
-                    <th class="text-end">Cost</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% set ns = namespace(total=0) %}
-                {% for i in interventions %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td style="text-align: left;"><strong>{{ i.intervention_type }}</strong> conducted by <strong><em>{{ i.employee.firstname }} {{ i.employee.lastname }}</em></strong><br>
-                        <small>{{ i.date }} ({{ i.start_time.strftime('%H:%M') }}-{{ i.end_time.strftime('%H:%M') }})</small>
-                    </td>
-                    <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
-                    <td style="text-align: right;">{{ "%.2f"|format(i.rate|float) }}</td>
-                    <td style="text-align: right;">{{ "%.2f"|format(i.cost|float) }}</td>
-                </tr>
-                {% set ns.total = ns.total + i.cost %}
-                {% endfor %}
-            </tbody>
-            <tbody>
-                <tr>
-                    <td colspan="4" style="text-align: right;"><strong>Total:</strong></td>
-                    <td style="text-align: right;"><strong>{{ "%.2f"|format(ns.total|float) }}</strong></td>
-                </tr>
-            </tbody>
-        </table>
-        {% if not total_cost %}
-            <form method="POST" class="py-4">
-                <button type="submit" class="btn btn-success">Confirm and Save Invoice</button>
-                <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
-            </form>
-        {% else %}
-            <div class="py-4">
-                <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
-            </div>
-        {% endif %}
     </div>
+
+    <div class="pdf-row">
+        <div class="pdf-col-6 pdf-info-section">
+            <h4><strong>Billed to:</strong></h4>
+            <p><strong>{{ client.parentname }}</strong></p>
+            <p>
+                {{ client.address1 }}{% if client.address2 %}, {{ client.address2 }}{% endif %},<br>
+                {{ client.city }}, {{ client.state }} {{ client.zipcode }}
+            </p>
+            <br>
+            <p><strong>Client:</strong> {{ client.firstname }} {{ client.lastname }}</p>
+        </div>
+        <div class="pdf-col-6 pdf-info-section right">
+            <h4><strong>Invoice Details:</strong></h4>
+            <p><strong>{{ invoice_number }}</strong></p>
+            <p>Status: <span class="{% if status == 'Paid' %}pdf-status-paid{% else %}pdf-status-unpaid{% endif %}">{{ status }}</span></p>
+            <p>Invoice Date: {{ invoice_date }}</p>
+            <p>Pay By: {{ payby_date }}</p>
+        </div>
+    </div>
+
+    <table class="pdf-table mt-3">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Details</th>
+                <th class="text-end">Duration</th>
+                <th class="text-end">Rate/Hr</th>
+                <th class="text-end">Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set ns = namespace(total=0) %}
+            {% for i in interventions %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td style="text-align: left;">
+                    <strong>{{ i.intervention_type }}</strong><br>
+                    Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }}){% if i.employee.position in ['Therapist', 'Senior Therapist'] %}, {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }}){% endif %}<br>
+                    <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }})</small>
+                </td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.rate|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.cost|float) }}</td>
+            </tr>
+            {% set ns.total = ns.total + i.cost %}
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="4" style="text-align: right;">Total:</td>
+                <td style="text-align: right;">{{ "%.2f"|format(ns.total|float) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if status != "Paid" %}
+        <div class="pdf-payment-info unpaid">
+            <strong>Payment is accepted via:</strong>
+            Interac e-Transfer to <strong><em>{{ payment_email }}</em></strong>
+            <br>
+            <em>This is not a confirmation of payment. Payment receipt will be shared once the payment is realised.</em>
+        </div>
+    {% else %}
+        <div class="pdf-payment-info paid">
+            <strong>Payment received. Thank you!</strong>
+            <p>Payment was received on {{ paid_date }}{% if payment_comments %}, via etransfer: {{ payment_comments }}.{% endif %}</p>
+        </div>
+    {% endif %}
+
+    <div class="pdf-footer-note">
+        <strong>Thank you for your business!</strong><br>
+        For feedback or queries write to us at <strong><em>{{ org_email }}</em></strong>.
+    </div>
+
+    {% if not total_cost %}
+        <form method="POST" class="py-4">
+            <button type="submit" class="btn btn-success">Confirm and Save Invoice</button>
+            <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
+        </form>
+    {% else %}
+        <div class="py-4">
+            <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
+        </div>
+    {% endif %}
+
 </div>
+
 {% endblock %}
