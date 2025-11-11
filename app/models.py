@@ -65,7 +65,7 @@ class Employee(db.Model, UserMixin):
     login_enabled = db.Column(db.Boolean, nullable=False, default=False)  # Controls if user can log in
     locked_until = db.Column(db.DateTime, default=None)
     failed_attempt = db.Column(db.Integer, default=-2, nullable=False)
-    activation_key = db.Column(db.String(15), nullable=True, default=None)
+    activation_key = db.Column(db.String(16), nullable=True, default=None)
 
     designation = db.relationship('Designation', backref='employees')
     pay_rates = db.relationship('PayRate', backref='employee', cascade='all, delete-orphan')
@@ -99,12 +99,47 @@ class Employee(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
         
-    def generate_activation_key(self):
-        """Generate a 8-character activation key"""
-        # Generate a 8-character string of random digits and uppercase letters
-        characters = string.ascii_letters + string.digits
-        self.activation_key = ''.join(secrets.choice(characters) for _ in range(8))
-        return self.activation_key
+    def generate_activation_key(self, length: int = 12, num_lowercase=3, num_uppercase=3, num_digits=3):
+        """
+        Generates a cryptographically secure activation key with specific character counts.
+
+        Args:
+            length (int): The total length of the key. Must be at least num_lower + num_upper + num_digits.
+            num_lower (int): The minimum number of lowercase letters.
+            num_upper (int): The minimum number of uppercase letters.
+            num_digits (int): The minimum number of digits.
+
+        Returns:
+            str: A randomly generated activation key.
+        
+        Raises:
+            ValueError: If the total length is too short to meet the minimum character counts.
+
+        The method sets `self.activation_key` and returns the generated key. It does
+        not commit the session — callers should commit when ready.
+        """
+
+        if length < (num_lowercase + num_uppercase + num_digits):
+            raise ValueError("Total length is too short for the specified character requirements")
+        
+        lowercase = ''.join(secrets.choice(string.ascii_lowercase) for _ in range(num_lowercase))
+        uppercase = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(num_uppercase))
+        digits = ''.join(secrets.choice(string.digits) for _ in range(num_digits))
+
+        remaining_length = length - (num_lowercase + num_uppercase + num_digits)
+
+        if remaining_length > 0:
+            all_possible_characters = string.ascii_lowercase + string.ascii_uppercase + string.digits
+            remaining = ''.join(secrets.choice(all_possible_characters) for _ in range(remaining_length))
+            all_characters = lowercase + uppercase + digits + remaining
+        else:
+            all_characters = lowercase + uppercase + digits
+
+        secrets.SystemRandom().shuffle(list(all_characters))
+
+        key = ''.join(all_characters)
+        self.activation_key = key
+        return key
         
     @staticmethod
     def create_super_admin(email, password):
