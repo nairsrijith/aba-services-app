@@ -323,10 +323,10 @@
   {% if current_user.is_authenticated and current_user.locked_until %}
     <script>
       // Check if user is locked and redirect to logout if so
-      (function() {
+        (function() {
         var lockedUntil = new Date("{{ current_user.locked_until }}");
         if (lockedUntil > new Date()) {
-          window.location.href = "{{ url_for('auth.logout') }}";
+          window.location.href = "{{ url_for('logout') }}";
         }
       })();
     </script>

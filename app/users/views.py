@@ -119,7 +119,7 @@ def change_password():
                 current_user.set_password(form.new_password.data)
                 db.session.commit()
                 flash('Your password has been updated.', 'success')
-                return redirect(url_for('auth.logout'))
+                return redirect(url_for('logout'))
             else:
                 flash('Current password is incorrect.', 'danger')
         return render_template('change_password.html', form=form, org_name=org_name)
