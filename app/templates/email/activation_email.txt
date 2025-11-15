@@ -1,0 +1,10 @@
+Hi {{ firstname }},
+
+Your account has been created. Use the activation key below to complete registration and set your password:
+
+{{ activation_key }}
+
+If you didn't expect this email, please contact your administrator.
+
+Thanks,
+{{ org_name }}

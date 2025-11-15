@@ -1,0 +1,12 @@
+<html>
+  <body style="font-family: Arial, Helvetica, sans-serif; color: #222;">
+    <div style="max-width:600px;margin:0 auto;padding:20px;border:1px solid #eee;border-radius:6px;">
+      <h2 style="color:#2c3e50;">Welcome to {{ org_name }}</h2>
+      <p>Hi {{ firstname }},</p>
+      <p>Your account has been created. Use the activation key below to complete registration and set your password.</p>
+      <div style="padding:12px;background:#f7f7f7;border-radius:4px;margin:10px 0;font-weight:600;font-size:1.2rem;">{{ activation_key }}</div>
+      <p>If you didn't expect this email, please contact your administrator.</p>
+      <p style="color:#888;font-size:0.9rem;">Thanks,<br>{{ org_name }}</p>
+    </div>
+  </body>
+</html>

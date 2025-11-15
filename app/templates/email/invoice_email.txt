@@ -1,0 +1,10 @@
+Dear {{ client.parentname }},
+
+Please find attached invoice {{ invoice.invoice_number }} for services between {{ invoice.date_from }} and {{ invoice.date_to }}.
+
+Invoice total: ${{ '%.2f'|format(invoice.total_cost) }}
+
+If you have any questions, reply to this email or contact us.
+
+Thanks,
+{{ org_name }}

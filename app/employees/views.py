@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from datetime import date
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
+from app.utils.email_utils import queue_email
 import os, re, datetime
 from dateutil.relativedelta import relativedelta
 
@@ -88,8 +89,16 @@ def add_employee():
                 db.session.add(base_payrate)
                 
                 db.session.commit()
-                flash('Employee added successfully! Base pay rate set to CA${:.2f} effective {}. User account created with activation code: {}'.format(
-                    base_rate, date.today().strftime('%Y-%m-%d'), activation_key), 'success')
+                # Try to email the activation key to the employee
+                try:
+                    subject = f"{org_name} - Activation Key"
+                    body_text = render_template('email/activation_email.txt', firstname=new_employee.firstname, activation_key=activation_key, org_name=org_name)
+                    body_html = render_template('email/activation_email.html', firstname=new_employee.firstname, activation_key=activation_key, org_name=org_name)
+                    queue_email(subject=subject, recipients=new_employee.email, body_text=body_text, body_html=body_html)
+                    flash('Employee added successfully! Activation key emailed to user. Base pay rate set to CA${:.2f} effective {}.'.format(
+                        base_rate, date.today().strftime('%Y-%m-%d')), 'success')
+                except Exception:
+                    flash('Employee added successfully! Could not send activation email; display activation key: {}'.format(activation_key), 'warning')
                 return redirect(url_for('employees.list_employees'))
             except Exception as e:
                 db.session.rollback()
@@ -149,7 +158,15 @@ def reactivate_employee(employee_id):
         employee.login_enabled = False  # Keep login disabled until re-registration completed
         
         db.session.commit()
-        flash(f'Employee has been prepared for reactivation. Please provide them with the activation code: {activation_key}', 'info')
+        # Attempt to email activation key
+        try:
+            subject = f"{org_name} - Account Reactivation"
+            body_text = render_template('email/activation_email.txt', firstname=employee.firstname, activation_key=activation_key, org_name=org_name)
+            body_html = render_template('email/activation_email.html', firstname=employee.firstname, activation_key=activation_key, org_name=org_name)
+            queue_email(subject=subject, recipients=employee.email, body_text=body_text, body_html=body_html)
+            flash('Employee has been prepared for reactivation. Activation key emailed to user.', 'info')
+        except Exception:
+            flash(f'Employee has been prepared for reactivation. Please provide them with the activation code: {activation_key}', 'info')
         flash('Their account will be activated once they complete the registration process.', 'info')
         
         # Check if there's a next parameter to determine where to redirect

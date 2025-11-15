@@ -135,9 +135,10 @@ class Employee(db.Model, UserMixin):
         else:
             all_characters = lowercase + uppercase + digits
 
-        secrets.SystemRandom().shuffle(list(all_characters))
+        character_list = list(all_characters)
+        secrets.SystemRandom().shuffle(character_list)
 
-        key = ''.join(all_characters)
+        key = ''.join(character_list)
         self.activation_key = key
         return key
         

@@ -336,7 +336,7 @@ def register():
         if employee:
             if not employee.password_hash:
                 # Check activation key
-                if not employee.activation_key or employee.activation_key != form.activation_key.data.upper():
+                if not employee.activation_key or employee.activation_key != form.activation_key.data:
                     flash('Invalid activation key. Please check the key provided by your administrator.', 'danger')
                     return render_template('register.html', form=form, org_name=org_name)
                 

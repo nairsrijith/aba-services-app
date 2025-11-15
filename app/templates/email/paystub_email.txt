@@ -1,0 +1,9 @@
+Hi {{ paystub.employee.firstname }},
+
+Please find attached your paystub for the period {{ paystub.period_start }} to {{ paystub.period_end }}.
+
+Total hours: {{ paystub.total_hours }}
+Total amount: ${{ '%.2f'|format(paystub.total_amount) }}
+
+Regards,
+{{ org_name }}

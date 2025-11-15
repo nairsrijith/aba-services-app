@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from datetime import date, datetime
 from weasyprint import HTML
 import tempfile, os
+from app.utils.email_utils import queue_email_with_pdf
 
 
 payroll_bp = Blueprint('payroll', __name__, template_folder='templates')
@@ -377,7 +378,30 @@ def create_paystub():
                 # Mark intervention as paid
                 ln['intervention'].is_paid = True
             db.session.commit()
-            flash('Paystub saved successfully', 'success')
+            # Attempt to generate PDF and email to employee
+            try:
+                paystub = ps
+                # Render paystub PDF HTML
+                html = render_template('paystub_pdf.html', paystub=paystub, org_name=os.environ.get('ORG_NAME', ''), download_time=datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
+                pdf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+                HTML(string=html, base_url=request.url_root).write_pdf(pdf_temp.name)
+                pdf_temp.close()
+                with open(pdf_temp.name, 'rb') as f:
+                    pdf_bytes = f.read()
+                filename = f"paystub_{paystub.period_start.strftime('%Y%m%d')}-{paystub.period_end.strftime('%Y%m%d')}_{paystub.employee.firstname}_{paystub.employee.lastname}.pdf"
+                body_text = render_template('email/paystub_email.txt', paystub=paystub, org_name=os.environ.get('ORG_NAME',''))
+                body_html = render_template('email/paystub_email.html', paystub=paystub, org_name=os.environ.get('ORG_NAME',''))
+                sent = queue_email_with_pdf(recipient=paystub.employee.email, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
+                try:
+                    os.unlink(pdf_temp.name)
+                except Exception:
+                    pass
+                if sent:
+                    flash('Paystub saved and emailed to employee.', 'success')
+                else:
+                    flash('Paystub saved but failed to email to employee.', 'warning')
+            except Exception as e:
+                flash(f'Paystub saved but failed to generate/email PDF: {str(e)}', 'warning')
             return redirect(url_for('payroll.list_paystubs'))
 
         if missing_rates:
