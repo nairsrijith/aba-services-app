@@ -9,6 +9,7 @@ from datetime import date, timedelta, datetime
 from sqlalchemy import and_
 from flask_login import login_required, current_user
 from weasyprint import HTML
+from app.utils.email_utils import queue_email_with_pdf
 import os
 
 invoices_bp = Blueprint('invoices', __name__, template_folder='templates')
@@ -164,7 +165,8 @@ def invoice_preview():
                 db.session.add(intervention)
 
             db.session.commit()
-            flash('Invoice created and sessions updated.', 'success')
+            # Keep new invoice in Draft state; mailing will occur when the invoice is marked as Sent.
+            flash('Invoice created and sessions updated (status: Draft). Use Send to email the invoice to the client.', 'success')
             return redirect(url_for('invoices.list_invoices'))
 
         return render_template(
@@ -447,9 +449,86 @@ def delete_invoice(invoice_number):
 def mark_sent(invoice_number):
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
-        invoice.status = 'Sent'
-        db.session.commit()
-        flash('Invoice marked as Sent.', 'success')
+        client = invoice.client
+
+        # Build interventions list (use snapshot if available)
+        interventions = Intervention.query.filter_by(invoice_number=invoice_number).order_by(Intervention.date, Intervention.start_time).all()
+        import json as _json
+        if invoice.invoice_items:
+            try:
+                items = _json.loads(invoice.invoice_items)
+            except Exception:
+                items = []
+            items_map = {item.get('intervention_id'): item for item in items}
+            for i in interventions:
+                item = items_map.get(i.id)
+                if item:
+                    i.rate = item.get('rate', 0)
+                    i.cost = item.get('cost', 0)
+                    i._snapshot = item
+                else:
+                    from app.models import Activity
+                    activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
+                    category = activity_map.get(i.intervention_type, '').lower()
+                    if category == 'therapy':
+                        rate = client.cost_therapy
+                    elif category == 'supervision':
+                        rate = client.cost_supervision
+                    else:
+                        rate = 0
+                    i.rate = rate
+                    try:
+                        i.cost = float(i.duration) * float(rate)
+                    except Exception:
+                        i.cost = 0
+
+        # prepare address and supervisor data
+        parent_name = getattr(client, 'parentname', '')
+        address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
+        supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
+        supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+        supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
+
+        # Generate PDF and send email
+        try:
+            html = render_template(
+                'invoice_pdf.html',
+                parent_name=parent_name,
+                billing_address=address,
+                client=client,
+                invoice_number=invoice.invoice_number,
+                invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
+                payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
+                date_from=invoice.date_from.strftime('%Y-%m-%d'),
+                date_to=invoice.date_to.strftime('%Y-%m-%d'),
+                supervisor_name=supervisor_name,
+                supervisor_rba_number=supervisor_rba_number,
+                status=invoice.status or 'Pending',
+                paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
+                payment_comments=invoice.payment_comments,
+                interventions=interventions,
+                org_name=org_name,
+                org_address=org_address,
+                org_email=org_email,
+                payment_email=payment_email,
+                org_phone=org_phone
+            )
+            pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+            subject = f"Invoice {invoice.invoice_number} from {org_name}"
+            # Render nice HTML and plain text email templates for invoice
+            body_text = render_template('email/invoice_email.txt', client=client, invoice=invoice, org_name=org_name)
+            body_html = render_template('email/invoice_email.html', client=client, invoice=invoice, org_name=org_name)
+            sent = queue_email_with_pdf(recipient=client.parentemail, subject=subject, body_text=body_text, pdf_bytes=pdf_bytes, filename=f"{invoice.invoice_number}.pdf", body_html=body_html)
+            if sent:
+                invoice.status = 'Sent'
+                db.session.commit()
+                flash('Invoice emailed to client and marked as Sent.', 'success')
+            else:
+                flash('Failed to enqueue invoice email to client. Invoice remains in Draft.', 'warning')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error generating/sending invoice: {str(e)}. Invoice remains in Draft.', 'danger')
+
         return redirect(url_for('invoices.list_invoices'))
     else:
         abort(403)

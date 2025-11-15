@@ -17,7 +17,7 @@ class LoginForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    activation_key = StringField('Activation Key', validators=[DataRequired(), length(min=8, max=8, message='Activation key must be 8 characters')])
+    activation_key = StringField('Activation Key', validators=[DataRequired(), length(max=16, message='Activation key contains less than 16 characters')])
     password = PasswordField('Password', validators=[DataRequired(), length(min=6, message='Password must be at least 6 characters long')])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
     submit = SubmitField('Register')
