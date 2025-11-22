@@ -39,14 +39,14 @@ def add_intervention():
 
         # Employee selection:
         if current_user.user_type in ["admin", "super"]:
-            # Exclude super users from the employee selection
+            # Exclude Administrators (position) from the employee selection
             form.employee_id.choices = [(e.id, f"{e.firstname} {e.lastname}") 
                                       for e in Employee.query.filter(
                                           Employee.is_active==True,
-                                          Employee.user_type!='super'
+                                          Employee.position!='Administrator'
                                       ).all()]
         elif current_user.user_type == 'supervisor':
-            # supervisors can choose therapists, senior therapists, and themselves
+            # supervisors can choose therapists, senior therapists, and themselves (position)
             current_employee = Employee.query.filter_by(email=current_user.email, is_active=True).first()
             employees = Employee.query.filter(
                 (Employee.position.in_(['Therapist', 'Senior Therapist']) & Employee.is_active==True) |
@@ -305,7 +305,7 @@ def update_intervention(intervention_id):
             emp_choices = [(e.id, f"{e.firstname} {e.lastname}") 
                           for e in Employee.query.filter(
                               Employee.is_active==True,
-                              Employee.user_type!='super'
+                              Employee.position!='Administrator'
                           ).all()]
             if intervention.employee_id:
                 emp_choices.extend([(e.id, f"{e.firstname} {e.lastname} (Inactive)")
