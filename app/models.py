@@ -196,6 +196,7 @@ class Client(db.Model):
     gender = db.Column(db.String(51), nullable=False)
     parentname = db.Column(db.String(101), nullable=False)
     parentemail = db.Column(db.String(120), nullable=False)
+    parentemail2 = db.Column(db.String(120), nullable=True)
     parentcell = db.Column(db.String(10), nullable=False)
     address1 = db.Column(db.String(120), nullable=False)
     address2 = db.Column(db.String(120))
@@ -209,13 +210,14 @@ class Client(db.Model):
 
     supervisor = db.relationship('Employee', backref='clients')
 
-    def __init__(self, firstname, lastname, dob, gender, parentname, parentemail, parentcell, address1, address2, city, state, zipcode, supervisor_id, cost_supervision=0.0, cost_therapy=0.0, is_active=True):
+    def __init__(self, firstname, lastname, dob, gender, parentname, parentemail, parentemail2, parentcell, address1, address2, city, state, zipcode, supervisor_id, cost_supervision=0.0, cost_therapy=0.0, is_active=True):
         self.firstname = firstname
         self.lastname = lastname
         self.dob = dob
         self.gender = gender
         self.parentname = parentname
         self.parentemail = parentemail
+        self.parentemail2 = parentemail2
         self.parentcell = parentcell
         self.address1 = address1
         self.address2 = address2

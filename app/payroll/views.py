@@ -391,7 +391,7 @@ def create_paystub():
                 filename = f"paystub_{paystub.period_start.strftime('%Y%m%d')}-{paystub.period_end.strftime('%Y%m%d')}_{paystub.employee.firstname}_{paystub.employee.lastname}.pdf"
                 body_text = render_template('email/paystub_email.txt', paystub=paystub, org_name=os.environ.get('ORG_NAME',''))
                 body_html = render_template('email/paystub_email.html', paystub=paystub, org_name=os.environ.get('ORG_NAME',''))
-                sent = queue_email_with_pdf(recipient=paystub.employee.email, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
+                sent = queue_email_with_pdf(recipients=paystub.employee.email, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
                 try:
                     os.unlink(pdf_temp.name)
                 except Exception:

@@ -147,6 +147,12 @@ def queue_email(subject: str, recipients, body_text: str = None, body_html: str 
     return True
 
 
-def queue_email_with_pdf(recipient: str, subject: str, body_text: str, pdf_bytes: bytes, filename: str, body_html: str = None, from_addr: str = None) -> bool:
+def queue_email_with_pdf(recipients, subject: str, body_text: str, pdf_bytes: bytes, filename: str, body_html: str = None, from_addr: str = None) -> bool:
+    """Queue an email with a single PDF attachment.
+
+    `recipients` may be a single email string or a list of emails.
+    """
+    if isinstance(recipients, str):
+        recipients = [recipients]
     attachments = [(filename, pdf_bytes, 'application/pdf')]
-    return queue_email(subject=subject, recipients=[recipient], body_text=body_text, body_html=body_html, attachments=attachments, from_addr=from_addr)
+    return queue_email(subject=subject, recipients=recipients, body_text=body_text, body_html=body_html, attachments=attachments, from_addr=from_addr)

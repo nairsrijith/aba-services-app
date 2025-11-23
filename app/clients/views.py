@@ -40,6 +40,7 @@ def add_client():
                                 gender=form.gender.data.title(),
                                 parentname=form.parentname.data.title(),
                                 parentemail=form.parentemail.data,
+                                parentemail2=form.parentemail2.data,
                                 parentcell=normalized_parentcell,
                                 address1=form.address1.data.title(),
                                 address2=form.address2.data.title(),
@@ -121,6 +122,7 @@ def list_clients():
                     Client.lastname.ilike(like_q),
                     Client.parentname.ilike(like_q),
                     Client.parentemail.ilike(like_q),
+                    Client.parentemail2.ilike(like_q),
                     Client.city.ilike(like_q)
                 )
             )
@@ -211,6 +213,7 @@ def update_client(client_id):
             client.gender = form.gender.data.title()
             client.parentname = form.parentname.data.title()
             client.parentemail = form.parentemail.data
+            client.parentemail2 = form.parentemail2.data
             client.parentcell = re.sub(r'\D', '', (form.parentcell.data or ''))
             client.address1 = form.address1.data.title()
             client.address2 = form.address2.data.title()

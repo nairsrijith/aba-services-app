@@ -518,7 +518,17 @@ def mark_sent(invoice_number):
             # Render nice HTML and plain text email templates for invoice
             body_text = render_template('email/invoice_email.txt', client=client, invoice=invoice, org_name=org_name)
             body_html = render_template('email/invoice_email.html', client=client, invoice=invoice, org_name=org_name)
-            sent = queue_email_with_pdf(recipient=client.parentemail, subject=subject, body_text=body_text, pdf_bytes=pdf_bytes, filename=f"{invoice.invoice_number}.pdf", body_html=body_html)
+            # Send to primary parent email and also to secondary parent email if present
+            recipients = []
+            if getattr(client, 'parentemail', None):
+                recipients.append(client.parentemail)
+            if getattr(client, 'parentemail2', None):
+                recipients.append(client.parentemail2)
+            # de-duplicate while preserving order
+            seen = set()
+            recipients = [x for x in recipients if x and not (x in seen or seen.add(x))]
+
+            sent = queue_email_with_pdf(recipients=recipients, subject=subject, body_text=body_text, pdf_bytes=pdf_bytes, filename=f"{invoice.invoice_number}.pdf", body_html=body_html)
             if sent:
                 invoice.status = 'Sent'
                 db.session.commit()
