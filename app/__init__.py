@@ -20,17 +20,79 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_app_super_secret_key'
 
 
+def _get_org_name():
+    try:
+        from app.models import AppSettings
+        s = AppSettings.get()
+        if s and s.org_name:
+            return s.org_name
+    except Exception:
+        pass
+    return os.environ.get('ORG_NAME', 'My Organization')
+
+
+def _get_org_logo():
+    try:
+        from app.utils.settings_utils import get_org_settings
+        settings = get_org_settings()
+        # prefer embedded base64, then external URL, then file URI/path
+        if settings.get('logo_b64'):
+            return settings.get('logo_b64')
+        if settings.get('logo_url'):
+            return settings.get('logo_url')
+        # prefer a web-accessible path for browser templates
+        if settings.get('logo_web_path'):
+            return settings.get('logo_web_path')
+        # fallback to file URI (useful for server-side PDF rendering)
+        if settings.get('logo_file_uri'):
+            return settings.get('logo_file_uri')
+    except Exception:
+        pass
+    try:
+        from flask import url_for
+        return url_for('static', filename='images/logo.png')
+    except Exception:
+        return '/static/images/logo.png'
+
+
+# expose helpers to templates so they always reflect DB values regardless
+app.jinja_env.globals['current_org_name'] = _get_org_name
+app.jinja_env.globals['current_org_logo'] = _get_org_logo
+
+
 # Inject organization-wide variables into every template so individual views
 # don't need to pass them explicitly. This ensures `org_name`, `org_address`,
 # `org_email`, `org_phone` and `payment_email` are always available.
 @app.context_processor
 def _inject_org_globals():
+    # Prefer values stored in the database AppSettings if present, otherwise fall back to environment values
+    try:
+        from app.models import AppSettings
+        s = AppSettings.get()
+    except Exception:
+        s = None
+
+    # also include resolved logo fields for templates
+    try:
+        from app.utils.settings_utils import get_org_settings
+        resolved = get_org_settings()
+    except Exception:
+        resolved = {}
+
     return {
-        'org_name': os.environ.get('ORG_NAME', 'My Organization'),
-        'org_address': os.environ.get('ORG_ADDRESS', 'Organization Address'),
-        'org_email': os.environ.get('ORG_EMAIL', 'email@org.com'),
-        'org_phone': os.environ.get('ORG_PHONE', 'Org Phone'),
-        'payment_email': os.environ.get('PAYMENT_EMAIL', 'payments@org.com')
+        'org_name': (s.org_name if s and s.org_name else os.environ.get('ORG_NAME', 'My Organization')),
+        'org_address': (s.org_address if s and s.org_address else os.environ.get('ORG_ADDRESS', 'Organization Address')),
+        'org_email': (s.org_email if s and s.org_email else os.environ.get('ORG_EMAIL', 'email@org.com')),
+        'org_phone': (s.org_phone if s and s.org_phone else os.environ.get('ORG_PHONE', 'Org Phone')),
+        'payment_email': (s.payment_email if s and s.payment_email else os.environ.get('PAYMENT_EMAIL', 'payments@org.com')),
+        'org_logo': (resolved.get('logo_b64') or resolved.get('logo_url') or resolved.get('logo_web_path') or resolved.get('logo_file_uri') or (('/' + s.logo_path) if s and s.logo_path else None)),
+        'logo_b64': resolved.get('logo_b64'),
+        'logo_url': resolved.get('logo_url'),
+        'logo_file_uri': resolved.get('logo_file_uri'),
+        'logo_web_path': resolved.get('logo_web_path'),
+        # expose testing flags so templates can show a global banner when enabled
+        'testing_mode': bool(s.testing_mode) if s and hasattr(s, 'testing_mode') else (os.environ.get('TESTING_MODE', '').lower() in ('1', 'true', 'yes')),
+        'testing_email': (s.testing_email if s and hasattr(s, 'testing_email') and s.testing_email else os.environ.get('TESTING_EMAIL'))
     }
 
 
@@ -192,13 +254,67 @@ def create_app():
     # Also provide org globals for apps created via the factory
     @app.context_processor
     def _inject_org_globals_factory():
+        try:
+            from app.models import AppSettings
+            s = AppSettings.get()
+        except Exception:
+            s = None
+
+        # resolve logo fields using get_org_settings for factory-created apps
+        try:
+            from app.utils.settings_utils import get_org_settings
+            resolved = get_org_settings()
+        except Exception:
+            resolved = {}
+
         return {
-            'org_name': os.environ.get('ORG_NAME', 'My Organization'),
-            'org_address': os.environ.get('ORG_ADDRESS', 'Organization Address'),
-            'org_email': os.environ.get('ORG_EMAIL', 'email@org.com'),
-            'org_phone': os.environ.get('ORG_PHONE', 'Org Phone'),
-            'payment_email': os.environ.get('PAYMENT_EMAIL', 'payments@org.com')
+            'org_name': (s.org_name if s and s.org_name else os.environ.get('ORG_NAME', 'My Organization')),
+            'org_address': (s.org_address if s and s.org_address else os.environ.get('ORG_ADDRESS', 'Organization Address')),
+            'org_email': (s.org_email if s and s.org_email else os.environ.get('ORG_EMAIL', 'email@org.com')),
+            'org_phone': (s.org_phone if s and s.org_phone else os.environ.get('ORG_PHONE', 'Org Phone')),
+            'payment_email': (s.payment_email if s and s.payment_email else os.environ.get('PAYMENT_EMAIL', 'payments@org.com')),
+            'org_logo': (resolved.get('logo_b64') or resolved.get('logo_url') or resolved.get('logo_web_path') or resolved.get('logo_file_uri') or (('/' + s.logo_path) if s and s.logo_path else None)),
+            'logo_b64': resolved.get('logo_b64'),
+            'logo_url': resolved.get('logo_url'),
+            'logo_file_uri': resolved.get('logo_file_uri'),
+            'logo_web_path': resolved.get('logo_web_path'),
+            'testing_mode': bool(s.testing_mode) if s and hasattr(s, 'testing_mode') else (os.environ.get('TESTING_MODE', '').lower() in ('1', 'true', 'yes')),
+            'testing_email': (s.testing_email if s and hasattr(s, 'testing_email') and s.testing_email else os.environ.get('TESTING_EMAIL'))
         }
+
+    # Register the same helpers for factory-created app so templates can call them
+    def _factory_get_org_name():
+        try:
+            from app.models import AppSettings
+            ss = AppSettings.get()
+            if ss and ss.org_name:
+                return ss.org_name
+        except Exception:
+            pass
+        return os.environ.get('ORG_NAME', 'My Organization')
+
+    def _factory_get_org_logo():
+        try:
+            from app.utils.settings_utils import get_org_settings
+            settings = get_org_settings()
+            if settings.get('logo_b64'):
+                return settings.get('logo_b64')
+            if settings.get('logo_url'):
+                return settings.get('logo_url')
+            if settings.get('logo_web_path'):
+                return settings.get('logo_web_path')
+            if settings.get('logo_file_uri'):
+                return settings.get('logo_file_uri')
+        except Exception:
+            pass
+        try:
+            from flask import url_for
+            return url_for('static', filename='images/logo.png')
+        except Exception:
+            return '/static/images/logo.png'
+
+    app.jinja_env.globals['current_org_name'] = _factory_get_org_name
+    app.jinja_env.globals['current_org_logo'] = _factory_get_org_logo
 
     # register blueprints (import at runtime to avoid circular import issues)
     from app.clients.views import clients_bp
@@ -220,3 +336,24 @@ def create_app():
     app.register_blueprint(error_pages)
 
     return app
+
+
+# CLI helper to initialize DB tables and ensure AppSettings exists
+@app.cli.command('init-settings')
+def init_settings():
+    """Create DB tables (if missing) and ensure a single AppSettings row exists.
+
+    Usage:
+      flask init-settings
+    """
+    try:
+        from app import db
+        from app.models import AppSettings
+        db.create_all()
+        s = AppSettings.get()
+        if s:
+            print('AppSettings initialized or already present.')
+        else:
+            print('Failed to initialize AppSettings — check database/migrations.')
+    except Exception as e:
+        print('Error initializing settings:', e)

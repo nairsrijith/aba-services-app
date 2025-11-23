@@ -6,7 +6,7 @@
       <p>Please find attached your paystub for the period <strong>{{ paystub.period_start }}</strong> to <strong>{{ paystub.period_end }}</strong>.</p>
       <p>Total hours: <strong>{{ paystub.total_hours }}</strong><br>
       Total amount: <strong>${{ '%.2f'|format(paystub.total_amount) }}</strong></p>
-      <p style="color:#888;font-size:0.9rem;">Regards,<br>{{ org_name }}</p>
+      <p style="color:#888;font-size:0.9rem;">Regards,<br>{{ current_org_name() }}</p>
     </div>
   </body>
 </html>

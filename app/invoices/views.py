@@ -1,9 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, make_response, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash, make_response, abort, current_app
 from app import db
 import json
 import base64
 import os
-from app.models import Invoice, Intervention, Client, Activity, Employee, PayStubItem
+from app.models import Invoice, Intervention, Client, Activity, Employee, PayStubItem, AppSettings
 from app.invoices.forms import InvoiceClientSelectionForm
 from datetime import date, timedelta, datetime
 from sqlalchemy import and_
@@ -11,15 +11,12 @@ from flask_login import login_required, current_user
 from weasyprint import HTML
 from app.utils.email_utils import queue_email_with_pdf
 import os
+from app.utils.settings_utils import get_org_settings
 
 invoices_bp = Blueprint('invoices', __name__, template_folder='templates')
 
 
-org_name = os.environ.get('ORG_NAME', 'My Organization')
-org_address = os.environ.get('ORG_ADDRESS', 'Organization Address')
-org_email = os.environ.get('ORG_EMAIL', 'email@org.com')
-payment_email = os.environ.get('PAYMENT_EMAIL', 'payments@org.com')
-org_phone = os.environ.get('ORG_PHONE', 'Org Phone')
+## note: org values are resolved per-request via get_org_settings() below
 
 
 def parse_date(val):
@@ -33,7 +30,8 @@ def parse_date(val):
 def list_invoices():
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoices = Invoice.query.order_by(Invoice.invoiced_date.desc()).all()
-        return render_template('list_invoices.html', invoices=invoices, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('list_invoices.html', invoices=invoices, org_name=settings['org_name'])
     else:
         abort(403)
 
@@ -65,7 +63,8 @@ def invoice_client_select():
                 df=form.date_from.data,
                 dt=form.date_to.data))
         
-        return render_template('invoice_client_select.html', form=form, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('invoice_client_select.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
 
@@ -169,6 +168,8 @@ def invoice_preview():
             flash('Invoice created and sessions updated (status: Draft). Use Send to email the invoice to the client.', 'success')
             return redirect(url_for('invoices.list_invoices'))
 
+        settings = get_org_settings()
+        
         return render_template(
             'invoice_preview.html',
             parent_name=parent_name,
@@ -183,11 +184,15 @@ def invoice_preview():
             supervisor_name=supervisor_name,
             supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
-            org_name=org_name,
-            org_address=org_address,
-            org_email=org_email,
-            org_phone=org_phone,
-            payment_email=payment_email
+            org_name=settings['org_name'],
+            org_address=settings['org_address'],
+            org_email=settings['org_email'],
+            org_phone=settings['org_phone'],
+            payment_email=settings['payment_email'],
+            logo_b64=settings.get('logo_b64'),
+            logo_url=settings.get('logo_url'),
+            logo_web_path=settings.get('logo_web_path'),
+            logo_file_uri=settings.get('logo_file_uri')
         )
     else:
         abort(403)
@@ -243,28 +248,13 @@ def download_invoice_pdf_by_number(invoice_number):
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
-        # Build logo context from deployment-time environment variables. Priority:
-        # LOGO_BASE64 -> LOGO_URL -> LOGO_PATH -> fallback to static url
-        logo_b64 = None
-        logo_url = os.environ.get('LOGO_URL')
-        logo_path_env = os.environ.get('LOGO_PATH')
-        logo_base64_env = os.environ.get('LOGO_BASE64')
-
-        if logo_base64_env:
-            # If the env var contains raw base64 (without data: prefix), add prefix
-            if logo_base64_env.strip().startswith('data:'):
-                logo_b64 = logo_base64_env.strip()
-            else:
-                # assume png unless overridden; icon files may be x-icon
-                # allow user to include mime if needed in env
-                logo_b64 = f"data:image/png;base64,{logo_base64_env.strip()}"
-        elif logo_url:
-            # remote HTTP(S) URL
-            pass
-        elif logo_path_env:
-            # file path inside container
-            # normalize to absolute path
-            logo_path_env = os.path.abspath(logo_path_env)
+        # Resolve org settings and logo context
+        settings = get_org_settings()
+        logo_b64 = settings.get('logo_b64')
+        logo_url = settings.get('logo_url')
+        logo_file_uri = settings.get('logo_file_uri')
+        logo_web_path = settings.get('logo_web_path')
+        
 
         html = render_template(
             'invoice_pdf.html',  # <-- use the new template!
@@ -282,18 +272,20 @@ def download_invoice_pdf_by_number(invoice_number):
             paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
             payment_comments=invoice.payment_comments,
             interventions=interventions,
-            org_name=org_name,
-            org_address=org_address,
-            org_email=org_email,
-            payment_email=payment_email,
-            org_phone=org_phone,
+            org_name=settings['org_name'],
+            org_address=settings['org_address'],
+            org_email=settings['org_email'],
+            payment_email=settings['payment_email'],
+            org_phone=settings['org_phone'],
             logo_b64=logo_b64,
             logo_url=logo_url,
-            logo_path=logo_path_env,
+            # For PDF rendering, prefer a file:// URI if available
+            logo_path=logo_file_uri or logo_web_path,
             download_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         )
 
-        pdf = HTML(string=html).write_pdf()
+        pdf = HTML(string=html, base_url=request.url_root).write_pdf()
+        
         # Create filename with download time, date range, and client name parts
         download_time_str = datetime.now().strftime('%Y%m%d%H%M%S')
         date_range_str = f"{invoice.date_from.strftime('%Y%m%d')}-{invoice.date_to.strftime('%Y%m%d')}"
@@ -360,6 +352,8 @@ def preview_invoice_by_number(invoice_number):
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
+        settings = get_org_settings()
+        
         return render_template(
             'invoice_preview.html',
             parent_name=parent_name,
@@ -375,11 +369,15 @@ def preview_invoice_by_number(invoice_number):
             supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
             total_cost=invoice.total_cost,
-            org_name=org_name,
-            org_address=org_address,
-            org_email=org_email,
-            org_phone=org_phone,
-            payment_email=payment_email
+            org_name=settings['org_name'],
+            org_address=settings['org_address'],
+            org_email=settings['org_email'],
+            org_phone=settings['org_phone'],
+            payment_email=settings['payment_email'],
+            logo_b64=settings.get('logo_b64'),
+            logo_url=settings.get('logo_url'),
+            logo_web_path=settings.get('logo_web_path'),
+            logo_file_uri=settings.get('logo_file_uri')
         )
     else:
         abort(403)
@@ -491,6 +489,14 @@ def mark_sent(invoice_number):
 
         # Generate PDF and send email
         try:
+            # Resolve org settings and logo context
+            settings = get_org_settings()
+            logo_b64 = settings.get('logo_b64')
+            logo_url = settings.get('logo_url')
+            logo_file_uri = settings.get('logo_file_uri')
+            logo_web_path = settings.get('logo_web_path')
+            
+
             html = render_template(
                 'invoice_pdf.html',
                 parent_name=parent_name,
@@ -507,17 +513,22 @@ def mark_sent(invoice_number):
                 paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
                 payment_comments=invoice.payment_comments,
                 interventions=interventions,
-                org_name=org_name,
-                org_address=org_address,
-                org_email=org_email,
-                payment_email=payment_email,
-                org_phone=org_phone
+                org_name=settings['org_name'],
+                org_address=settings['org_address'],
+                org_email=settings['org_email'],
+                payment_email=settings['payment_email'],
+                org_phone=settings['org_phone'],
+                logo_b64=logo_b64,
+                logo_url=logo_url,
+                logo_path=logo_file_uri or logo_web_path,
+                download_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             )
             pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
-            subject = f"Invoice {invoice.invoice_number} from {org_name}"
+            
+            subject = f"Invoice {invoice.invoice_number} from {settings['org_name']}"
             # Render nice HTML and plain text email templates for invoice
-            body_text = render_template('email/invoice_email.txt', client=client, invoice=invoice, org_name=org_name)
-            body_html = render_template('email/invoice_email.html', client=client, invoice=invoice, org_name=org_name)
+            body_text = render_template('email/invoice_email.txt', client=client, invoice=invoice, org_name=settings['org_name'])
+            body_html = render_template('email/invoice_email.html', client=client, invoice=invoice, org_name=settings['org_name'])
             # Send to primary parent email and also to secondary parent email if present
             recipients = []
             if getattr(client, 'parentemail', None):
@@ -527,6 +538,17 @@ def mark_sent(invoice_number):
             # de-duplicate while preserving order
             seen = set()
             recipients = [x for x in recipients if x and not (x in seen or seen.add(x))]
+
+            # Enforce testing override at call site: if testing_mode is set in AppSettings,
+            # send emails only to testing_email to avoid accidental sends.
+            try:
+                appsettings_obj = settings.get('appsettings')
+                if appsettings_obj and getattr(appsettings_obj, 'testing_mode', False) and getattr(appsettings_obj, 'testing_email', None):
+                    test_addr = appsettings_obj.testing_email
+                    # preserve original recipients in X-Original-To header via the email util
+                    recipients = [test_addr]
+            except Exception:
+                pass
 
             sent = queue_email_with_pdf(recipients=recipients, subject=subject, body_text=body_text, pdf_bytes=pdf_bytes, filename=f"{invoice.invoice_number}.pdf", body_html=body_html)
             if sent:

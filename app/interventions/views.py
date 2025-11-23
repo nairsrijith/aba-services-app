@@ -4,14 +4,14 @@ from app.models import Intervention, Client, Employee, Activity, PayStubItem
 from app.interventions.forms import AddInterventionForm, UpdateInterventionForm
 from flask_login import login_required, current_user
 import os
+from app.utils.settings_utils import get_org_settings
 import json
 from werkzeug.utils import secure_filename
 import shutil
 
 
 interventions_bp = Blueprint('interventions', __name__, template_folder='templates')
-
-org_name = os.environ.get('ORG_NAME', 'My Organization')
+# org values resolved per-request via get_org_settings()
 
 
 # client_id is a foreign key to the Client model
@@ -73,7 +73,8 @@ def add_intervention():
         if form.validate_on_submit():
             # Check for overlapping sessions first
             if not form.validate_session_time():
-                return render_template('add_int.html', form=form, org_name=org_name)
+                settings = get_org_settings()
+                return render_template('add_int.html', form=form, org_name=settings['org_name'])
 
             try:
                 client_id = form.client_id.data
@@ -123,10 +124,11 @@ def add_intervention():
             except Exception as e:
                 db.session.rollback()
                 flash('Error adding intervention: ' + str(e), 'error')
-                return render_template('add_int.html', form=form, org_name=org_name)
+                settings = get_org_settings()
+                return render_template('add_int.html', form=form, org_name=settings['org_name'])
             
-        return render_template('add_int.html', form=form, org_name=org_name)
-        return render_template('add_int.html', form=form, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('add_int.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
 
@@ -197,13 +199,14 @@ def list_interventions():
 
         activities = Activity.query.order_by(Activity.activity_name).all()
 
+        settings = get_org_settings()
         return render_template(
             'list_int.html',
             interventions=pagination.items,
             pagination=pagination,
             per_page=per_page,
             activities=activities,
-            org_name=org_name
+            org_name=settings['org_name']
         )
     else:
         abort(403)
@@ -350,10 +353,11 @@ def update_intervention(intervention_id):
         if request.method == 'POST' and form.validate():
             # Check for overlapping sessions first
             if not form.validate_session_time():
+                settings = get_org_settings()
                 return render_template('update_int.html', form=form, 
                                     clients=Client.query.all(), 
                                     employees=Employee.query.all(), 
-                                    org_name=org_name,
+                                    org_name=settings['org_name'],
                                     intervention=intervention)
             try:
                 client_id = form.client_id.data
@@ -363,10 +367,11 @@ def update_intervention(intervention_id):
                 os.makedirs(deleted_folder, exist_ok=True)
             except OSError as e:
                 flash('Error creating directories: ' + str(e), 'error')
+                settings = get_org_settings()
                 return render_template('update_int.html', form=form,
                                     clients=Client.query.all(),
                                     employees=Employee.query.all(),
-                                    org_name=org_name,
+                                    org_name=settings['org_name'],
                                     intervention=intervention)
 
             try:
@@ -421,10 +426,11 @@ def update_intervention(intervention_id):
                 except Exception as e:
                     db.session.rollback()
                     flash('Database error: ' + str(e), 'error')
+                    settings = get_org_settings()
                     return render_template('update_int.html', form=form,
                                         clients=Client.query.all(),
                                         employees=Employee.query.all(),
-                                        org_name=org_name,
+                                        org_name=settings['org_name'],
                                         intervention=intervention)
 
             except Exception as e:
@@ -444,7 +450,8 @@ def update_intervention(intervention_id):
                 for err in field_errors:
                     flash(f"{label_text}: {err}", 'danger')
 
-        return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=org_name, intervention=intervention)
+        settings = get_org_settings()
+        return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=settings['org_name'], intervention=intervention)
     else:
         abort(403)
 

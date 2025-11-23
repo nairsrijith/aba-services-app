@@ -4,10 +4,15 @@ from app.models import Designation, Activity, Intervention, Employee
 from app.manage.forms import DesignationForm, ActivityForm
 from flask_login import login_required, current_user
 import os
+from flask import request, current_app
+from werkzeug.utils import secure_filename
+from app.manage.forms import SettingsForm
+from app import db
+from app.models import AppSettings
+from app.utils.settings_utils import get_org_settings
 
 manage_bp = Blueprint('manage', __name__, template_folder='templates')
 
-org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
 @manage_bp.route('/designations', methods=['GET', 'POST'])
@@ -23,7 +28,8 @@ def designations():
             return redirect(url_for('manage.designations'))
         designations = Designation.query.all()
         allocated_designations = [a.position for a in Employee.query.with_entities(Employee.position).distinct()] # Fetch unique designations
-        return render_template('designations.html', form=form, designations=designations, allocated_designations=allocated_designations, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('designations.html', form=form, designations=designations, allocated_designations=allocated_designations, org_name=settings['org_name'])
     else:
         abort(403)
 
@@ -42,7 +48,8 @@ def activities():
             return redirect(url_for('manage.activities'))
         activities = Activity.query.all()
         allocated_activities = [a.intervention_type for a in Intervention.query.with_entities(Intervention.intervention_type).distinct()] # Fetch unique intervention types
-        return render_template('activities.html', form=form, activities=activities, allocated_activities=allocated_activities, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('activities.html', form=form, activities=activities, allocated_activities=allocated_activities, org_name=settings['org_name'])
     else:
         abort(403)
 
@@ -81,3 +88,69 @@ def delete_designation(designation_name):
         return redirect(url_for('manage.designations'))
     else:
         abort(403)
+
+
+@manage_bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
+        abort(403)
+
+    form = SettingsForm()
+    settings = AppSettings.get()
+
+    if request.method == 'GET' and settings:
+        # populate form with existing values
+        form.org_name.data = settings.org_name
+        form.org_address.data = settings.org_address
+        form.org_phone.data = settings.org_phone
+        form.org_email.data = settings.org_email
+        form.payment_email.data = settings.payment_email
+        form.smtp_host.data = settings.smtp_host
+        form.smtp_port.data = settings.smtp_port
+        form.smtp_user.data = settings.smtp_user
+        form.smtp_pass.data = settings.smtp_pass
+        form.smtp_use_tls.data = bool(settings.smtp_use_tls)
+        form.smtp_use_ssl.data = bool(settings.smtp_use_ssl)
+        form.testing_mode.data = bool(settings.testing_mode)
+        form.testing_email.data = settings.testing_email
+
+    if form.validate_on_submit():
+        if not settings:
+            settings = AppSettings()
+
+        settings.org_name = form.org_name.data or None
+        settings.org_address = form.org_address.data or None
+        settings.org_phone = form.org_phone.data or None
+        settings.org_email = form.org_email.data or None
+        settings.payment_email = form.payment_email.data or None
+        settings.smtp_host = form.smtp_host.data or None
+        settings.smtp_port = int(form.smtp_port.data) if form.smtp_port.data else None
+        settings.smtp_user = form.smtp_user.data or None
+        # only overwrite password if a new one is provided
+        if form.smtp_pass.data:
+            settings.smtp_pass = form.smtp_pass.data
+        settings.smtp_use_tls = bool(form.smtp_use_tls.data)
+        settings.smtp_use_ssl = bool(form.smtp_use_ssl.data)
+        settings.testing_mode = bool(form.testing_mode.data)
+        settings.testing_email = form.testing_email.data or None
+
+        # handle logo upload
+        if form.logo_file.data:
+            f = form.logo_file.data
+            filename = secure_filename(f.filename)
+            images_dir = os.path.join(current_app.root_path, 'static', 'images', 'assets')
+            os.makedirs(images_dir, exist_ok=True)
+            save_path = os.path.join(images_dir, filename)
+            f.save(save_path)
+            # save relative path for templates
+            settings.logo_path = os.path.join('static', 'images', 'assets', filename)
+
+        db.session.add(settings)
+        db.session.commit()
+        flash('Settings saved successfully.', 'success')
+        return redirect(url_for('manage.settings'))
+
+    return render_template('settings.html', form=form)
+
+

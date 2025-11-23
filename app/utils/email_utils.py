@@ -4,6 +4,12 @@ import logging
 from email.message import EmailMessage
 
 logger = logging.getLogger(__name__)
+# Ensure logs are visible in container stdout/stderr when not otherwise configured
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s'))
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 # Read SMTP config from environment variables
 SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
@@ -54,8 +60,32 @@ def _build_message(subject: str, recipients, body_text: Optional[str] = None, bo
 
     msg = EmailMessage()
     msg['Subject'] = subject
-    msg['From'] = from_addr or DEFAULT_FROM
+    # Allow AppSettings to override the default From address
+    try:
+        from app.models import AppSettings
+        s = AppSettings.get()
+        default_from = s.org_email if s and s.org_email else DEFAULT_FROM
+    except Exception:
+        default_from = DEFAULT_FROM
+
+    msg['From'] = from_addr or default_from
     msg['To'] = ', '.join(recipients)
+
+    # If testing mode is enabled in AppSettings, rewrite recipients now
+    try:
+        from app.models import AppSettings
+        s_test = AppSettings.get()
+        if s_test and s_test.testing_mode and s_test.testing_email:
+            original_to = msg['To']
+            msg['X-Original-To'] = original_to
+            # replace_header will fail if header not present, but 'To' is set above
+            try:
+                msg.replace_header('To', s_test.testing_email)
+            except Exception:
+                msg['To'] = s_test.testing_email
+    except Exception:
+        # if AppSettings can't be read, continue without testing override
+        pass
 
     if body_html and body_text:
         msg.set_content(body_text)
@@ -81,18 +111,50 @@ def _build_message(subject: str, recipients, body_text: Optional[str] = None, bo
 
 def _send_message(msg: EmailMessage) -> bool:
     try:
-        if SMTP_USE_SSL:
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-                if SMTP_USER and SMTP_PASS:
-                    server.login(SMTP_USER, SMTP_PASS)
+        # Allow AppSettings to override SMTP configuration and enable testing mode
+        try:
+            from app.models import AppSettings
+            s = AppSettings.get()
+        except Exception:
+            s = None
+
+        smtp_host = s.smtp_host if s and s.smtp_host else SMTP_HOST
+        smtp_port = int(s.smtp_port) if s and s.smtp_port else SMTP_PORT
+        smtp_user = s.smtp_user if s and s.smtp_user else SMTP_USER
+        smtp_pass = s.smtp_pass if s and s.smtp_pass else SMTP_PASS
+        smtp_use_tls = bool(s.smtp_use_tls) if s and s.smtp_use_tls is not None else SMTP_USE_TLS
+        smtp_use_ssl = bool(s.smtp_use_ssl) if s and s.smtp_use_ssl is not None else SMTP_USE_SSL
+
+        # If testing mode is enabled, rewrite recipients to testing email and annotate
+        if s and s.testing_mode and s.testing_email:
+            original_to = msg['To']
+            msg['X-Original-To'] = original_to
+            msg.replace_header('To', s.testing_email)
+
+        # Log recipients before sending (include original recipients if present)
+        try:
+            orig = msg.get('X-Original-To')
+            if orig:
+                logger.info('Sending email to %s (original: %s) subject=%s', msg['To'], orig, msg['Subject'])
+            else:
+                logger.info('Sending email to %s subject=%s', msg['To'], msg['Subject'])
+        except Exception:
+            logger.info('Sending email (subject=%s)', msg.get('Subject'))
+
+        if smtp_use_ssl:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+                if smtp_user and smtp_pass:
+                    server.login(smtp_user, smtp_pass)
                 server.send_message(msg)
         else:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-                if SMTP_USE_TLS:
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                if smtp_use_tls:
                     server.starttls()
-                if SMTP_USER and SMTP_PASS:
-                    server.login(SMTP_USER, SMTP_PASS)
+                if smtp_user and smtp_pass:
+                    server.login(smtp_user, smtp_pass)
                 server.send_message(msg)
+
+        # Confirm send
         logger.info('Email sent to %s (subject=%s)', msg['To'], msg['Subject'])
         return True
     except Exception as e:
