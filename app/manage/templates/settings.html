@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Application Settings</h2>
+  <form method="post" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+      {{ form.org_name.label }}
+      {{ form.org_name(class_='form-control') }}
+    </div>
+    <div class="mb-3">
+      {{ form.org_address.label }}
+      {{ form.org_address(class_='form-control') }}
+    </div>
+    <div class="mb-3">
+      {{ form.org_phone.label }}
+      {{ form.org_phone(class_='form-control') }}
+    </div>
+    <div class="mb-3">
+      {{ form.org_email.label }}
+      {{ form.org_email(class_='form-control') }}
+    </div>
+    <div class="mb-3">
+      {{ form.payment_email.label }}
+      {{ form.payment_email(class_='form-control') }}
+    </div>
+
+    <h4>Logo</h4>
+    <div class="mb-3">
+      {{ form.logo_file.label }}
+      {{ form.logo_file(class_='form-control') }}
+    </div>
+
+    <h4>SMTP Settings</h4>
+    <div class="mb-3">
+      {{ form.smtp_host.label }}
+      {{ form.smtp_host(class_='form-control') }}
+    </div>
+    <div class="mb-3">
+      {{ form.smtp_port.label }}
+      {{ form.smtp_port(class_='form-control') }}
+    </div>
+    <div class="mb-3">
+      {{ form.smtp_user.label }}
+      {{ form.smtp_user(class_='form-control') }}
+    </div>
+    <div class="mb-3">
+      {{ form.smtp_pass.label }}
+      {{ form.smtp_pass(class_='form-control') }}
+    </div>
+    <div class="form-check mb-3">
+      {{ form.smtp_use_tls(class_='form-check-input') }} {{ form.smtp_use_tls.label(class_='form-check-label') }}
+    </div>
+    <div class="form-check mb-3">
+      {{ form.smtp_use_ssl(class_='form-check-input') }} {{ form.smtp_use_ssl.label(class_='form-check-label') }}
+    </div>
+
+    <h4>Testing Mode</h4>
+    <div class="form-check mb-3">
+      {{ form.testing_mode(class_='form-check-input') }} {{ form.testing_mode.label(class_='form-check-label') }}
+    </div>
+    <div class="mb-3">
+      {{ form.testing_email.label }}
+      {{ form.testing_email(class_='form-control') }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.submit(class_='btn btn-primary') }}
+    </div>
+  </form>
+</div>
+{% endblock %}

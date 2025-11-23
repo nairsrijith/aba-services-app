@@ -38,14 +38,16 @@
                 <img src="{{ logo_b64 }}" alt="">
             {% elif logo_url %}
                 <img src="{{ logo_url }}" alt="">
-            {% elif logo_path %}
-                <img src="file://{{ logo_path }}" alt="">
+            {% elif logo_web_path %}
+                <img src="{{ logo_web_path }}" alt="">
+            {% elif logo_file_uri %}
+                <img src="{{ logo_file_uri }}" alt="">
             {% else %}
                 <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="">
             {% endif %}
         </div>
         <div class="right">
-            <h2>{{ org_name }}</h2>
+            <h2>{{ current_org_name() }}</h2>
             <small>{{ org_address }}<br><small>Phone: {{ org_phone }} &emsp; Email: {{ org_email }}</small></small>
         </div>
     </div>

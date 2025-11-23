@@ -8,6 +8,7 @@ from datetime import date, datetime
 from weasyprint import HTML
 import tempfile, os
 from app.utils.email_utils import queue_email_with_pdf
+from app.utils.settings_utils import get_org_settings
 
 
 payroll_bp = Blueprint('payroll', __name__, template_folder='templates')
@@ -198,40 +199,17 @@ def export_paystub_pdf(id):
                 flash('Unauthorized access.', 'danger')
                 return redirect(url_for('home'))
         
-        # Get logo path or base64 data. Prefer configured LOGO_PATH (or env var),
-        # otherwise fall back to app static favicon as a base64-embedded image.
-        logo_b64 = None
-        logo_path = None
-        try:
-            # check configuration first (support both config and environment variable)
-            configured_logo = current_app.config.get('LOGO_PATH') or os.environ.get('LOGO_PATH')
-            configured_logo_url = current_app.config.get('LOGO_URL') or os.environ.get('LOGO_URL')
-
-            if configured_logo:
-                # if relative path, resolve against app root
-                lp = configured_logo
-                if not os.path.isabs(lp):
-                    lp = os.path.join(current_app.root_path, lp)
-                if os.path.exists(lp):
-                    logo_path = lp
-            elif configured_logo_url:
-                # provide a URL to the template if present
-                logo_url = configured_logo_url
-            else:
-                # fallback to static favicon embedded as base64
-                static_logo = os.path.join(current_app.static_folder, 'images', 'favicon.ico')
-                if os.path.exists(static_logo):
-                    import base64
-                    with open(static_logo, 'rb') as f:
-                        logo_b64 = f'data:image/x-icon;base64,{base64.b64encode(f.read()).decode()}'
-        except Exception as e:
-            current_app.logger.warning(f'Logo loading failed: {str(e)}')
-
-        # Get organization details from config or environment (support ORG_* names in .env)
-        org_name = current_app.config.get('ORG_NAME') or current_app.config.get('ORGANIZATION_NAME') or os.environ.get('ORG_NAME') or 'ABA Services'
-        org_phone = current_app.config.get('ORG_PHONE') or current_app.config.get('ORGANIZATION_PHONE') or os.environ.get('ORG_PHONE') or ''
-        org_email = current_app.config.get('ORG_EMAIL') or current_app.config.get('ORGANIZATION_EMAIL') or os.environ.get('ORG_EMAIL') or ''
-        org_address = current_app.config.get('ORG_ADDRESS') or current_app.config.get('ORGANIZATION_ADDRESS') or os.environ.get('ORG_ADDRESS') or ''
+        # Resolve org settings and logo using AppSettings -> env -> defaults
+        settings = get_org_settings()
+        logo_b64 = settings.get('logo_b64')
+        logo_file_uri = settings.get('logo_file_uri')
+        logo_web_path = settings.get('logo_web_path')
+        logo_url = settings.get('logo_url')
+        org_name = settings.get('org_name')
+        org_phone = settings.get('org_phone')
+        org_email = settings.get('org_email')
+        org_address = settings.get('org_address')
+        
         
         # Get current timestamp for download time
         download_time = datetime.now()
@@ -241,15 +219,16 @@ def export_paystub_pdf(id):
         # Generate PDF using WeasyPrint with the new template
         # render the template from this blueprint's templates folder
         html = render_template('paystub_pdf.html',
-                           paystub=paystub,
-                           logo_b64=logo_b64,
-                           logo_path=logo_path if 'logo_path' in locals() else None,
-                           logo_url=locals().get('logo_url', None),
-                           org_name=org_name,
-                           org_phone=org_phone,
-                           org_email=org_email,
-                           org_address=org_address,
-                           download_time=formatted_time)
+               paystub=paystub,
+               logo_b64=logo_b64,
+               # For PDF rendering prefer a file:// URI; fall back to web path
+               logo_path=logo_file_uri or logo_web_path,
+               logo_url=logo_url,
+               org_name=org_name,
+               org_phone=org_phone,
+               org_email=org_email,
+               org_address=org_address,
+               download_time=formatted_time)
         
         # Create a temporary file for the PDF
         temp_dir = tempfile.mkdtemp()
@@ -257,6 +236,10 @@ def export_paystub_pdf(id):
         
         # Generate PDF from HTML with custom styles
         HTML(string=html, base_url=request.url_root).write_pdf(pdf_path)
+        try:
+            size = os.path.getsize(pdf_path)
+        except Exception:
+            size = None
         
         # Send the PDF file
         return send_file(
@@ -381,17 +364,28 @@ def create_paystub():
             # Attempt to generate PDF and email to employee
             try:
                 paystub = ps
-                # Render paystub PDF HTML
-                html = render_template('paystub_pdf.html', paystub=paystub, org_name=os.environ.get('ORG_NAME', ''), download_time=datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
+                # Resolve org settings for paystub rendering and email
+                settings = get_org_settings()
+                html = render_template('paystub_pdf.html', paystub=paystub, org_name=settings['org_name'], logo_b64=settings.get('logo_b64'), logo_url=settings.get('logo_url'), logo_path=(settings.get('logo_file_uri') or settings.get('logo_web_path')), download_time=datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
                 pdf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
                 HTML(string=html, base_url=request.url_root).write_pdf(pdf_temp.name)
                 pdf_temp.close()
                 with open(pdf_temp.name, 'rb') as f:
                     pdf_bytes = f.read()
+                
                 filename = f"paystub_{paystub.period_start.strftime('%Y%m%d')}-{paystub.period_end.strftime('%Y%m%d')}_{paystub.employee.firstname}_{paystub.employee.lastname}.pdf"
-                body_text = render_template('email/paystub_email.txt', paystub=paystub, org_name=os.environ.get('ORG_NAME',''))
-                body_html = render_template('email/paystub_email.html', paystub=paystub, org_name=os.environ.get('ORG_NAME',''))
-                sent = queue_email_with_pdf(recipients=paystub.employee.email, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
+                body_text = render_template('email/paystub_email.txt', paystub=paystub, org_name=settings['org_name'])
+                body_html = render_template('email/paystub_email.html', paystub=paystub, org_name=settings['org_name'])
+                # Resolve recipients and honor testing override in AppSettings at call site
+                recipients = paystub.employee.email
+                try:
+                    appsettings_obj = settings.get('appsettings')
+                    if appsettings_obj and getattr(appsettings_obj, 'testing_mode', False) and getattr(appsettings_obj, 'testing_email', None):
+                        recipients = appsettings_obj.testing_email
+                except Exception:
+                    pass
+
+                sent = queue_email_with_pdf(recipients=recipients, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
                 try:
                     os.unlink(pdf_temp.name)
                 except Exception:

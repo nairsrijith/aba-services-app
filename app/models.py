@@ -1,4 +1,5 @@
 from app import db, login_manager
+import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import date
@@ -414,4 +415,63 @@ class PayStubItem(db.Model):
 
     def __repr__(self):
         return f"<PayStubItem paystub={self.paystub_id} int={self.intervention_id} amount={self.amount}>"
+
+
+class AppSettings(db.Model):
+    __tablename__ = 'app_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    org_name = db.Column(db.String(200))
+    org_address = db.Column(db.String(500))
+    org_phone = db.Column(db.String(50))
+    org_email = db.Column(db.String(120))
+    payment_email = db.Column(db.String(120))
+    logo_path = db.Column(db.String(500))
+
+    smtp_host = db.Column(db.String(200))
+    smtp_port = db.Column(db.Integer)
+    smtp_user = db.Column(db.String(200))
+    smtp_pass = db.Column(db.String(200))
+    smtp_use_tls = db.Column(db.Boolean, default=False)
+    smtp_use_ssl = db.Column(db.Boolean, default=False)
+
+    testing_mode = db.Column(db.Boolean, default=False)
+    testing_email = db.Column(db.String(120))
+
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        try:
+            s = cls.query.first()
+            if s:
+                return s
+
+            # If no AppSettings row exists, create one from environment defaults
+            s = cls(
+                org_name=os.environ.get('ORG_NAME'),
+                org_address=os.environ.get('ORG_ADDRESS'),
+                org_phone=os.environ.get('ORG_PHONE'),
+                org_email=os.environ.get('ORG_EMAIL'),
+                payment_email=os.environ.get('PAYMENT_EMAIL'),
+                logo_path=os.environ.get('LOGO_PATH'),
+                smtp_host=os.environ.get('SMTP_HOST'),
+                smtp_port=int(os.environ.get('SMTP_PORT')) if os.environ.get('SMTP_PORT') else None,
+                smtp_user=os.environ.get('SMTP_USER'),
+                smtp_pass=os.environ.get('SMTP_PASS'),
+                smtp_use_tls=os.environ.get('SMTP_USE_TLS', 'false').lower() in ('1', 'true', 'yes'),
+                smtp_use_ssl=os.environ.get('SMTP_USE_SSL', 'false').lower() in ('1', 'true', 'yes'),
+                testing_mode=False,
+                testing_email=None
+            )
+            try:
+                db.session.add(s)
+                db.session.commit()
+            except Exception:
+                try:
+                    db.session.rollback()
+                except Exception:
+                    pass
+            return s
+        except Exception:
+            return None
 

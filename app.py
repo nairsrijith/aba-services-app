@@ -10,8 +10,8 @@ import os
 
 from gevent.pywsgi import WSGIServer
 
+from app.utils.settings_utils import get_org_settings
 
-org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
 def get_date_ranges():
@@ -226,6 +226,7 @@ def home():
         # Get monthly statistics for the graph
         monthly_data = get_monthly_totals()
         
+        settings = get_org_settings()
         return render_template('home.html', 
                             total_employees=total_employees,
                             total_clients=total_clients,
@@ -235,13 +236,18 @@ def home():
                             user_stats=user_stats,
                             show_org_stats=show_org_stats,
                             show_user_stats=show_user_stats,
-                            org_name=org_name,
+                            org_name=settings['org_name'],
+                            org_address=settings['org_address'],
+                            org_email=settings['org_email'],
+                            org_phone=settings['org_phone'],
+                            payment_email=settings['payment_email'],
                             monthly_labels=monthly_data['labels'],
                             monthly_paid_invoices=monthly_data['paid_invoices'],
                             monthly_total_invoices=monthly_data['total_invoices'],
                             monthly_paystubs=monthly_data['paystub_amounts'],
                             monthly_earnings=monthly_data['earnings'])
-    return render_template('home.html', org_name=org_name)
+    settings = get_org_settings()
+    return render_template('home.html', org_name=settings['org_name'], org_address=settings['org_address'], org_email=settings['org_email'], org_phone=settings['org_phone'], payment_email=settings['payment_email'])
 
 
 @app.route('/logout')
@@ -262,11 +268,13 @@ def login():
         employee = Employee.query.filter_by(email=form.email.data.lower()).first()
         if not employee:
             flash('Your account is not registered. Contact Administrator.', 'danger')
-            return render_template('login.html', form=form, org_name=org_name)
+            settings = get_org_settings()
+            return render_template('login.html', form=form, org_name=settings['org_name'])
         
         if not employee.login_enabled:
             flash('Your account has not been activated. Contact Administrator.', 'danger')
-            return render_template('login.html', form=form, org_name=org_name)
+            settings = get_org_settings()
+            return render_template('login.html', form=form, org_name=settings['org_name'])
         
         if employee.user_type == "super":
             if employee.check_password(form.password.data):
@@ -278,15 +286,18 @@ def login():
                 return redirect(next_page)
             else:
                 flash('Incorrect password! Try again.', 'danger')
-                return render_template('login.html', form=form, org_name=org_name)
+                settings = get_org_settings()
+                return render_template('login.html', form=form, org_name=settings['org_name'])
         else:
             if not employee.password_hash:
                 flash('Your account password has not been set. Contact Administrator.', 'danger')
-                return render_template('login.html', form=form, org_name=org_name)
+                settings = get_org_settings()
+                return render_template('login.html', form=form, org_name=settings['org_name'])
 
             if employee.failed_attempt == -2:
-                flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
-                return render_template('login.html', form=form, org_name=org_name)
+                    flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
+                    settings = get_org_settings()
+                    return render_template('login.html', form=form, org_name=settings['org_name'])
             
             if employee.check_password(form.password.data):
                 if employee.locked_until and datetime.now() < employee.locked_until:
@@ -294,7 +305,8 @@ def login():
                     rem_min = int(remaining_time.total_seconds() / 60)
                     rem_sec = int(remaining_time.total_seconds() % 60)
                     flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
-                    return render_template('login.html', form=form, org_name=org_name)
+                    settings = get_org_settings()
+                    return render_template('login.html', form=form, org_name=settings['org_name'])
 
                 employee.failed_attempt = 3
                 employee.locked_until = None
@@ -319,9 +331,11 @@ def login():
                 else:
                     flash(f"Incorrect password! {employee.failed_attempt} remaining attempt(s).", 'danger')
                 db.session.commit()
-                return render_template('login.html', form=form, org_name=org_name)
+                settings = get_org_settings()
+                return render_template('login.html', form=form, org_name=settings['org_name'])
 
-    return render_template('login.html', form=form, org_name=org_name)
+    settings = get_org_settings()
+    return render_template('login.html', form=form, org_name=settings['org_name'])
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -338,7 +352,8 @@ def register():
                 # Check activation key
                 if not employee.activation_key or employee.activation_key != form.activation_key.data:
                     flash('Invalid activation key. Please check the key provided by your administrator.', 'danger')
-                    return render_template('register.html', form=form, org_name=org_name)
+                    settings = get_org_settings()
+                    return render_template('register.html', form=form, org_name=settings['org_name'])
                 
                 # First time setting up password
                 employee.email = form.email.data
@@ -353,11 +368,14 @@ def register():
                 return redirect(url_for('login'))
             else:
                 flash('This account is already registered. Use the login page instead.', 'danger')
-                return render_template('register.html', form=form, org_name=org_name)
+                settings = get_org_settings()
+                return render_template('register.html', form=form, org_name=settings['org_name'])
         else:
             flash('This email is not recognized. You must be an employee to register.', 'danger')
-            return render_template('register.html', form=form, org_name=org_name)
-    return render_template('register.html', form=form, org_name=org_name)
+            settings = get_org_settings()
+            return render_template('register.html', form=form, org_name=settings['org_name'])
+    settings = get_org_settings()
+    return render_template('register.html', form=form, org_name=settings['org_name'])
 
 
 if __name__ == '__main__':

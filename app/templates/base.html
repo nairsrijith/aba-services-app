@@ -179,8 +179,8 @@
     <ul>
       <li class="logo-container">
         <div class="logo-wrapper">
-          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo-image" />
-        </div>
+            <img src="{{ current_org_logo() }}" alt="Logo" class="logo-image" />
+          </div>
       </li>
       <li class="{% if request.endpoint == 'home' %}active{% endif %}">
         <a href="{{ url_for('home') }}">
@@ -262,6 +262,7 @@
                 <li class="{% if request.endpoint and request.endpoint.startswith('users.list_users') %}active{% endif %}"><a href="{{ url_for('users.list_users') }}">Users</a></li>
                 <li class="{% if request.endpoint and request.endpoint.startswith('manage.designations') %}active{% endif %}"><a href="{{ url_for('manage.designations') }}">Designations</a></li>
                 <li class="{% if request.endpoint and request.endpoint.startswith('manage.activities') %}active{% endif %}"><a href="{{ url_for('manage.activities') }}">Activities</a></li>
+                  <li class="{% if request.endpoint and request.endpoint.startswith('manage.settings') %}active{% endif %}"><a href="{{ url_for('manage.settings') }}">Settings</a></li>
               {% endif %}
               <li><a href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}
@@ -313,9 +314,17 @@
   </div>
 
   <main>
-  <header class="app-org-name" role="banner">
-    {{ org_name if org_name is defined else 'My Organization' }}
-  </header>
+  {% if current_user.is_authenticated and testing_mode %}
+    <div class="alert alert-warning text-center m-0" role="alert" style="border-radius:0;">
+      <strong>Testing Mode:</strong>
+      Emails will be sent to <code>{{ testing_email or 'the configured test email' }}</code>
+      instead of client or employee addresses.
+    </div>
+    <header class="app-org-name" role="banner">
+      {{ current_org_name() }}
+    </header>
+  {% endif %}
+
   {% block content %}
   {% endblock %}
   </main>

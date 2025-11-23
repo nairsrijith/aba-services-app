@@ -3,13 +3,12 @@ from app import db
 from app.models import Client, Employee, Intervention, Invoice, PayRate, PayStubItem
 from app.clients.forms import AddClientForm, UpdateClientForm
 from flask_login import login_required, current_user
+from app.utils.settings_utils import get_org_settings
 import os
 import re
 
 clients_bp = Blueprint('clients', __name__, template_folder='templates')
 
-
-org_name = os.environ.get('ORG_NAME', 'My Organization')
 
 
 @clients_bp.route('/add', methods=['GET', 'POST'])
@@ -53,7 +52,8 @@ def add_client():
             db.session.add(new_client)
             db.session.commit()
             return redirect(url_for('clients.list_clients'))
-        return render_template('add.html', form=form, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('add.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
 
@@ -130,12 +130,13 @@ def list_clients():
         # Always order results for consistent pagination
         query = query.order_by(Client.is_active.desc(), Client.firstname, Client.lastname)
         clients_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        settings = get_org_settings()
         return render_template(
             'list.html',
             clients=clients_pagination.items,
             pagination=clients_pagination,
             per_page=per_page,
-            org_name=org_name
+            org_name=settings['org_name']
         )
     else:
         abort(403)
@@ -225,7 +226,8 @@ def update_client(client_id):
             client.cost_therapy = form.cost_therapy.data or 0
             db.session.commit()
             return redirect(url_for('clients.list_clients'))
-        return render_template('update.html', form=form, client=client, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('update.html', form=form, client=client, org_name=settings['org_name'])
     else:
         abort(403)
 

@@ -6,12 +6,13 @@ from datetime import date
 from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
 from app.utils.email_utils import queue_email
+from app.utils.settings_utils import get_org_settings
 import os, re, datetime
 from dateutil.relativedelta import relativedelta
 
 employees_bp = Blueprint('employees', __name__, template_folder='templates')
 
-org_name = os.environ.get('ORG_NAME', 'My Organization')
+# org values resolved per-request via get_org_settings()
 
 def determine_user_type(position, current_user_type=None):
     """
@@ -40,13 +41,15 @@ def add_employee():
                             ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
                             ("NU", "Nunavut"), ("YT", "Yukon")]
 
+        settings = get_org_settings()
+
         if form.validate_on_submit():
             try:
                 # First check if an employee with this email already exists
                 existing_employee = Employee.query.filter_by(email=form.email.data).first()
                 if existing_employee:
                     flash('An employee with this email already exists.', 'danger')
-                    return render_template('add_emp.html', form=form, org_name=org_name)
+                    return render_template('add_emp.html', form=form, org_name=settings['org_name'])
 
                 # Set rba_number to None if position is not Behaviour Analyst
                 rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
@@ -54,7 +57,7 @@ def add_employee():
                 # Validate RBA number requirement for Behaviour Analyst
                 if form.position.data == 'Behaviour Analyst' and not rba_number:
                     form.rba_number.errors.append('RBA Number is required for Behaviour Analysts')
-                    return render_template('add_emp.html', form=form, org_name=org_name)
+                    return render_template('add_emp.html', form=form, org_name=settings['org_name'])
 
                 # Normalize phone number to digits-only before storing (DB column is String(10))
                 normalized_cell = re.sub(r'\D', '', (form.cell.data or ''))
@@ -91,9 +94,10 @@ def add_employee():
                 db.session.commit()
                 # Try to email the activation key to the employee
                 try:
-                    subject = f"{org_name} - Activation Key"
-                    body_text = render_template('email/activation_email.txt', firstname=new_employee.firstname, activation_key=activation_key, org_name=org_name)
-                    body_html = render_template('email/activation_email.html', firstname=new_employee.firstname, activation_key=activation_key, org_name=org_name)
+                    settings = get_org_settings()
+                    subject = f"{settings['org_name']} - Activation Key"
+                    body_text = render_template('email/activation_email.txt', firstname=new_employee.firstname, activation_key=activation_key, org_name=settings['org_name'])
+                    body_html = render_template('email/activation_email.html', firstname=new_employee.firstname, activation_key=activation_key, org_name=settings['org_name'])
                     queue_email(subject=subject, recipients=new_employee.email, body_text=body_text, body_html=body_html)
                     flash('Employee added successfully! Activation key emailed to user. Base pay rate set to CA${:.2f} effective {}.'.format(
                         base_rate, date.today().strftime('%Y-%m-%d')), 'success')
@@ -104,10 +108,11 @@ def add_employee():
                 db.session.rollback()
                 if 'employees_rba_number_key' in str(e):
                     form.rba_number.errors.append('This RBA Number is already in use')
-                    return render_template('add_emp.html', form=form, org_name=org_name)
+                    settings = get_org_settings()
+                    return render_template('add_emp.html', form=form, org_name=settings['org_name'])
                 flash(f'Error adding employee: {str(e)}', 'danger')
-                return render_template('add_emp.html', form=form, org_name=org_name)
-        return render_template('add_emp.html', form=form, org_name=org_name)
+                settings = get_org_settings()
+                return render_template('add_emp.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
 
@@ -160,9 +165,10 @@ def reactivate_employee(employee_id):
         db.session.commit()
         # Attempt to email activation key
         try:
-            subject = f"{org_name} - Account Reactivation"
-            body_text = render_template('email/activation_email.txt', firstname=employee.firstname, activation_key=activation_key, org_name=org_name)
-            body_html = render_template('email/activation_email.html', firstname=employee.firstname, activation_key=activation_key, org_name=org_name)
+            settings = get_org_settings()
+            subject = f"{settings['org_name']} - Account Reactivation"
+            body_text = render_template('email/activation_email.txt', firstname=employee.firstname, activation_key=activation_key, org_name=settings['org_name'])
+            body_html = render_template('email/activation_email.html', firstname=employee.firstname, activation_key=activation_key, org_name=settings['org_name'])
             queue_email(subject=subject, recipients=employee.email, body_text=body_text, body_html=body_html)
             flash('Employee has been prepared for reactivation. Activation key emailed to user.', 'info')
         except Exception:
@@ -210,12 +216,13 @@ def list_employees():
             )
 
         employees_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        settings = get_org_settings()
         return render_template(
             'list_emp.html',
             employees=employees_pagination.items,
             pagination=employees_pagination,
             per_page=per_page,
-            org_name=org_name
+            org_name=settings['org_name']
         )
     else:
         abort(403)
@@ -304,8 +311,39 @@ def update_employee(employee_id):
             except Exception as e:
                 db.session.rollback()
                 flash('Error updating employee. Please check the form and try again.', 'danger')
-                return render_template('update_emp.html', form=form, employee=employee, org_name=org_name)
-        return render_template('update_emp.html', form=form, employee=employee, org_name=org_name)
+                settings = get_org_settings()
+                if form.validate_on_submit():
+                    try:
+                        # Set rba_number to None if position is not Behaviour Analyst
+                        rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
+                
+                        employee.firstname = form.firstname.data.title()
+                        employee.lastname = form.lastname.data.title()
+                        employee.position = form.position.data.title()
+                        employee.rba_number = rba_number
+                        # Keep previous email to find an existing user before we overwrite
+                        previous_email = employee.email
+                        employee.email = form.email.data
+                        # Store digits-only phone number to match DB column
+                        employee.cell = re.sub(r'\D', '', (form.cell.data or ''))
+                        employee.address1 = form.address1.data.title()
+                        employee.address2 = form.address2.data.title()
+                        employee.city = form.city.data.title()
+                        employee.state = form.state.data
+                        employee.zipcode = form.zipcode.data.upper()
+                
+                        # Update user_type based on position
+                        employee.user_type = determine_user_type(form.position.data, employee.user_type)
+                
+                        db.session.commit()
+                        flash('Employee and associated user account updated successfully!', 'success')
+                        return redirect(url_for('employees.list_employees'))
+                    except Exception as e:
+                        db.session.rollback()
+                        flash('Error updating employee. Please check the form and try again.', 'danger')
+                        return render_template('update_emp.html', form=form, employee=employee, org_name=settings['org_name'])
+                # GET or validation failed
+                return render_template('update_emp.html', form=form, employee=employee, org_name=settings['org_name'])
     else:
         abort(403)
 

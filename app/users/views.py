@@ -6,11 +6,12 @@ from app.users.forms import SetRoleForm, UpdatePasswordForm
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import os, string, secrets
+from app.utils.settings_utils import get_org_settings
 
 users_bp = Blueprint('users', __name__, template_folder='templates')
 
 
-org_name = os.environ.get('ORG_NAME', 'My Organization')
+
 
 
 @users_bp.route('/list', methods=['GET','POST'])
@@ -23,12 +24,13 @@ def list_users():
         users_pagination = Employee.query.filter(
             ~((Employee.user_type == 'super') | (Employee.email == current_user.email) | (Employee.failed_attempt <= -5 ))
         ).paginate(page=page, per_page=per_page, error_out=False)
+        settings = get_org_settings()
         return render_template(
             'list_user.html',
             users=users_pagination.items,
             pagination=users_pagination,
             per_page=per_page,
-            org_name=org_name
+            org_name=settings['org_name']
         )
     else:
         abort(403)
@@ -122,6 +124,7 @@ def change_password():
                 return redirect(url_for('logout'))
             else:
                 flash('Current password is incorrect.', 'danger')
-        return render_template('change_password.html', form=form, org_name=org_name)
+        settings = get_org_settings()
+        return render_template('change_password.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
