@@ -38,3 +38,18 @@ class SettingsForm(FlaskForm):
     testing_email = StringField('Testing Email Address', validators=[length(max=120)])
 
     submit = SubmitField('Save Settings')
+
+    def validate(self, **kwargs):
+        # first run the default validators
+        rv = super().validate(**kwargs)
+        if not rv:
+            return False
+
+        # enforce mutual exclusivity for TLS vs SSL
+        if bool(self.smtp_use_tls.data) and bool(self.smtp_use_ssl.data):
+            msg = 'Only one of TLS or SSL may be selected.'
+            self.smtp_use_tls.errors.append(msg)
+            self.smtp_use_ssl.errors.append(msg)
+            return False
+
+        return True

@@ -49,10 +49,10 @@
       {{ form.smtp_pass(class_='form-control') }}
     </div>
     <div class="form-check mb-3">
-      {{ form.smtp_use_tls(class_='form-check-input') }} {{ form.smtp_use_tls.label(class_='form-check-label') }}
+      {{ form.smtp_use_tls(class_='form-check-input', id='smtp_use_tls') }} {{ form.smtp_use_tls.label(class_='form-check-label') }}
     </div>
     <div class="form-check mb-3">
-      {{ form.smtp_use_ssl(class_='form-check-input') }} {{ form.smtp_use_ssl.label(class_='form-check-label') }}
+      {{ form.smtp_use_ssl(class_='form-check-input', id='smtp_use_ssl') }} {{ form.smtp_use_ssl.label(class_='form-check-label') }}
     </div>
 
     <h4>Testing Mode</h4>
@@ -69,4 +69,17 @@
     </div>
   </form>
 </div>
+<script>
+  // Make TLS/SSL checkboxes mutually exclusive in the UI
+  (function(){
+    try {
+      const tls = document.getElementById('smtp_use_tls');
+      const ssl = document.getElementById('smtp_use_ssl');
+      if (tls && ssl) {
+        tls.addEventListener('change', function(){ if (this.checked) ssl.checked = false; });
+        ssl.addEventListener('change', function(){ if (this.checked) tls.checked = false; });
+      }
+    } catch(e) { /* ignore in older browsers */ }
+  })();
+</script>
 {% endblock %}
