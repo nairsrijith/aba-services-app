@@ -127,9 +127,24 @@ def invoice_preview():
                 i.cost = 0
 
         if request.method == 'POST':
-            # Build a snapshot of invoice line items so future changes to client rates won't affect this invoice
+            # Which interventions did the user select on the preview page?
+            selected_raw = request.form.getlist('selected_interventions')
+            try:
+                selected_ids = set(int(x) for x in selected_raw if str(x).isdigit())
+            except Exception:
+                selected_ids = set()
+
+            if not selected_ids:
+                flash('No sessions were selected for invoicing. Please pick at least one session.', 'warning')
+                # redirect back to the same preview so user can select
+                return redirect(url_for('invoices.invoice_preview', ci=client_id, df=date_from.strftime('%Y-%m-%d') if date_from else '', dt=date_to.strftime('%Y-%m-%d') if date_to else ''))
+
+            # Filter interventions down to only those selected by the user
+            selected_interventions = [i for i in interventions if i.id in selected_ids]
+
+            # Build a snapshot of invoice line items from selected interventions
             invoice_items = []
-            for i in interventions:
+            for i in selected_interventions:
                 invoice_items.append({
                     'intervention_id': i.id,
                     'date': i.date.strftime('%Y-%m-%d'),
@@ -140,7 +155,8 @@ def invoice_preview():
                 })
 
             total_cost = sum(item['cost'] for item in invoice_items)
-            # 1. Create Invoice record (no longer storing intervention_ids; snapshot stored in invoice_items)
+
+            # 1. Create Invoice record
             invoice = Invoice(
                 client_id=client.id,
                 invoice_number=invoice_number,
@@ -148,24 +164,23 @@ def invoice_preview():
                 payby_date=payby_date,
                 date_from=date_from,
                 date_to=date_to,
-                total_cost=total_cost,  # <-- store here
+                total_cost=total_cost,
                 status="Draft",
                 paid_date=None,
                 payment_comments="",
                 invoice_items=json.dumps(invoice_items)
             )
             db.session.add(invoice)
-            db.session.flush()  # To get invoice.id if needed
+            db.session.flush()
 
-            # 2. Update interventions
-            for intervention in interventions:
+            # 2. Update only the selected interventions
+            for intervention in selected_interventions:
                 intervention.invoiced = True
                 intervention.invoice_number = invoice_number
                 db.session.add(intervention)
 
             db.session.commit()
-            # Keep new invoice in Draft state; mailing will occur when the invoice is marked as Sent.
-            flash('Invoice created and sessions updated (status: Draft). Use Send to email the invoice to the client.', 'success')
+            flash('Invoice created and selected sessions updated (status: Draft). Use Send to email the invoice to the client.', 'success')
             return redirect(url_for('invoices.list_invoices'))
 
         settings = get_org_settings()
