@@ -320,14 +320,18 @@
       Emails will be sent to <code>{{ testing_email or 'the configured test email' }}</code>
       instead of client or employee addresses.
     </div>
-    <header class="app-org-name" role="banner">
-      {{ current_org_name() }}
-    </header>
   {% endif %}
+
+  <header class="app-org-name" role="banner">
+    {{ current_org_name() }}
+  </header>
 
   {% block content %}
   {% endblock %}
   </main>
+
+  {# Allow pages to inject page-specific scripts (e.g., invoice preview JS) #}
+  {% block scripts %}{% endblock %}
 
   {% if current_user.is_authenticated and current_user.locked_until %}
     <script>

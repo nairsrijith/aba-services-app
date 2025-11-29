@@ -20,6 +20,10 @@
     .pdf-table tr:nth-child(even) td { background: #f8f9fa; }
     .pdf-table tr:nth-child(odd) td { background: #fff; }
     .pdf-table tr.total-row td { background: #e9ecef; font-weight: bold; color: #0d6efd; }
+     /* visually indicate rows excluded from invoicing: soft red text and slightly muted background
+         Target the <td> cells (not the <tr>) so cell-level background rules do not override this styling */
+     .pdf-table tr.excluded td { color: #b04545; background: #fff4f4; }
+     .pdf-table tr.excluded td, .pdf-table tr.excluded td * { opacity: 0.6; color: #b04545 !important; }
     .pdf-status-paid { background: #056627; color: #fff; border-radius: 4px; padding: 2px 8px; }
     .pdf-status-unpaid { background: #ffc721; color: #212529; border-radius: 4px; padding: 2px 8px; }
     .pdf-payment-info { margin-top: 16px; border-radius: 8px; padding: 12px; }
@@ -71,6 +75,8 @@
         </div>
     </div>
 
+    {% if total_cost is defined %}
+    <!-- Read-only invoice preview for already generated invoices -->
     <table class="pdf-table mt-3">
         <thead>
             <tr>
@@ -88,8 +94,8 @@
                 <td>{{ loop.index }}</td>
                 <td style="text-align: left;">
                     <strong>{{ i.intervention_type }}</strong><br>
-                    Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }}){% if i.employee.position in ['Therapist', 'Senior Therapist'] %}, {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }}){% endif %}<br>
-                    <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }})</small>
+                    Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }}){% if i.employee and i.employee.position in ['Therapist', 'Senior Therapist'] %}, {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }}){% endif %}<br>
+                    <small style="font-size: 10px;">{{ i.date }}{% if i.start_time and i.end_time %} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }}){% endif %}</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
                 <td style="text-align: right;">{{ "%.2f"|format(i.rate|float) }}</td>
@@ -99,10 +105,56 @@
             {% endfor %}
             <tr class="total-row">
                 <td colspan="4" style="text-align: right;">Total:</td>
-                <td style="text-align: right;">{{ "%.2f"|format(ns.total|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(total_cost|float) }}</td>
             </tr>
         </tbody>
     </table>
+    <div class="py-4">
+        <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
+    </div>
+    {% else %}
+    <form method="POST" id="invoice-select-form">
+    <table class="pdf-table mt-3">
+        <thead>
+            <tr>
+                <th style="width:38px;"><input type="checkbox" id="select_all" title="Select all" checked></th>
+                <th>Details</th>
+                <th class="text-end">Duration</th>
+                <th class="text-end">Rate/Hr</th>
+                <th class="text-end">Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set ns = namespace(total=0) %}
+            {% for i in interventions %}
+            <tr>
+                <td>
+                    <input type="checkbox" name="selected_interventions" value="{{ i.id }}" class="select-session" checked>
+                </td>
+                <td style="text-align: left;">
+                    <strong>{{ i.intervention_type }}</strong><br>
+                    Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }}){% if i.employee.position in ['Therapist', 'Senior Therapist'] %}, {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }}){% endif %}<br>
+                    <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }})</small>
+                </td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.rate|float) }}</td>
+                <td style="text-align: right;" data-cost="{{ "%.2f"|format(i.cost|float) }}">{{ "%.2f"|format(i.cost|float) }}</td>
+            </tr>
+            {% set ns.total = ns.total + i.cost %}
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="4" style="text-align: right;">Total:</td>
+                <td style="text-align: right;" id="preview-total">{{ "%.2f"|format(ns.total|float) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="py-4">
+        <button type="submit" class="btn btn-success">Confirm and Save Invoice</button>
+        <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary ms-2">Back to Invoice List</a>
+    </div>
+    </form>
+    {% endif %}
 
     {% if status != "Paid" %}
         <div class="pdf-payment-info unpaid">
@@ -123,17 +175,66 @@
         For feedback or queries write to us at <strong><em>{{ org_email }}</em></strong>.
     </div>
 
-    {% if not total_cost %}
-        <form method="POST" class="py-4">
-            <button type="submit" class="btn btn-success">Confirm and Save Invoice</button>
-            <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
-        </form>
-    {% else %}
-        <div class="py-4">
-            <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary">Back to Invoice List</a>
-        </div>
-    {% endif %}
+    {# Buttons above handle form submit/back; do not duplicate here. #}
 
 </div>
 
 {% endblock %}
+
+{% if not total_cost is defined %}
+{% block scripts %}
+<script>
+    // Select-all toggle
+    (function(){
+        try {
+            const selectAll = document.getElementById('select_all');
+            const checkboxes = Array.from(document.querySelectorAll('.select-session'));
+            const totalEl = document.getElementById('preview-total');
+
+            function recalcTotal(){
+                let t = 0.0;
+                checkboxes.forEach(cb => {
+                    if (cb.checked){
+                        const tr = cb.closest('tr');
+                        const costTd = tr.querySelector('td[data-cost]');
+                        if (costTd){ t += parseFloat(costTd.getAttribute('data-cost') || '0'); }
+                    }
+                });
+                if (totalEl) totalEl.textContent = t.toFixed(2);
+            }
+
+            if (selectAll){
+                selectAll.addEventListener('change', function(){
+                    checkboxes.forEach(cb => {
+                        cb.checked = !!this.checked;
+                        const row = cb.closest('tr');
+                        if (row) row.classList.toggle('excluded', !this.checked);
+                    });
+                    recalcTotal();
+                });
+            }
+
+            checkboxes.forEach(cb => cb.addEventListener('change', function(){
+                        // toggle row styling when unchecked/checked
+                        const row = this.closest('tr');
+                        if (row) row.classList.toggle('excluded', !this.checked);
+                        // if any unchecked, uncheck selectAll
+                        if (!this.checked && selectAll) selectAll.checked = false;
+                        // if all checked, ensure selectAll is checked
+                        if (checkboxes.every(c => c.checked) && selectAll) selectAll.checked = true;
+                        recalcTotal();
+            }));
+
+            // initial recalc and apply excluded class for rows (in case some are unchecked)
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                if (row) row.classList.toggle('excluded', !cb.checked);
+            });
+            recalcTotal();
+
+            // automatic recalculation happens on checkbox changes and select-all; no manual button required
+        } catch(e) { /* ignore */ }
+    })();
+</script>
+{% endblock %}
+{% endif %}
