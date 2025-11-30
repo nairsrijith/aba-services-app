@@ -275,7 +275,7 @@
                 <li class="{% if request.endpoint and request.endpoint.startswith('manage.activities') %}active{% endif %}"><a href="{{ url_for('manage.activities') }}">Activities</a></li>
                   <li class="{% if request.endpoint and request.endpoint.startswith('manage.settings') %}active{% endif %}"><a href="{{ url_for('manage.settings') }}">Org Settings</a></li>
               {% endif %}
-              <li class="{% if request.endpoint and request.endpoint.startswith('users.change_password') %}active{% endif %}"><a href="{{ url_for('users.change_password') }}">My Profile</a></li>
+              <li class="{% if request.endpoint and request.endpoint.startswith('users.update_profile') %}active{% endif %}"><a href="{{ url_for('users.update_profile') }}">My Profile</a></li>
               <li><a href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}
               <li class="{% if request.endpoint and request.endpoint.startswith('login') %}active{% endif %}"><a href="{{ url_for('login') }}">Login</a></li>
