@@ -67,6 +67,8 @@ class Employee(db.Model, UserMixin):
     locked_until = db.Column(db.DateTime, default=None)
     failed_attempt = db.Column(db.Integer, default=-2, nullable=False)
     activation_key = db.Column(db.String(16), nullable=True, default=None)
+    # Profile picture path stored as a relative path under the project (e.g. 'data/profile_pic/filename.png')
+    profile_pic = db.Column(db.String(255), nullable=True)
 
     designation = db.relationship('Designation', backref='employees')
     pay_rates = db.relationship('PayRate', backref='employee', cascade='all, delete-orphan')

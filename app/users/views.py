@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, current_app
 from app import db
 from flask_login import login_required, current_user
 from app.models import Employee
@@ -7,6 +7,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import os, string, secrets
 from app.utils.settings_utils import get_org_settings
+from werkzeug.utils import secure_filename
+import time
 
 users_bp = Blueprint('users', __name__, template_folder='templates')
 
@@ -111,20 +113,101 @@ def demote_user(id):
         abort(403)
 
 
-@users_bp.route('/change_password', methods=['GET', 'POST'])
+@users_bp.route('/update_profile', methods=['GET', 'POST'])
 @login_required
-def change_password():
+def update_profile():
     if current_user.is_authenticated:
         form = UpdatePasswordForm()
         if form.validate_on_submit():
-            if current_user.check_password(form.current_password.data):
-                current_user.set_password(form.new_password.data)
-                db.session.commit()
-                flash('Your password has been updated.', 'success')
-                return redirect(url_for('logout'))
+            action = request.form.get('action')
+            # Update profile picture only
+            if action == 'update_picture':
+                file_field = form.profile_pic.data
+                if file_field and getattr(file_field, 'filename', None):
+                    try:
+                        orig_name = secure_filename(file_field.filename)
+                        if orig_name:
+                            # remember previous pic so we can remove it after successful save
+                            prev_pic = current_user.profile_pic
+                            ext = orig_name.rsplit('.', 1)[-1].lower()
+                            filename = f"user_{current_user.id}_{int(time.time())}.{ext}"
+                            folder = current_app.config.get('PROFILE_PIC_FOLDER')
+                            os.makedirs(folder, exist_ok=True)
+                            dest = os.path.join(folder, filename)
+                            file_field.save(dest)
+                            rel_path = os.path.join('data', 'profile_pic', filename).replace('\\', '/')
+                            current_user.profile_pic = rel_path
+                            db.session.commit()
+                            # remove previous file if it exists and is different
+                            try:
+                                if prev_pic:
+                                    prev_basename = prev_pic.split('/')[-1]
+                                    if prev_basename and prev_basename != filename:
+                                        prev_path = os.path.join(folder, prev_basename)
+                                        if os.path.exists(prev_path):
+                                            os.remove(prev_path)
+                            except Exception:
+                                pass
+                            flash('Profile picture updated.', 'success')
+                            return redirect(url_for('users.update_profile'))
+                    except Exception:
+                        flash('Could not save profile picture; please try again.', 'warning')
+                else:
+                    flash('No file selected to upload.', 'warning')
+
+            # Update password only
+            elif action == 'update_password':
+                # require current + new + confirm
+                if not form.current_password.data or not form.new_password.data or not form.confirm_password.data:
+                    flash('Please provide current and new password (and confirmation).', 'danger')
+                elif form.new_password.data != form.confirm_password.data:
+                    flash('New passwords do not match.', 'danger')
+                else:
+                    if current_user.check_password(form.current_password.data):
+                        current_user.set_password(form.new_password.data)
+                        db.session.commit()
+                        flash('Your password has been updated.', 'success')
+                        return redirect(url_for('logout'))
+                    else:
+                        flash('Current password is incorrect.', 'danger')
+
+            # Fallback: if no explicit action, treat as original (password change)
             else:
-                flash('Current password is incorrect.', 'danger')
+                if current_user.check_password(form.current_password.data):
+                    current_user.set_password(form.new_password.data)
+                    file_field = form.profile_pic.data
+                    if file_field and getattr(file_field, 'filename', None):
+                        try:
+                            orig_name = secure_filename(file_field.filename)
+                            if orig_name:
+                                prev_pic = current_user.profile_pic
+                                ext = orig_name.rsplit('.', 1)[-1].lower()
+                                filename = f"user_{current_user.id}_{int(time.time())}.{ext}"
+                                folder = current_app.config.get('PROFILE_PIC_FOLDER')
+                                os.makedirs(folder, exist_ok=True)
+                                dest = os.path.join(folder, filename)
+                                file_field.save(dest)
+                                rel_path = os.path.join('data', 'profile_pic', filename).replace('\\', '/')
+                                current_user.profile_pic = rel_path
+                                # remove previous file if different
+                                try:
+                                    if prev_pic:
+                                        prev_basename = prev_pic.split('/')[-1]
+                                        if prev_basename and prev_basename != filename:
+                                            prev_path = os.path.join(folder, prev_basename)
+                                            if os.path.exists(prev_path):
+                                                os.remove(prev_path)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            flash('Could not save profile picture; please try again.', 'warning')
+                    db.session.commit()
+                    flash('Your password has been updated.', 'success')
+                    return redirect(url_for('logout'))
+                else:
+                    flash('Current password is incorrect.', 'danger')
         settings = get_org_settings()
-        return render_template('change_password.html', form=form, org_name=settings['org_name'])
+        # render new centered template with profile-pic upload
+        return render_template('update_profile.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)

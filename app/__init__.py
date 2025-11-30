@@ -171,10 +171,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///' + os.path.j
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'data/uploads')
 app.config['DELETE_FOLDER'] = os.path.join(basedir, 'data/deleted')
+app.config['PROFILE_PIC_FOLDER'] = os.path.join(basedir, 'data/profile_pic')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
+if not os.path.exists(app.config['PROFILE_PIC_FOLDER']):
+    os.makedirs(app.config['PROFILE_PIC_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -206,6 +209,18 @@ app.register_blueprint(manage_bp, url_prefix='/manage')
 from app.error_pages.handlers import error_pages
 app.register_blueprint(error_pages)
 
+# serve profile pics for module-level app (used by app.py)
+@app.route('/profile_pic/<path:filename>', endpoint='profile_pic')
+def _profile_pic_module(filename):
+    from flask import send_from_directory, abort
+    folder = app.config.get('PROFILE_PIC_FOLDER')
+    if not folder:
+        abort(404)
+    try:
+        return send_from_directory(folder, filename)
+    except Exception:
+        abort(404)
+
 # Register Jinja filters on the global `app` instance
 app.jinja_env.filters['format_phone'] = _format_phone
 app.jinja_env.filters['format_date'] = _format_date
@@ -234,11 +249,13 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'data/uploads')
     app.config['DELETE_FOLDER'] = os.path.join(basedir, 'data/deleted')
+    app.config['PROFILE_PIC_FOLDER'] = os.path.join(basedir, 'data/profile_pic')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
     # ensure upload dirs exist inside container
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['DELETE_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['PROFILE_PIC_FOLDER'], exist_ok=True)
 
     # initialize extensions with this app
     db.init_app(app)
@@ -315,6 +332,17 @@ def create_app():
 
     app.jinja_env.globals['current_org_name'] = _factory_get_org_name
     app.jinja_env.globals['current_org_logo'] = _factory_get_org_logo
+
+    @app.route('/profile_pic/<path:filename>', endpoint='profile_pic')
+    def profile_pic_factory(filename):
+        from flask import send_from_directory, abort
+        folder = app.config.get('PROFILE_PIC_FOLDER')
+        if not folder:
+            abort(404)
+        try:
+            return send_from_directory(folder, filename)
+        except Exception:
+            abort(404)
 
     # register blueprints (import at runtime to avoid circular import issues)
     from app.clients.views import clients_bp

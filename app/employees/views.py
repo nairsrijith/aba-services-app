@@ -7,8 +7,11 @@ from app.employees.forms import AddEmployeeForm, UpdateEmployeeForm
 from flask_login import login_required, current_user
 from app.utils.email_utils import queue_email
 from app.utils.settings_utils import get_org_settings
+from app import app as flask_app
 import os, re, datetime
 from dateutil.relativedelta import relativedelta
+from werkzeug.utils import secure_filename
+import shutil, time, base64
 
 employees_bp = Blueprint('employees', __name__, template_folder='templates')
 
@@ -85,6 +88,57 @@ def add_employee():
                 activation_key = new_employee.generate_activation_key()
                 db.session.add(new_employee)
                 db.session.flush()  # get new_employee.id before creating pay rate
+
+                # Set default profile picture for the new employee from org logo (best-effort)
+                try:
+                    settings = get_org_settings()
+                    logo_file_uri = settings.get('logo_file_uri')
+                    logo_b64 = settings.get('logo_b64')
+                    profile_folder = flask_app.config.get('PROFILE_PIC_FOLDER')
+                    os.makedirs(profile_folder, exist_ok=True)
+                    pic_filename = None
+                    if logo_file_uri:
+                        # strip file:// if present
+                        src = logo_file_uri
+                        if src.startswith('file://'):
+                            src = src[7:]
+                        if os.path.exists(src):
+                            ext = src.rsplit('.', 1)[-1] if '.' in src else 'png'
+                            pic_filename = f"user_{new_employee.id}_logo.{ext}"
+                            dest = os.path.join(profile_folder, secure_filename(pic_filename))
+                            try:
+                                shutil.copyfile(src, dest)
+                                new_employee.profile_pic = os.path.join('data', 'profile_pic', pic_filename).replace('\\', '/')
+                            except Exception:
+                                pic_filename = None
+                    elif logo_b64:
+                        # logo_b64 may be data:... base64 or plain base64
+                        try:
+                            data = logo_b64
+                            if data.startswith('data:'):
+                                header, data = data.split(',', 1)
+                                # try to guess extension from header
+                                if 'png' in header:
+                                    ext = 'png'
+                                elif 'jpeg' in header or 'jpg' in header:
+                                    ext = 'jpg'
+                                elif 'gif' in header:
+                                    ext = 'gif'
+                                else:
+                                    ext = 'png'
+                            else:
+                                ext = 'png'
+                            binary = base64.b64decode(data)
+                            pic_filename = f"user_{new_employee.id}_logo.{ext}"
+                            dest = os.path.join(profile_folder, secure_filename(pic_filename))
+                            with open(dest, 'wb') as fh:
+                                fh.write(binary)
+                            new_employee.profile_pic = os.path.join('data', 'profile_pic', pic_filename).replace('\\', '/')
+                        except Exception:
+                            pic_filename = None
+                except Exception:
+                    # don't fail employee creation just because profile pic couldn't be set
+                    pass
 
                 # Add base pay rate for new employee (client_id=None means base rate)
                 base_rate = form.basepay.data  # Default base rate, can be changed or set via form later
