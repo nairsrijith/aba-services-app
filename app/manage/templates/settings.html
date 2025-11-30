@@ -1,61 +1,111 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  /* Semi-transparent blurred panel for settings */
+  .settings-panel {
+    background: rgba(255,255,255,0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+  /* Slightly darker panel for users who prefer dark mode (optional) */
+  html.dark-mode .settings-panel {
+    background: rgba(18,18,20,0.55);
+    color: #e9ecef;
+  }
+  /* uniform section header spacing inside the panel */
+  .settings-panel .section-header {
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+</style>
 <div class="container mt-4">
   <h2>Application Settings</h2>
+  <div class="settings-panel">
   <form method="post" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    <div class="mb-3">
-      {{ form.org_name.label }}
-      {{ form.org_name(class_='form-control') }}
-    </div>
-    <div class="mb-3">
-      {{ form.org_address.label }}
-      {{ form.org_address(class_='form-control') }}
-    </div>
-    <div class="mb-3">
-      {{ form.org_phone.label }}
-      {{ form.org_phone(class_='form-control') }}
-    </div>
-    <div class="mb-3">
-      {{ form.org_email.label }}
-      {{ form.org_email(class_='form-control') }}
-    </div>
-    <div class="mb-3">
-      {{ form.payment_email.label }}
-      {{ form.payment_email(class_='form-control') }}
+    <h4 class="section-header">Organization Information</h4>
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">{{ form.org_name.label.text }}</label>
+        {{ form.org_name(class_='form-control') }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.org_phone.label.text }}</label>
+        {{ form.org_phone(class_='form-control') }}
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">{{ form.org_address.label.text }}</label>
+        {{ form.org_address(class_='form-control') }}
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">{{ form.org_email.label.text }}</label>
+        {{ form.org_email(class_='form-control') }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.payment_email.label.text }}</label>
+        {{ form.payment_email(class_='form-control') }}
+      </div>
     </div>
 
-    <h4>Logo</h4>
-    <div class="mb-3">
-      {{ form.logo_file.label }}
-      {{ form.logo_file(class_='form-control') }}
+    <h4 class="section-header">Logo</h4>
+    <div class="mb-3 d-flex align-items-center" style="gap:12px;">
+      <div style="min-width:96px;">
+        {% if logo_b64 %}
+          <img src="{{ logo_b64 }}" alt="Current logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
+        {% elif logo_url %}
+          <img src="{{ logo_url }}" alt="Current logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
+        {% elif logo_web_path %}
+          <img src="{{ logo_web_path }}" alt="Current logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
+        {% else %}
+          <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="No logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
+        {% endif %}
+      </div>
+      <div style="flex:1;">
+        {{ form.logo_file.label }}
+        {{ form.logo_file(class_='form-control') }}
+      </div>
     </div>
 
-    <h4>SMTP Settings</h4>
-    <div class="mb-3">
-      {{ form.smtp_host.label }}
-      {{ form.smtp_host(class_='form-control') }}
-    </div>
-    <div class="mb-3">
-      {{ form.smtp_port.label }}
-      {{ form.smtp_port(class_='form-control') }}
-    </div>
-    <div class="mb-3">
-      {{ form.smtp_user.label }}
-      {{ form.smtp_user(class_='form-control') }}
-    </div>
-    <div class="mb-3">
-      {{ form.smtp_pass.label }}
-      {{ form.smtp_pass(class_='form-control') }}
-    </div>
-    <div class="form-check mb-3">
-      {{ form.smtp_use_tls(class_='form-check-input', id='smtp_use_tls') }} {{ form.smtp_use_tls.label(class_='form-check-label') }}
-    </div>
-    <div class="form-check mb-3">
-      {{ form.smtp_use_ssl(class_='form-check-input', id='smtp_use_ssl') }} {{ form.smtp_use_ssl.label(class_='form-check-label') }}
+    <h4 class="section-header">SMTP Settings</h4>
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">{{ form.smtp_host.label.text }}</label>
+        {{ form.smtp_host(class_='form-control') }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.smtp_port.label.text }}</label>
+        {{ form.smtp_port(class_='form-control') }}
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">{{ form.smtp_user.label.text }}</label>
+        {{ form.smtp_user(class_='form-control') }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.smtp_pass.label.text }}</label>
+        {{ form.smtp_pass(class_='form-control') }}
+      </div>
+
+      <div class="col-12 d-flex gap-3 align-items-center">
+        <div class="form-check">
+          {{ form.smtp_use_tls(class_='form-check-input', id='smtp_use_tls') }}
+          {{ form.smtp_use_tls.label(class_='form-check-label ms-2') }}
+        </div>
+        <div class="form-check">
+          {{ form.smtp_use_ssl(class_='form-check-input', id='smtp_use_ssl') }}
+          {{ form.smtp_use_ssl.label(class_='form-check-label ms-2') }}
+        </div>
+      </div>
     </div>
 
-    <h4>Testing Mode</h4>
+    <h4 class="section-header">Testing Mode</h4>
     <div class="form-check mb-3">
       {{ form.testing_mode(class_='form-check-input') }} {{ form.testing_mode.label(class_='form-check-label') }}
     </div>
@@ -68,6 +118,7 @@
       {{ form.submit(class_='btn btn-primary') }}
     </div>
   </form>
+  </div>
 </div>
 <script>
   // Make TLS/SSL checkboxes mutually exclusive in the UI
