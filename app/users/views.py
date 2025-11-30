@@ -113,9 +113,9 @@ def demote_user(id):
         abort(403)
 
 
-@users_bp.route('/change_password', methods=['GET', 'POST'])
+@users_bp.route('/update_profile', methods=['GET', 'POST'])
 @login_required
-def change_password():
+def update_profile():
     if current_user.is_authenticated:
         form = UpdatePasswordForm()
         if form.validate_on_submit():
@@ -149,7 +149,7 @@ def change_password():
                             except Exception:
                                 pass
                             flash('Profile picture updated.', 'success')
-                            return redirect(url_for('users.change_password'))
+                            return redirect(url_for('users.update_profile'))
                     except Exception:
                         flash('Could not save profile picture; please try again.', 'warning')
                 else:
@@ -208,6 +208,6 @@ def change_password():
                     flash('Current password is incorrect.', 'danger')
         settings = get_org_settings()
         # render new centered template with profile-pic upload
-        return render_template('change_password.html', form=form, org_name=settings['org_name'])
+        return render_template('update_profile.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
