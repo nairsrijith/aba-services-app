@@ -21,3 +21,4 @@ python init_db.py
 
 # start app
 exec python app.py
+

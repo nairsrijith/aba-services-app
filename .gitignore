@@ -7,6 +7,4 @@ data/
 data/*
 .vscode
 .git
-assets/
-assets/*
 app/static/images/logo.png

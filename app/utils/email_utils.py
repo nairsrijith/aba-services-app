@@ -2,6 +2,11 @@ import os
 import smtplib
 import logging
 from email.message import EmailMessage
+from email.utils import getaddresses
+from threading import Thread
+from typing import List, Tuple, Optional
+
+from flask import render_template
 
 logger = logging.getLogger(__name__)
 # Ensure logs are visible in container stdout/stderr when not otherwise configured
@@ -21,39 +26,7 @@ SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').lower() in ('1', 'true', 
 DEFAULT_FROM = os.environ.get('ORG_EMAIL', 'no-reply@example.com')
 ORG_NAME = os.environ.get('ORG_NAME', '')
 
-
-def send_email(subject: str, recipients, body_text: str = None, body_html: str = None, attachments: list = None, from_addr: str = None):
-    """Send an email using SMTP. attachments is a list of tuples (filename, content_bytes, mime_type).
-
-    Recipients can be a string or list.
-    """
-    if isinstance(recipients, str):
-        recipients = [recipients]
-import os
-import smtplib
-import logging
-from email.message import EmailMessage
-from threading import Thread
-from typing import List, Tuple, Optional
-
-from flask import render_template
-
-logger = logging.getLogger(__name__)
-
-# Read SMTP config from environment variables
-SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
-SMTP_PORT = int(os.environ.get('SMTP_PORT', 25))
-SMTP_USER = os.environ.get('SMTP_USER')
-SMTP_PASS = os.environ.get('SMTP_PASS')
-SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'false').lower() in ('1', 'true', 'yes')
-SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').lower() in ('1', 'true', 'yes')
-DEFAULT_FROM = os.environ.get('ORG_EMAIL', 'no-reply@example.com')
-ORG_NAME = os.environ.get('ORG_NAME', '')
-
-# Optional Redis URL for RQ background queue. If not provided, fallback to threaded background send.
-REDIS_URL = os.environ.get('REDIS_URL')
-
-
+# No Redis/RQ support in this deployment; always use threaded background send.
 def _build_message(subject: str, recipients, body_text: Optional[str] = None, body_html: Optional[str] = None, attachments: Optional[List[Tuple[str, bytes, str]]] = None, from_addr: Optional[str] = None) -> EmailMessage:
     if isinstance(recipients, str):
         recipients = [recipients]
@@ -129,7 +102,10 @@ def _send_message(msg: EmailMessage) -> bool:
         if s and s.testing_mode and s.testing_email:
             original_to = msg['To']
             msg['X-Original-To'] = original_to
-            msg.replace_header('To', s.testing_email)
+            try:
+                msg.replace_header('To', s.testing_email)
+            except Exception:
+                msg['To'] = s.testing_email
 
         # Log recipients before sending (include original recipients if present)
         try:
@@ -141,18 +117,42 @@ def _send_message(msg: EmailMessage) -> bool:
         except Exception:
             logger.info('Sending email (subject=%s)', msg.get('Subject'))
 
+        # Determine explicit recipient list to pass to send_message.
+        # This avoids relying solely on msg headers (which some environments
+        # or transport layers may ignore) and ensures testing override is used.
+        if s and s.testing_mode and s.testing_email:
+            to_addrs = [s.testing_email]
+        else:
+            # extract addresses from the To header(s)
+            raw_to = msg.get_all('To', [])
+            # getaddresses expects a list of address-containing strings
+            parsed = getaddresses(raw_to)
+            to_addrs = [addr for name, addr in parsed if addr]
+
+        # Log what we're about to send and why — helpful for debugging testing mode
+        try:
+            logger.info('AppSettings testing_mode=%s testing_email=%s', bool(s.testing_mode) if s else None, (s.testing_email if s else None))
+            orig = msg.get('X-Original-To')
+            if orig:
+                logger.info('Prepared message To header=%s (X-Original-To=%s) subject=%s', msg.get('To'), orig, msg.get('Subject'))
+            else:
+                logger.info('Prepared message To header=%s subject=%s', msg.get('To'), msg.get('Subject'))
+            logger.info('Computed to_addrs=%s', to_addrs)
+        except Exception:
+            logger.exception('Failed while logging email send debug info')
+
         if smtp_use_ssl:
             with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
                 if smtp_user and smtp_pass:
                     server.login(smtp_user, smtp_pass)
-                server.send_message(msg)
+                server.send_message(msg, to_addrs=to_addrs)
         else:
             with smtplib.SMTP(smtp_host, smtp_port) as server:
                 if smtp_use_tls:
                     server.starttls()
                 if smtp_user and smtp_pass:
                     server.login(smtp_user, smtp_pass)
-                server.send_message(msg)
+                server.send_message(msg, to_addrs=to_addrs)
 
         # Confirm send
         logger.info('Email sent to %s (subject=%s)', msg['To'], msg['Subject'])
@@ -173,38 +173,25 @@ def send_email_with_pdf(recipient: str, subject: str, body_text: str, pdf_bytes:
     return send_email(subject=subject, recipients=[recipient], body_text=body_text, body_html=body_html, attachments=attachments, from_addr=from_addr)
 
 
-def _background_send(subject: str, recipients, body_text: str = None, body_html: str = None, attachments: list = None, from_addr: str = None):
-    # Simple threaded background sender for environments without Redis
-    try:
-        send_email(subject, recipients, body_text, body_html, attachments, from_addr)
-    except Exception:
-        logger.exception('Background email send failed')
+# _background_send removed — always build message in request thread and send in background thread
+
 
 
 def queue_email(subject: str, recipients, body_text: str = None, body_html: str = None, attachments: list = None, from_addr: str = None):
-    """Queue email for background sending. If REDIS_URL is configured RQ is used; otherwise falls back to a background thread.
+    """Queue email for background sending. Uses a background thread to send the prebuilt message.
 
     attachments: list of (filename, bytes, mime_type)
     """
-    # If Redis is configured, enqueue job via rq
-    if REDIS_URL:
-        try:
-            from redis import Redis
-            from rq import Queue
+    # Build the message in the current thread/context so AppSettings and
+    # environment-based overrides are read while the Flask app/context is active.
+    try:
+        msg = _build_message(subject, recipients, body_text, body_html, attachments, from_addr)
+    except Exception:
+        logger.exception('Failed to build email message')
+        return False
 
-            conn = Redis.from_url(REDIS_URL)
-            q = Queue(connection=conn)
-            # We enqueue the _send_message helper to avoid pickling Flask objects
-            msg = _build_message(subject, recipients, body_text, body_html, attachments, from_addr)
-            # enqueue a tiny wrapper that calls _send_message
-            q.enqueue(_send_message, msg)
-            logger.info('Email enqueued to Redis queue')
-            return True
-        except Exception:
-            logger.exception('Failed to enqueue email to Redis; falling back to threaded send')
-
-    # Fallback: run in a background thread so request isn't blocked
-    t = Thread(target=_background_send, args=(subject, recipients, body_text, body_html, attachments, from_addr), daemon=True)
+    # Send in a background thread so request isn't blocked.
+    t = Thread(target=_send_message, args=(msg,), daemon=True)
     t.start()
     return True
 

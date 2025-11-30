@@ -167,6 +167,9 @@ def add_employee():
                 flash(f'Error adding employee: {str(e)}', 'danger')
                 settings = get_org_settings()
                 return render_template('add_emp.html', form=form, org_name=settings['org_name'])
+        # For GET requests (or when the form isn't submitted/valid), render the add employee form
+        settings = get_org_settings()
+        return render_template('add_emp.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
 
