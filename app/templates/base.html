@@ -32,6 +32,15 @@
     @media (max-width: 575.98px) {
       .app-org-name { font-size: 1rem; margin: 4px 0; }
     }
+    /* profile pic in sidebar next to username */
+    .sidebar-profile-pic {
+      width: 24px;
+      height: 24px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
   </style>
   <script>
     // Theme logic: apply saved theme on load
@@ -243,12 +252,15 @@
 
       <li>
         <button onclick=toggleSubMenu(this) class="dropdown-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
           <span>
             {% if current_user.is_authenticated %}
-              <!-- {{ current_user.email.split('@')[0] }} -->
+              {% if current_user.profile_pic %}
+                {% set pic = current_user.profile_pic.split('/')[-1] %}
+                <img src="{{ url_for('profile_pic', filename=pic) }}" alt="Me" class="sidebar-profile-pic" onerror="this.style.display='none'" />
+              {% endif %}
               {{ current_user.firstname }}
             {% else %}
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
               Account
             {% endif %}
           </span>
@@ -263,7 +275,7 @@
                 <li class="{% if request.endpoint and request.endpoint.startswith('manage.activities') %}active{% endif %}"><a href="{{ url_for('manage.activities') }}">Activities</a></li>
                   <li class="{% if request.endpoint and request.endpoint.startswith('manage.settings') %}active{% endif %}"><a href="{{ url_for('manage.settings') }}">Org Settings</a></li>
               {% endif %}
-              <li class="{% if request.endpoint and request.endpoint.startswith('users.change_password') %}active{% endif %}"><a href="{{ url_for('users.change_password') }}">Change Password</a></li>
+              <li class="{% if request.endpoint and request.endpoint.startswith('users.change_password') %}active{% endif %}"><a href="{{ url_for('users.change_password') }}">My Profile</a></li>
               <li><a href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}
               <li class="{% if request.endpoint and request.endpoint.startswith('login') %}active{% endif %}"><a href="{{ url_for('login') }}">Login</a></li>
