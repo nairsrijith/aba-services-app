@@ -328,80 +328,52 @@ def delete_employee(employee_id):
 @employees_bp.route('/update/<int:employee_id>', methods=['GET', 'POST'])
 @login_required
 def update_employee(employee_id):
-    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
-        employee = Employee.query.get_or_404(employee_id)
-        form = UpdateEmployeeForm(obj=employee)
-        form.employee_id.data = str(employee_id)  # Set the employee_id field
-        form.position.choices = [(d.designation, d.designation) for d in Designation.query.all()]
-        form.state.choices = [("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),
-                            ("NB", "New Brunswick"), ("NL", "Newfoundland and Labrador"),
-                            ("NS", "Nova Scotia"), ("ON", "Ontario"), ("PE", "Prince Edward Island"),
-                            ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
-                            ("NU", "Nunavut"), ("YT", "Yukon")]
-
-        if form.validate_on_submit():
-            try:
-                # Set rba_number to None if position is not Behaviour Analyst
-                rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
-                
-                employee.firstname = form.firstname.data.title()
-                employee.lastname = form.lastname.data.title()
-                employee.position = form.position.data.title()
-                employee.rba_number = rba_number
-                # Keep previous email to find an existing user before we overwrite
-                previous_email = employee.email
-                employee.email = form.email.data
-                # Store digits-only phone number to match DB column
-                employee.cell = re.sub(r'\D', '', (form.cell.data or ''))
-                employee.address1 = form.address1.data.title()
-                employee.address2 = form.address2.data.title()
-                employee.city = form.city.data.title()
-                employee.state = form.state.data
-                employee.zipcode = form.zipcode.data.upper()
-                
-                # Update user_type based on position
-                employee.user_type = determine_user_type(form.position.data, employee.user_type)
-                
-                db.session.commit()
-                flash('Employee and associated user account updated successfully!', 'success')
-                return redirect(url_for('employees.list_employees'))
-            except Exception as e:
-                db.session.rollback()
-                flash('Error updating employee. Please check the form and try again.', 'danger')
-                settings = get_org_settings()
-                if form.validate_on_submit():
-                    try:
-                        # Set rba_number to None if position is not Behaviour Analyst
-                        rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
-                
-                        employee.firstname = form.firstname.data.title()
-                        employee.lastname = form.lastname.data.title()
-                        employee.position = form.position.data.title()
-                        employee.rba_number = rba_number
-                        # Keep previous email to find an existing user before we overwrite
-                        previous_email = employee.email
-                        employee.email = form.email.data
-                        # Store digits-only phone number to match DB column
-                        employee.cell = re.sub(r'\D', '', (form.cell.data or ''))
-                        employee.address1 = form.address1.data.title()
-                        employee.address2 = form.address2.data.title()
-                        employee.city = form.city.data.title()
-                        employee.state = form.state.data
-                        employee.zipcode = form.zipcode.data.upper()
-                
-                        # Update user_type based on position
-                        employee.user_type = determine_user_type(form.position.data, employee.user_type)
-                
-                        db.session.commit()
-                        flash('Employee and associated user account updated successfully!', 'success')
-                        return redirect(url_for('employees.list_employees'))
-                    except Exception as e:
-                        db.session.rollback()
-                        flash('Error updating employee. Please check the form and try again.', 'danger')
-                        return render_template('update_emp.html', form=form, employee=employee, org_name=settings['org_name'])
-                # GET or validation failed
-                return render_template('update_emp.html', form=form, employee=employee, org_name=settings['org_name'])
-    else:
+    # Permission check
+    if not (current_user.is_authenticated and current_user.user_type in ["admin", "super"]):
         abort(403)
+
+    employee = Employee.query.get_or_404(employee_id)
+    form = UpdateEmployeeForm(obj=employee)
+    form.employee_id.data = str(employee_id)
+    form.position.choices = [(d.designation, d.designation) for d in Designation.query.all()]
+    form.state.choices = [
+        ("AB", "Alberta"), ("BC", "British Columbia"), ("MB", "Manitoba"),
+        ("NB", "New Brunswick"), ("NL", "Newfoundland and Labrador"),
+        ("NS", "Nova Scotia"), ("ON", "Ontario"), ("PE", "Prince Edward Island"),
+        ("QC", "Quebec"), ("SK", "Saskatchewan"), ("NT", "Northwest Territories"),
+        ("NU", "Nunavut"), ("YT", "Yukon")
+    ]
+
+    settings = get_org_settings()
+
+    # Handle POST (form submission)
+    if form.validate_on_submit():
+        try:
+            rba_number = form.rba_number.data if form.position.data == 'Behaviour Analyst' else None
+
+            employee.firstname = form.firstname.data.title()
+            employee.lastname = form.lastname.data.title()
+            employee.position = form.position.data.title()
+            employee.rba_number = rba_number
+            previous_email = employee.email
+            employee.email = form.email.data
+            employee.cell = re.sub(r'\D', '', (form.cell.data or ''))
+            employee.address1 = form.address1.data.title()
+            employee.address2 = form.address2.data.title()
+            employee.city = form.city.data.title()
+            employee.state = form.state.data
+            employee.zipcode = form.zipcode.data.upper()
+            employee.user_type = determine_user_type(form.position.data, employee.user_type)
+
+            db.session.commit()
+            flash('Employee and associated user account updated successfully!', 'success')
+            return redirect(url_for('employees.list_employees'))
+        except Exception:
+            db.session.rollback()
+            flash('Error updating employee. Please check the form and try again.', 'danger')
+            return render_template('update_emp.html', form=form, employee=employee, org_name=settings['org_name'])
+
+    # For GET or when validation fails, render the update form
+    return render_template('update_emp.html', form=form, employee=employee, org_name=settings['org_name'])
 
 
