@@ -9,7 +9,7 @@ from datetime import date, timedelta, datetime
 from sqlalchemy import and_
 from flask_login import login_required, current_user
 from weasyprint import HTML
-from app.utils.email_utils import queue_email_with_pdf
+from app.utils.email_utils import queue_email_with_pdf, queue_email
 import os
 from app.utils.settings_utils import get_org_settings
 
@@ -607,6 +607,121 @@ def mark_paid(invoice_number):
         invoice.paid_date = paid_date
         invoice.payment_comments = payment_comments
         db.session.commit()
+        
+        # Send notification email to client parent about payment with invoice PDF attached
+        try:
+            client = Client.query.get(invoice.client_id)
+            settings = get_org_settings()
+            if client and client.parentemail:
+                # Generate invoice PDF
+                interventions = Intervention.query.filter_by(invoice_number=invoice_number).order_by(Intervention.date, Intervention.start_time).all()
+                
+                # Use invoice_items snapshot if available; otherwise fall back to calculating from current rates
+                if invoice.invoice_items:
+                    try:
+                        items = json.loads(invoice.invoice_items)
+                    except Exception:
+                        items = []
+                    items_map = {item.get('intervention_id'): item for item in items}
+                    for i in interventions:
+                        item = items_map.get(i.id)
+                        if item:
+                            i.rate = item.get('rate', 0)
+                            i.cost = item.get('cost', 0)
+                            i._snapshot = item
+                        else:
+                            from app.models import Activity
+                            activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
+                            category = activity_map.get(i.intervention_type, '').lower()
+                            if category == 'therapy':
+                                rate = client.cost_therapy
+                            elif category == 'supervision':
+                                rate = client.cost_supervision
+                            else:
+                                rate = 0
+                            i.rate = rate
+                            try:
+                                i.cost = float(i.duration) * float(rate)
+                            except Exception:
+                                i.cost = 0
+                
+                parent_name = getattr(client, 'parent_name', '')
+                address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
+                supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
+                supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+                supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
+                
+                logo_b64 = settings.get('logo_b64')
+                logo_url = settings.get('logo_url')
+                logo_file_uri = settings.get('logo_file_uri')
+                logo_web_path = settings.get('logo_web_path')
+                
+                html = render_template(
+                    'invoice_pdf.html',
+                    parent_name=parent_name,
+                    billing_address=address,
+                    client=client,
+                    invoice_number=invoice.invoice_number,
+                    invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
+                    payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
+                    date_from=invoice.date_from.strftime('%Y-%m-%d'),
+                    date_to=invoice.date_to.strftime('%Y-%m-%d'),
+                    supervisor_name=supervisor_name,
+                    supervisor_rba_number=supervisor_rba_number,
+                    status='Paid',
+                    paid_date=paid_date.strftime('%Y-%m-%d'),
+                    payment_comments=payment_comments,
+                    interventions=interventions,
+                    org_name=settings['org_name'],
+                    org_address=settings['org_address'],
+                    org_email=settings['org_email'],
+                    payment_email=settings['payment_email'],
+                    org_phone=settings['org_phone'],
+                    logo_b64=logo_b64,
+                    logo_url=logo_url,
+                    logo_path=logo_file_uri or logo_web_path,
+                    download_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                )
+                
+                pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+                
+                # Create filename for PDF attachment
+                download_time_str = datetime.now().strftime('%Y%m%d%H%M%S')
+                date_range_str = f"{invoice.date_from.strftime('%Y%m%d')}-{invoice.date_to.strftime('%Y%m%d')}"
+                first_three = client.firstname[:3].upper() if client.firstname else ''
+                last_three = client.lastname[:3].upper() if client.lastname else ''
+                client_name_code = f"{first_three}{last_three}"
+                pdf_filename = f"{invoice.invoice_number}_{date_range_str}_{client_name_code}_{download_time_str}.pdf"
+                
+                # Prepare email content
+                subject = f"{settings['org_name']} - Invoice {invoice.invoice_number} Payment Received"
+                body_text = render_template(
+                    'email/paid_invoice_email.txt',
+                    invoice=invoice,
+                    client=client,
+                    paid_date=paid_date.strftime('%Y-%m-%d'),
+                    org_name=settings['org_name']
+                )
+                body_html = render_template(
+                    'email/paid_invoice_email.html',
+                    invoice=invoice,
+                    client=client,
+                    paid_date=paid_date.strftime('%Y-%m-%d')
+                )
+                
+                # Send email with PDF attachment
+                queue_email_with_pdf(
+                    recipients=client.parentemail,
+                    subject=subject,
+                    body_text=body_text,
+                    body_html=body_html,
+                    pdf_bytes=pdf_bytes,
+                    filename=pdf_filename
+                )
+        except Exception as e:
+            # Log but don't fail the payment marking if email fails
+            current_app.logger.exception(f'Failed to send paid invoice email for {invoice_number}: {e}')
+        
         flash('Invoice marked as Paid.', 'success')
         return redirect(url_for('invoices.list_invoices'))
     else:

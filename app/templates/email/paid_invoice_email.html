@@ -1,0 +1,25 @@
+<html>
+  <body style="font-family: Arial, Helvetica, sans-serif; color: #222;">
+    <div style="max-width:700px;margin:0 auto;padding:20px;border:1px solid #eee;border-radius:6px;">
+      <h2 style="color:#2c3e50;">Invoice {{ invoice.invoice_number }} - Payment Received</h2>
+      <p>Dear {{ client.parentname }},</p>
+      <p>This is to confirm that invoice <strong>{{ invoice.invoice_number }}</strong> has been marked as paid.</p>
+      <table style="width:100%;border-collapse:collapse;margin:15px 0;">
+        <tr>
+          <td style="padding:8px;border:1px solid #eee;font-weight:bold;">Invoice Number</td>
+          <td style="padding:8px;border:1px solid #eee;">{{ invoice.invoice_number }}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px;border:1px solid #eee;font-weight:bold;">Amount</td>
+          <td style="padding:8px;border:1px solid #eee;text-align:right;">${{ '%.2f'|format(invoice.total_cost) }}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px;border:1px solid #eee;font-weight:bold;">Paid Date</td>
+          <td style="padding:8px;border:1px solid #eee;">{{ paid_date }}</td>
+        </tr>
+      </table>
+      <p>If you have any questions regarding this payment or need further assistance, please contact us.</p>
+      <p style="color:#888;font-size:0.9rem;">Thanks,<br>{{ current_org_name() }}</p>
+    </div>
+  </body>
+</html>

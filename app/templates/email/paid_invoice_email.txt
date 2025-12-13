@@ -1,0 +1,12 @@
+Dear {{ client.parentname }},
+
+This is to confirm that invoice {{ invoice.invoice_number }} has been marked as paid.
+
+Invoice Number: {{ invoice.invoice_number }}
+Amount: ${{ '%.2f'|format(invoice.total_cost) }}
+Paid Date: {{ paid_date }}
+
+If you have any questions regarding this payment, please contact us.
+
+Thanks,
+{{ org_name }}
