@@ -64,7 +64,7 @@
         {% elif logo_web_path %}
           <img src="{{ logo_web_path }}" alt="Current logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
         {% else %}
-          <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="No logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
+          <img src="{{ current_org_logo() }}" alt="No logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
         {% endif %}
       </div>
       <div style="flex:1;">

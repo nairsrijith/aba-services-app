@@ -47,7 +47,7 @@
             {% elif logo_file_uri %}
                 <img src="{{ logo_file_uri }}" alt="">
             {% else %}
-                <img src="{{ url_for('static', filename='images/favicon.ico') }}" alt="">
+                <img src="{{ current_org_logo() }}" alt="">
             {% endif %}
         </div>
         <div class="right">
