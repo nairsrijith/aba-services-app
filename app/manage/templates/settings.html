@@ -73,35 +73,19 @@
       </div>
     </div>
 
-    <h4 class="section-header">SMTP Settings</h4>
+    <h4 class="section-header">Gmail OAuth Settings</h4>
     <div class="row g-3">
-      <div class="col-md-8">
-        <label class="form-label">{{ form.smtp_host.label.text }}</label>
-        {{ form.smtp_host(class_='form-control') }}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">{{ form.smtp_port.label.text }}</label>
-        {{ form.smtp_port(class_='form-control') }}
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label">{{ form.smtp_user.label.text }}</label>
-        {{ form.smtp_user(class_='form-control') }}
+      <div class="col-12">
+        <label class="form-label">{{ form.gmail_client_id.label.text }}</label>
+        {{ form.gmail_client_id(class_='form-control') }}
       </div>
       <div class="col-md-6">
-        <label class="form-label">{{ form.smtp_pass.label.text }}</label>
-        {{ form.smtp_pass(class_='form-control') }}
+        <label class="form-label">{{ form.gmail_client_secret.label.text }}</label>
+        {{ form.gmail_client_secret(class_='form-control') }}
       </div>
-
-      <div class="col-12 d-flex gap-3 align-items-center">
-        <div class="form-check">
-          {{ form.smtp_use_tls(class_='form-check-input', id='smtp_use_tls') }}
-          {{ form.smtp_use_tls.label(class_='form-check-label ms-2') }}
-        </div>
-        <div class="form-check">
-          {{ form.smtp_use_ssl(class_='form-check-input', id='smtp_use_ssl') }}
-          {{ form.smtp_use_ssl.label(class_='form-check-label ms-2') }}
-        </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.gmail_refresh_token.label.text }}</label>
+        {{ form.gmail_refresh_token(class_='form-control') }}
       </div>
     </div>
 
@@ -120,17 +104,4 @@
   </form>
   </div>
 </div>
-<script>
-  // Make TLS/SSL checkboxes mutually exclusive in the UI
-  (function(){
-    try {
-      const tls = document.getElementById('smtp_use_tls');
-      const ssl = document.getElementById('smtp_use_ssl');
-      if (tls && ssl) {
-        tls.addEventListener('change', function(){ if (this.checked) ssl.checked = false; });
-        ssl.addEventListener('change', function(){ if (this.checked) tls.checked = false; });
-      }
-    } catch(e) { /* ignore in older browsers */ }
-  })();
-</script>
 {% endblock %}

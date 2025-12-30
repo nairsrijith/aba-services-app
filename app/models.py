@@ -429,12 +429,9 @@ class AppSettings(db.Model):
     payment_email = db.Column(db.String(120))
     logo_path = db.Column(db.String(500))
 
-    smtp_host = db.Column(db.String(200))
-    smtp_port = db.Column(db.Integer)
-    smtp_user = db.Column(db.String(200))
-    smtp_pass = db.Column(db.String(200))
-    smtp_use_tls = db.Column(db.Boolean, default=False)
-    smtp_use_ssl = db.Column(db.Boolean, default=False)
+    gmail_client_id = db.Column(db.String(200))
+    gmail_client_secret = db.Column(db.String(200))
+    gmail_refresh_token = db.Column(db.String(200))
 
     testing_mode = db.Column(db.Boolean, default=False)
     testing_email = db.Column(db.String(120))
@@ -456,12 +453,6 @@ class AppSettings(db.Model):
                 org_email=os.environ.get('ORG_EMAIL'),
                 payment_email=os.environ.get('PAYMENT_EMAIL'),
                 logo_path=os.environ.get('LOGO_PATH'),
-                smtp_host=os.environ.get('SMTP_HOST'),
-                smtp_port=int(os.environ.get('SMTP_PORT')) if os.environ.get('SMTP_PORT') else None,
-                smtp_user=os.environ.get('SMTP_USER'),
-                smtp_pass=os.environ.get('SMTP_PASS'),
-                smtp_use_tls=os.environ.get('SMTP_USE_TLS', 'false').lower() in ('1', 'true', 'yes'),
-                smtp_use_ssl=os.environ.get('SMTP_USE_SSL', 'false').lower() in ('1', 'true', 'yes'),
                 testing_mode=False,
                 testing_email=None
             )

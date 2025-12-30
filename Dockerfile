@@ -4,11 +4,14 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /myapp
 
-# system deps (libpq-dev for psycopg2, postgresql-client for pg_isready)
+# Install system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential gcc libpq-dev pkg-config postgresql-client\
+    build-essential gcc libpq-dev pkg-config postgresql-client \
     libglib2.0-0 libcairo2 libcairo2-dev gir1.2-gtk-3.0 \
     && rm -rf /var/lib/apt/lists/*
+
+# Make python3 the default python
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # install python deps
 COPY requirements.txt requirements.txt

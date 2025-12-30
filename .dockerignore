@@ -1,0 +1,14 @@
+db_data
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+README.md
+.env
+migrations/versions/*.pyc
+app/__pycache__
+app/*/__pycache__
+data
+assets
+.DS_Store

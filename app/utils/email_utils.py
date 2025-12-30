@@ -1,12 +1,16 @@
 import os
-import smtplib
 import logging
 from email.message import EmailMessage
 from email.utils import getaddresses
 from threading import Thread
 from typing import List, Tuple, Optional
+import base64
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
-from flask import render_template
+from flask import render_template, current_app
+from app import app
 
 logger = logging.getLogger(__name__)
 # Ensure logs are visible in container stdout/stderr when not otherwise configured
@@ -16,13 +20,7 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-# Read SMTP config from environment variables
-SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
-SMTP_PORT = int(os.environ.get('SMTP_PORT', 25))
-SMTP_USER = os.environ.get('SMTP_USER')
-SMTP_PASS = os.environ.get('SMTP_PASS')
-SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'false').lower() in ('1', 'true', 'yes')
-SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').lower() in ('1', 'true', 'yes')
+# Read configuration from environment variables
 DEFAULT_FROM = os.environ.get('ORG_EMAIL', 'no-reply@example.com')
 ORG_NAME = os.environ.get('ORG_NAME', '')
 
@@ -82,21 +80,53 @@ def _build_message(subject: str, recipients, body_text: Optional[str] = None, bo
     return msg
 
 
+def _send_via_gmail_api(msg: EmailMessage, settings) -> bool:
+    try:
+        # Log recipients before sending (include original recipients if present)
+        try:
+            orig = msg.get('X-Original-To')
+            if orig:
+                logger.info('Sending email via Gmail API to %s (original: %s) subject=%s', msg['To'], orig, msg['Subject'])
+            else:
+                logger.info('Sending email via Gmail API to %s subject=%s', msg['To'], msg['Subject'])
+        except Exception:
+            logger.info('Sending email via Gmail API (subject=%s)', msg.get('Subject'))
+
+        creds = Credentials(
+            token=None,
+            refresh_token=settings.gmail_refresh_token,
+            token_uri='https://oauth2.googleapis.com/token',
+            client_id=settings.gmail_client_id,
+            client_secret=settings.gmail_client_secret,
+            scopes=['https://www.googleapis.com/auth/gmail.send']
+        )
+        service = build('gmail', 'v1', credentials=creds)
+
+        # Encode the message
+        raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+        message = {'raw': raw_message}
+
+        # Send the message
+        sent_message = service.users().messages().send(userId='me', body=message).execute()
+        logger.info('Email sent via Gmail API, message ID: %s', sent_message['id'])
+        return True
+    except HttpError as e:
+        logger.exception('Failed to send email via Gmail API: %s', e)
+        return False
+    except Exception as e:
+        logger.exception('Failed to send email via Gmail API: %s', e)
+        return False
+
+
 def _send_message(msg: EmailMessage) -> bool:
     try:
-        # Allow AppSettings to override SMTP configuration and enable testing mode
+        # Allow AppSettings to override configuration and enable testing mode
         try:
             from app.models import AppSettings
             s = AppSettings.get()
         except Exception:
             s = None
-
-        smtp_host = s.smtp_host if s and s.smtp_host else SMTP_HOST
-        smtp_port = int(s.smtp_port) if s and s.smtp_port else SMTP_PORT
-        smtp_user = s.smtp_user if s and s.smtp_user else SMTP_USER
-        smtp_pass = s.smtp_pass if s and s.smtp_pass else SMTP_PASS
-        smtp_use_tls = bool(s.smtp_use_tls) if s and s.smtp_use_tls is not None else SMTP_USE_TLS
-        smtp_use_ssl = bool(s.smtp_use_ssl) if s and s.smtp_use_ssl is not None else SMTP_USE_SSL
 
         # If testing mode is enabled, rewrite recipients to testing email and annotate
         if s and s.testing_mode and s.testing_email:
@@ -107,58 +137,15 @@ def _send_message(msg: EmailMessage) -> bool:
             except Exception:
                 msg['To'] = s.testing_email
 
-        # Log recipients before sending (include original recipients if present)
-        try:
-            orig = msg.get('X-Original-To')
-            if orig:
-                logger.info('Sending email to %s (original: %s) subject=%s', msg['To'], orig, msg['Subject'])
-            else:
-                logger.info('Sending email to %s subject=%s', msg['To'], msg['Subject'])
-        except Exception:
-            logger.info('Sending email (subject=%s)', msg.get('Subject'))
+        # Use Gmail API for sending emails
+        if not s or not s.gmail_client_id or not s.gmail_client_secret or not s.gmail_refresh_token:
+            logger.error('Gmail OAuth not configured. Please set Gmail OAuth credentials in app settings.')
+            return False
 
-        # Determine explicit recipient list to pass to send_message.
-        # This avoids relying solely on msg headers (which some environments
-        # or transport layers may ignore) and ensures testing override is used.
-        if s and s.testing_mode and s.testing_email:
-            to_addrs = [s.testing_email]
-        else:
-            # extract addresses from the To header(s)
-            raw_to = msg.get_all('To', [])
-            # getaddresses expects a list of address-containing strings
-            parsed = getaddresses(raw_to)
-            to_addrs = [addr for name, addr in parsed if addr]
+        return _send_via_gmail_api(msg, s)
 
-        # Log what we're about to send and why — helpful for debugging testing mode
-        try:
-            logger.info('AppSettings testing_mode=%s testing_email=%s', bool(s.testing_mode) if s else None, (s.testing_email if s else None))
-            orig = msg.get('X-Original-To')
-            if orig:
-                logger.info('Prepared message To header=%s (X-Original-To=%s) subject=%s', msg.get('To'), orig, msg.get('Subject'))
-            else:
-                logger.info('Prepared message To header=%s subject=%s', msg.get('To'), msg.get('Subject'))
-            logger.info('Computed to_addrs=%s', to_addrs)
-        except Exception:
-            logger.exception('Failed while logging email send debug info')
-
-        if smtp_use_ssl:
-            with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
-                if smtp_user and smtp_pass:
-                    server.login(smtp_user, smtp_pass)
-                server.send_message(msg, to_addrs=to_addrs)
-        else:
-            with smtplib.SMTP(smtp_host, smtp_port) as server:
-                if smtp_use_tls:
-                    server.starttls()
-                if smtp_user and smtp_pass:
-                    server.login(smtp_user, smtp_pass)
-                server.send_message(msg, to_addrs=to_addrs)
-
-        # Confirm send
-        logger.info('Email sent to %s (subject=%s)', msg['To'], msg['Subject'])
-        return True
     except Exception as e:
-        logger.exception('Failed to send email to %s: %s', msg['To'], e)
+        logger.exception('Failed to send email: %s', e)
         return False
 
 
@@ -191,7 +178,11 @@ def queue_email(subject: str, recipients, body_text: str = None, body_html: str 
         return False
 
     # Send in a background thread so request isn't blocked.
-    t = Thread(target=_send_message, args=(msg,), daemon=True)
+    def send_in_thread(msg):
+        with app.app_context():
+            _send_message(msg)
+
+    t = Thread(target=send_in_thread, args=(msg,), daemon=True)
     t.start()
     return True
 

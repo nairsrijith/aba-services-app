@@ -27,29 +27,11 @@ class SettingsForm(FlaskForm):
     payment_email = StringField('Payment Email', validators=[length(max=120)])
     logo_file = FileField('Organization Logo', validators=[FileAllowed(list(ALLOWED_IMAGE_EXT), 'Images only')])
 
-    smtp_host = StringField('SMTP Host', validators=[length(max=200)])
-    smtp_port = IntegerField('SMTP Port')
-    smtp_user = StringField('SMTP User', validators=[length(max=200)])
-    smtp_pass = PasswordField('SMTP Password')
-    smtp_use_tls = BooleanField('Use TLS')
-    smtp_use_ssl = BooleanField('Use SSL')
+    gmail_client_id = StringField('Gmail OAuth Client ID', validators=[length(max=200)])
+    gmail_client_secret = PasswordField('Gmail OAuth Client Secret')
+    gmail_refresh_token = PasswordField('Gmail OAuth Refresh Token')
 
     testing_mode = BooleanField('Enable Email Testing Mode')
     testing_email = StringField('Testing Email Address', validators=[length(max=120)])
 
     submit = SubmitField('Save Settings')
-
-    def validate(self, **kwargs):
-        # first run the default validators
-        rv = super().validate(**kwargs)
-        if not rv:
-            return False
-
-        # enforce mutual exclusivity for TLS vs SSL
-        if bool(self.smtp_use_tls.data) and bool(self.smtp_use_ssl.data):
-            msg = 'Only one of TLS or SSL may be selected.'
-            self.smtp_use_tls.errors.append(msg)
-            self.smtp_use_ssl.errors.append(msg)
-            return False
-
-        return True

@@ -8,3 +8,4 @@ data/*
 .vscode
 .git
 app/static/images/logo.png
+.venv/

@@ -106,12 +106,9 @@ def settings():
         form.org_phone.data = settings.org_phone
         form.org_email.data = settings.org_email
         form.payment_email.data = settings.payment_email
-        form.smtp_host.data = settings.smtp_host
-        form.smtp_port.data = settings.smtp_port
-        form.smtp_user.data = settings.smtp_user
-        form.smtp_pass.data = settings.smtp_pass
-        form.smtp_use_tls.data = bool(settings.smtp_use_tls)
-        form.smtp_use_ssl.data = bool(settings.smtp_use_ssl)
+        form.gmail_client_id.data = settings.gmail_client_id
+        form.gmail_client_secret.data = settings.gmail_client_secret
+        form.gmail_refresh_token.data = settings.gmail_refresh_token
         form.testing_mode.data = bool(settings.testing_mode)
         form.testing_email.data = settings.testing_email
 
@@ -124,14 +121,11 @@ def settings():
         settings.org_phone = form.org_phone.data or None
         settings.org_email = form.org_email.data or None
         settings.payment_email = form.payment_email.data or None
-        settings.smtp_host = form.smtp_host.data or None
-        settings.smtp_port = int(form.smtp_port.data) if form.smtp_port.data else None
-        settings.smtp_user = form.smtp_user.data or None
-        # only overwrite password if a new one is provided
-        if form.smtp_pass.data:
-            settings.smtp_pass = form.smtp_pass.data
-        settings.smtp_use_tls = bool(form.smtp_use_tls.data)
-        settings.smtp_use_ssl = bool(form.smtp_use_ssl.data)
+        settings.gmail_client_id = form.gmail_client_id.data or None
+        if form.gmail_client_secret.data:
+            settings.gmail_client_secret = form.gmail_client_secret.data
+        if form.gmail_refresh_token.data:
+            settings.gmail_refresh_token = form.gmail_refresh_token.data
         settings.testing_mode = bool(form.testing_mode.data)
         settings.testing_email = form.testing_email.data or None
 
