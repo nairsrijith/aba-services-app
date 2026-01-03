@@ -345,7 +345,7 @@
 
   <main>
   {% if current_user.is_authenticated and testing_mode %}
-    <div class="alert alert-warning text-center m-0" role="alert" style="border-radius:0;">
+    <div class="alert alert-warning text-center mb-1" role="alert" style="border-radius:0;">
       <strong>Testing Mode:</strong>
       Emails will be sent to <code>{{ testing_email or 'the configured test email' }}</code>
       instead of client or employee addresses.
