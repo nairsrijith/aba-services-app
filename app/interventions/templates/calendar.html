@@ -33,21 +33,15 @@
   .fc-header-toolbar {
     margin: 0 0 1.5rem 0 !important;
     padding: 1rem !important;
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6 !important;
-    border-radius: 8px !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
     flex-wrap: wrap !important;
     gap: 1rem !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
     color: #222533 !important;
   }
   
   html.dark-mode .fc-header-toolbar {
-    background-color: #272836 !important;
-    border-color: #444 !important;
     color: #e6e6ef !important;
   }
   
@@ -490,8 +484,8 @@ function applyCalendarStyles() {
   style.textContent = `
     .fc { background: transparent !important; color: #222533 !important; }
     html.dark-mode .fc { color: #e6e6ef !important; }
-    .fc-header-toolbar { background: #ffffff !important; border: 1px solid #dee2e6 !important; color: #222533 !important; }
-    html.dark-mode .fc-header-toolbar { background: #272836 !important; border-color: #444 !important; color: #e6e6ef !important; }
+    .fc-header-toolbar { color: #222533 !important; }
+    html.dark-mode .fc-header-toolbar { color: #e6e6ef !important; }
     .fc-toolbar-title { color: #222533 !important; font-weight: 700 !important; font-size: 1.75rem !important; }
     html.dark-mode .fc-toolbar-title { color: #e6e6ef !important; }
     .fc-button { background: #ffffff !important; color: #222533 !important; border: 1px solid #dee2e6 !important; }
@@ -564,18 +558,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Function to apply inline styles to rendered elements
   function applyInlineStyles() {
-    // Toolbar, title, and button styles are now handled by CSS
-    // Only apply styles to dynamically created elements that CSS can't reach
-
-    // Apply to column headers (these may be dynamically created)
-    document.querySelectorAll('.fc-col-header-cell').forEach(cell => {
-      cell.style.cssText = 'background: #f8f9fa !important; color: #222533 !important; border: 1px solid #dee2e6 !important; font-weight: 700 !important;';
-      if (document.documentElement.classList.contains('dark-mode')) {
-        cell.style.backgroundColor = '#1f2028 !important';
-        cell.style.color = '#e6e6ef !important';
-        cell.style.borderColor = '#333 !important';
-      }
-    });
     
     // Apply to day numbers
     document.querySelectorAll('.fc-daygrid-day-number').forEach(day => {
@@ -723,6 +705,8 @@ document.addEventListener('DOMContentLoaded', function() {
       },
       contentHeight: 'auto',
       eventDisplay: 'block',
+      eventOverlap: false,
+      slotEventOverlap: false,
       eventContent: function(arg) {
         return {
           html: '<div class="fc-event-content">' + arg.event.title + '</div>'
