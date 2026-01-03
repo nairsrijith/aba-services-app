@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="container-fluid py-2">
+<div class="container-fluid col-12">
     <h2>Users</h2>
     <form method="get" class="mb-3 d-flex align-items-center">
         <label for="per_page" class="me-2">Rows per page:</label>
@@ -55,6 +55,11 @@
                             {% else %}
                                 <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Lock User">
                                     Lock
+                                </button>
+                            {% endif %}
+                            {% if user.activation_key %}
+                                <button class="btn btn-info btn-sm" title="Send Activation Email" data-action="{{ url_for('users.send_activation_email', id=user.id) }}">
+                                    Send Activation
                                 </button>
                             {% endif %}
                             <form id="roleForm-{{ user.id }}" method="POST" style="display:none;"></form>

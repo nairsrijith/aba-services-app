@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row justify-content-center">
-      <div class="col-12 col-md-10 col-lg-8">
-        <h3 class="mb-4 text-center">My Profile</h3>
+<div class="container-fluid">
+    <div class="col-12 col-md-10 col-lg-8">
+        <h3>My Profile</h3>
         <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
           <div class="row align-items-center g-2 mb-2">
@@ -52,7 +51,6 @@
             <button type="submit" name="action" value="update_password" class="btn btn-primary">Update Password</button>
           </div>
         </form>
-      </div>
     </div>
 </div>
 {% endblock %}
