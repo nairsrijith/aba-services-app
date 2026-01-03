@@ -9,6 +9,8 @@ import json
 from werkzeug.utils import secure_filename
 import shutil
 from datetime import datetime
+import csv
+import io
 
 
 interventions_bp = Blueprint('interventions', __name__, template_folder='templates')
@@ -647,3 +649,183 @@ def get_activities(employee_id):
 def get_file(client_id, filename):
     client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
     return send_from_directory(client_folder, filename, as_attachment=True)
+
+
+@interventions_bp.route('/download_template')
+@login_required
+def download_template():
+    # Create CSV template
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Client Name', 'Employee Name', 'Intervention Type', 'Date', 'Start Time', 'End Time'])
+    # Add a sample row
+    writer.writerow(['John Doe', 'Jane Smith', 'Therapy', '2023-10-01', '09:00', '10:00'])
+    
+    output.seek(0)
+    return app.response_class(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=intervention_template.csv'}
+    )
+
+
+@interventions_bp.route('/bulk_upload', methods=['POST'])
+@login_required
+def bulk_upload():
+    if current_user.is_authenticated:
+        # Check permissions - only admin, super, or supervisors can bulk upload
+        if current_user.user_type not in ['admin', 'super', 'supervisor']:
+            flash('You do not have permission to perform bulk uploads.', 'danger')
+            return redirect(url_for('interventions.list_interventions'))
+        
+        file = request.files.get('bulk_file')
+        skip_errors = request.form.get('skip_errors') == 'on'
+        
+        if not file or file.filename == '':
+            flash('No file selected.', 'danger')
+            return redirect(url_for('interventions.list_interventions'))
+        
+        if not file.filename.endswith('.csv'):
+            flash('Only CSV files are allowed.', 'danger')
+            return redirect(url_for('interventions.list_interventions'))
+        
+        # Read CSV
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        csv_reader = csv.DictReader(stream)
+        
+        success_count = 0
+        error_count = 0
+        errors = []
+        
+        for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 since row 1 is header
+            try:
+                # Parse row
+                client_name = row.get('Client Name', '').strip()
+                employee_name = row.get('Employee Name', '').strip()
+                intervention_type = row.get('Intervention Type', '').strip()
+                date_str = row.get('Date', '').strip()
+                start_time_str = row.get('Start Time', '').strip()
+                end_time_str = row.get('End Time', '').strip()
+                
+                # Validate required fields
+                if not all([client_name, employee_name, intervention_type, date_str, start_time_str, end_time_str]):
+                    raise ValueError("Missing required fields")
+                
+                # Parse date and times
+                try:
+                    date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    start_time = datetime.strptime(start_time_str, '%H:%M').time()
+                    end_time = datetime.strptime(end_time_str, '%H:%M').time()
+                except ValueError:
+                    raise ValueError("Invalid date or time format")
+                
+                # Calculate duration
+                start_dt = datetime.combine(date, start_time)
+                end_dt = datetime.combine(date, end_time)
+                if end_dt <= start_dt:
+                    raise ValueError("End time must be after start time")
+                duration = (end_dt - start_dt).total_seconds() / 3600
+                
+                # Find client
+                name_parts = client_name.split()
+                if len(name_parts) < 2:
+                    raise ValueError("Client name must have at least first and last name")
+                
+                client = None
+                # Try different ways to split the name for matching
+                for i in range(1, len(name_parts)):
+                    potential_firstname = ' '.join(name_parts[:i])
+                    potential_lastname = ' '.join(name_parts[i:])
+                    client = Client.query.filter(
+                        db.func.lower(Client.firstname) == potential_firstname.lower(),
+                        db.func.lower(Client.lastname) == potential_lastname.lower(),
+                        Client.is_active == True
+                    ).first()
+                    if client:
+                        break
+                
+                if not client:
+                    raise ValueError(f"Client '{client_name}' not found or inactive")
+                
+                # Find employee
+                emp_parts = employee_name.split()
+                if len(emp_parts) < 2:
+                    raise ValueError("Employee name must have at least first and last name")
+                
+                employee = None
+                # Try different ways to split the name for matching
+                for i in range(1, len(emp_parts)):
+                    potential_firstname = ' '.join(emp_parts[:i])
+                    potential_lastname = ' '.join(emp_parts[i:])
+                    employee = Employee.query.filter(
+                        db.func.lower(Employee.firstname) == potential_firstname.lower(),
+                        db.func.lower(Employee.lastname) == potential_lastname.lower(),
+                        Employee.is_active == True
+                    ).first()
+                    if employee:
+                        break
+                
+                if not employee:
+                    raise ValueError(f"Employee '{employee_name}' not found or inactive")
+                
+                # Check intervention type exists and matches employee position
+                intervention_type_clean = ' '.join(intervention_type.strip().split())  # Normalize whitespace and strip
+                activity = Activity.query.filter(
+                    Activity.activity_name.ilike(intervention_type_clean)
+                ).first()
+                if not activity:
+                    # Get all available activities for better error message
+                    all_activities = [a.activity_name for a in Activity.query.all()]
+                    raise ValueError(f"Intervention type '{intervention_type}' not found. Available types: {', '.join(all_activities)}")
+                
+                # Check if activity category matches employee position
+                if employee.position.lower() == 'behaviour analyst' and activity.activity_category.lower() != 'supervision':
+                    raise ValueError(f"Behaviour Analyst can only perform Supervision activities")
+                elif employee.position.lower() in ['therapist', 'senior therapist'] and activity.activity_category.lower() != 'therapy':
+                    raise ValueError(f"{employee.position} can only perform Therapy activities")
+                
+                # Check permissions based on user type
+                if current_user.user_type == 'supervisor':
+                    emp = Employee.query.filter_by(email=current_user.email).first()
+                    if not emp or client.supervisor_id != emp.id:
+                        raise ValueError("Supervisor can only upload sessions for their clients")
+                
+                # Check for overlapping sessions
+                if Intervention.has_overlap(employee.id, date, start_time, end_time):
+                    raise ValueError(f"Schedule conflict for {employee_name} on {date_str}")
+                
+                # Create intervention
+                new_intervention = Intervention(
+                    client_id=client.id,
+                    employee_id=employee.id,
+                    intervention_type=activity.activity_name,
+                    date=date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    duration=round(duration, 2),
+                    invoiced=False,
+                    invoice_number=None,
+                    file_names=json.dumps([])
+                )
+                
+                db.session.add(new_intervention)
+                success_count += 1
+                
+            except Exception as e:
+                error_msg = f"Row {row_num}: {str(e)}"
+                errors.append(error_msg)
+                error_count += 1
+                if not skip_errors:
+                    db.session.rollback()
+                    flash(f'Error processing row {row_num}: {str(e)}', 'danger')
+                    return redirect(url_for('interventions.list_interventions'))
+        
+        if success_count > 0:
+            db.session.commit()
+            flash(f'Successfully uploaded {success_count} sessions.', 'success')
+        if error_count > 0:
+            flash(f'Failed to process {error_count} rows: ' + '; '.join(errors[:5]), 'warning')  # Show first 5 errors
+        
+        return redirect(url_for('interventions.list_interventions'))
+    else:
+        abort(403)
