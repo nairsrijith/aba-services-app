@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Calendar View - {{ org_name }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<style>
+  /*** CRITICAL: FORCE FULLCALENDAR STYLING ***/
+  
+  /* Week view specific - fixed height for 8 hours */
+  .fc-timegrid .fc-view-harness {
+    height: 500px !important;
+  }
+  
+  .fc-timegrid {
+    flex-grow: 1 !important;
+  }
+  
+  .fc {
+    background: transparent !important;
+    color: #222533 !important;
+    font-family: Poppins, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif !important;
+  }
+  
+  html.dark-mode .fc {
+    color: #e6e6ef !important;
+  }
+  
+  /* TOOLBAR - Header with navigation */
+  .fc-header-toolbar {
+    margin: 0 0 1.5rem 0 !important;
+    padding: 1rem !important;
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    color: #222533 !important;
+  }
+  
+  html.dark-mode .fc-header-toolbar {
+    background-color: #272836 !important;
+    border-color: #444 !important;
+    color: #e6e6ef !important;
+  }
+  
+  .fc-toolbar-title {
+    color: #222533 !important;
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+  }
+  
+  html.dark-mode .fc-toolbar-title {
+    color: #e6e6ef !important;
+  }
+  
+  .fc-toolbar-chunk {
+    display: flex !important;
+    gap: 0.5rem !important;
+    flex-wrap: wrap !important;
+  }
+  
+  /* Buttons */
+  .fc-button {
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    color: #222533 !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    padding: 0.5rem 1rem !important;
+    cursor: pointer !important;
+    font-size: 0.9rem !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  html.dark-mode .fc-button {
+    background-color: #2a2b34 !important;
+    border-color: #444 !important;
+    color: #e6e6ef !important;
+  }
+  
+  .fc-button:hover:not(:disabled) {
+    background-color: #e9ecef !important;
+    border-color: #adb5bd !important;
+  }
+  
+  html.dark-mode .fc-button:hover:not(:disabled) {
+    background-color: #222533 !important;
+    border-color: #626986 !important;
+  }
+  
+  .fc-button.fc-button-active, .fc-button:not(:disabled).fc-button-active {
+    background-color: #1998a8 !important;
+    border-color: #1998a8 !important;
+    color: white !important;
+  }
+  
+  .fc-button-primary:not(:disabled).fc-button-active {
+    background-color: #1998a8 !important;
+    border-color: #1998a8 !important;
+  }
+  
+  .fc-col-content, .fc-timegrid-body {
+    background: transparent !important;
+  }
+  
+  /* Column Headers - Day names */
+  .fc-col-header-cell {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    color: #222533 !important;
+    font-weight: 700 !important;
+    padding: 12px 4px !important;
+  }
+  
+  html.dark-mode .fc-col-header-cell {
+    background-color: #1f2028 !important;
+    border-color: #333 !important;
+    color: #e6e6ef !important;
+  }
+  
+  .fc-col-time {
+    width: auto !important;
+  }
+  
+  .fc-timegrid-divider {
+    border-color: #dee2e6 !important;
+  }
+  
+  html.dark-mode .fc-timegrid-divider {
+    border-color: #444 !important;
+  }
+  
+  /* EVENTS - Session Cards */
+  .fc-event {
+    cursor: pointer !important;
+    border-radius: 6px !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+    list-style: none !important;
+  }
+  
+  .fc-event:before,
+  .fc-event:after {
+    display: none !important;
+  }
+  
+  .fc-event-main {
+    padding: 4px 6px !important;
+  }
+  
+  .fc-event-title {
+    font-weight: 700 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 1.05rem !important;
+    color: white !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
+    line-height: 1.4 !important;
+  }
+  
+  .fc-event-content {
+    line-height: 1.3 !important;
+    white-space: normal !important;
+  }
+  
+  .fc-event-content br {
+    display: block !important;
+    margin-bottom: 2px !important;
+  }
+  
+  /* Invoice Status Events - Match session list page colors */
+  .fc-event.invoice-draft {
+    background-color: #0dcaf0 !important;
+    border-color: #0dcaf0 !important;
+    background: #0dcaf0 !important;
+  }
+  
+  .fc-event.invoice-draft .fc-event-main {
+    background: transparent !important;
+  }
+  
+  .fc-event.invoice-draft .fc-event-title {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5) !important;
+  }
+  
+  /* Sent Events - Orange */
+  .fc-event.invoice-sent {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    background: #ffc107 !important;
+  }
+  
+  .fc-event.invoice-sent .fc-event-main {
+    background: transparent !important;
+  }
+  
+  .fc-event.invoice-sent .fc-event-title {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5) !important;
+  }
+  
+  /* Paid Events - Green */
+  .fc-event.invoice-paid {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+    background: #198754 !important;
+  }
+  
+  .fc-event.invoice-paid .fc-event-main {
+    background: transparent !important;
+  }
+  
+  .fc-event.invoice-paid .fc-event-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* Not Invoiced Events - Gray */
+  .fc-event.not-invoiced {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    background: #6c757d !important;
+  }
+  
+  .fc-event.not-invoiced .fc-event-main {
+    background: transparent !important;
+  }
+  
+  .fc-event.not-invoiced .fc-event-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* Other invoice status - Gray */
+  .fc-event.invoice-other {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    background: #6c757d !important;
+  }
+  
+  .fc-event.invoice-other .fc-event-main {
+    background: transparent !important;
+  }
+  
+  .fc-event.invoice-other .fc-event-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  .fc-daygrid-event {
+    border-radius: 6px !important;
+    margin: 2px !important;
+    padding: 2px 3px !important;
+  }
+  
+  .fc-timegrid-event {
+    border-radius: 6px !important;
+  }
+  
+  .fc-daygrid-event .fc-event-title {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+  }
+  
+  /* Filter section */
+  .filter-section {
+    background: #ffffff;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #dee2e6;
+  }
+  
+  html.dark-mode .filter-section {
+    background: #272836;
+    border-color: #444;
+  }
+  
+  .calendar-container {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    display: block;
+    width: 100%;
+  }
+  
+  /* Custom scrollbar */
+  .calendar-scroll-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .calendar-scroll-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-radius: 4px;
+  }
+  
+  html.dark-mode .calendar-scroll-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  .calendar-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-radius: 4px;
+  }
+  
+  html.dark-mode .calendar-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  .calendar-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.4) !important;
+  }
+  
+  html.dark-mode .calendar-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4) !important;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .calendar-scroll-container {
+      max-height: 70vh !important;
+      padding: 0.5rem !important;
+    }
+    
+    .fc-header-toolbar {
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+      padding: 0.75rem !important;
+    }
+    
+    .fc-toolbar-chunk {
+      justify-content: center !important;
+    }
+    
+    .fc-toolbar-title {
+      font-size: 1.3rem !important;
+    }
+  }
+  
+  /* Modal styling */
+  .modal-content {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+  }
+  
+  html.dark-mode .modal-content {
+    background: #272836;
+    border-color: #444;
+    color: #e6e6ef;
+  }
+  
+  .modal-header {
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
+  }
+  
+  html.dark-mode .modal-header {
+    border-bottom-color: #444;
+    background: #272836;
+  }
+  
+  .modal-footer {
+    border-top: 1px solid #dee2e6;
+    background: #f8f9fa;
+  }
+  
+  html.dark-mode .modal-footer {
+    border-top-color: #444;
+    background: #272836;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <h2>Session Calendar</h2>
+      
+      <!-- Filter Section -->
+      <div class="filter-section">
+        <form id="filterForm" class="row g-3">
+          <div class="col-md-3">
+            <label for="view_type" class="form-label">View Type</label>
+            <select class="form-select" id="view_type" name="view_type">
+              <option value="client" {% if view_type == 'client' %}selected{% endif %}>Client View</option>
+              <option value="employee" {% if view_type == 'employee' %}selected{% endif %}>Employee View</option>
+            </select>
+          </div>
+          
+          <div class="col-md-3">
+            <label for="entity_id" class="form-label" id="entity_label">
+              {% if view_type == 'client' %}Select Client{% else %}Select Employee{% endif %}
+            </label>
+            <select class="form-select" id="entity_id" name="entity_id" required>
+              <option value="">Choose...</option>
+              {% if view_type == 'client' %}
+                {% for client in clients %}
+                  <option value="{{ client.id }}" {% if entity_id == client.id %}selected{% endif %}>
+                    {{ client.firstname }} {{ client.lastname }}
+                  </option>
+                {% endfor %}
+              {% else %}
+                {% for employee in employees %}
+                  <option value="{{ employee.id }}" {% if entity_id == employee.id %}selected{% endif %}>
+                    {{ employee.firstname }} {{ employee.lastname }}
+                  </option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+          
+          <div class="col-md-3">
+            <label for="view_mode" class="form-label">Calendar View</label>
+            <select class="form-select" id="view_mode" name="view">
+              <option value="month" {% if view_mode == 'month' %}selected{% endif %}>Month View</option>
+              <option value="week" {% if view_mode == 'week' %}selected{% endif %}>Week View</option>
+            </select>
+          </div>
+          
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
+            <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+          </div>
+        </form>
+      </div>
+      <br>
+      <!-- Calendar Container -->
+      <div class="calendar-container">
+        <div class="calendar-scroll-container">
+          <div id="calendar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Event Details Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Session Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="eventDetails">
+        <!-- Event details will be populated here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <a id="editLink" href="#" class="btn btn-primary">Edit Session</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+<script>
+// Force apply all calendar styles via JavaScript
+function applyCalendarStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .fc { background: transparent !important; color: #222533 !important; }
+    html.dark-mode .fc { color: #e6e6ef !important; }
+    .fc-header-toolbar { background: #ffffff !important; border: 1px solid #dee2e6 !important; color: #222533 !important; }
+    html.dark-mode .fc-header-toolbar { background: #272836 !important; border-color: #444 !important; color: #e6e6ef !important; }
+    .fc-toolbar-title { color: #222533 !important; font-weight: 700 !important; font-size: 1.75rem !important; }
+    html.dark-mode .fc-toolbar-title { color: #e6e6ef !important; }
+    .fc-button { background: #ffffff !important; color: #222533 !important; border: 1px solid #dee2e6 !important; }
+    html.dark-mode .fc-button { background: #272836 !important; color: #e6e6ef !important; border-color: #444 !important; }
+    .fc-button:hover { background: #e9ecef !important; }
+    html.dark-mode .fc-button:hover { background: #222533 !important; }
+    .fc-button-active { background: #1998a8 !important; border-color: #1998a8 !important; color: white !important; }
+    .fc-col-header-cell { background: #f8f9fa !important; color: #222533 !important; border: 1px solid #dee2e6 !important; font-weight: 700 !important; }
+    html.dark-mode .fc-col-header-cell { background: #1f2028 !important; color: #e6e6ef !important; border-color: #333 !important; }
+    .fc-event { cursor: pointer !important; border-radius: 6px !important; font-weight: 600 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; }
+    .fc-event.invoice-draft { background: #0dcaf0 !important; border: none !important; }
+    .fc-event.invoice-draft .fc-event-title { color: #000000 !important; font-weight: 600 !important; }
+    .fc-event.invoice-draft .fc-event-time { color: #000000 !important; font-weight: 600 !important; }
+    .fc-event.invoice-sent { background: #ffc107 !important; border: none !important; }
+    .fc-event.invoice-sent .fc-event-title { color: #000000 !important; font-weight: 600 !important; }
+    .fc-event.invoice-sent .fc-event-time { color: #000000 !important; font-weight: 600 !important; }
+    .fc-event.invoice-paid { background: #198754 !important; border: none !important; }
+    .fc-event.invoice-paid .fc-event-title { color: #ffffff !important; font-weight: 600 !important; }
+    .fc-event.invoice-paid .fc-event-time { color: white !important; font-weight: 600 !important; }
+    .fc-event.not-invoiced { background: #6c757d !important; border: none !important; }
+    .fc-event.not-invoiced .fc-event-title { color: #ffffff !important; font-weight: 600 !important; }
+    .fc-event.not-invoiced .fc-event-time { color: white !important; font-weight: 600 !important; }
+    .fc-event.invoice-other { background: #6c757d !important; border: none !important; }
+    .fc-event.invoice-other .fc-event-time { color: white !important; font-weight: 600 !important; }
+    .fc-event-content { line-height: 1.3 !important; white-space: normal !important; }
+    .fc-event-content br { display: block !important; margin-bottom: 2px !important; }
+  `;
+  document.head.appendChild(style);
+}
+
+applyCalendarStyles();
+
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarEl = document.getElementById('calendar');
+  const filterForm = document.getElementById('filterForm');
+  const viewTypeSelect = document.getElementById('view_type');
+  const entitySelect = document.getElementById('entity_id');
+  const entityLabel = document.getElementById('entity_label');
+  const viewModeSelect = document.getElementById('view_mode');
+  
+  // Watch for theme changes and update calendar styles
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        // Theme has changed, update calendar styles
+        setTimeout(applyInlineStyles, 10);
+      }
+    });
+  });
+  
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+  
+  // Available entities data
+  const clientsData = [
+    {% for client in clients %}
+      {id: {{ client.id }}, firstname: "{{ client.firstname }}", lastname: "{{ client.lastname }}"}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  
+  const employeesData = [
+    {% for employee in employees %}
+      {id: {{ employee.id }}, firstname: "{{ employee.firstname }}", lastname: "{{ employee.lastname }}"}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+  
+  let calendar;
+  
+  // Function to apply inline styles to rendered elements
+  function applyInlineStyles() {
+    // Toolbar, title, and button styles are now handled by CSS
+    // Only apply styles to dynamically created elements that CSS can't reach
+
+    // Apply to column headers (these may be dynamically created)
+    document.querySelectorAll('.fc-col-header-cell').forEach(cell => {
+      cell.style.cssText = 'background: #f8f9fa !important; color: #222533 !important; border: 1px solid #dee2e6 !important; font-weight: 700 !important;';
+      if (document.documentElement.classList.contains('dark-mode')) {
+        cell.style.backgroundColor = '#1f2028 !important';
+        cell.style.color = '#e6e6ef !important';
+        cell.style.borderColor = '#333 !important';
+      }
+    });
+    
+    // Apply to day numbers
+    document.querySelectorAll('.fc-daygrid-day-number').forEach(day => {
+      day.style.color = '#222533 !important';
+      if (document.documentElement.classList.contains('dark-mode')) {
+        day.style.color = '#e6e6ef !important';
+      }
+    });
+    
+    // Apply to day cells
+    document.querySelectorAll('.fc-daygrid-day').forEach(cell => {
+      cell.style.background = 'rgba(248, 249, 250, 0.5) !important';
+      cell.style.border = '1px solid #dee2e6 !important';
+      if (document.documentElement.classList.contains('dark-mode')) {
+        cell.style.background = 'rgba(26, 27, 34, 0.6) !important';
+        cell.style.borderColor = '#444 !important';
+      }
+    });
+    
+    // Apply to time grid slots
+    document.querySelectorAll('.fc-timegrid-slot').forEach(slot => {
+      slot.style.background = 'rgba(248, 249, 250, 0.5) !important';
+      slot.style.borderColor = '#dee2e6 !important';
+      if (document.documentElement.classList.contains('dark-mode')) {
+        slot.style.background = 'rgba(26, 27, 34, 0.6) !important';
+        slot.style.borderColor = '#444 !important';
+      }
+    });
+    
+    // Apply to time axis
+    document.querySelectorAll('.fc-timegrid-axis').forEach(axis => {
+      axis.style.cssText = 'background: transparent !important; color: #626986 !important; border-right: 1px solid #dee2e6 !important; font-weight: 500 !important;';
+      if (document.documentElement.classList.contains('dark-mode')) {
+        axis.style.color = '#999 !important';
+        axis.style.borderRightColor = '#444 !important';
+      }
+    });
+    
+    // Apply to events
+    document.querySelectorAll('.fc-event').forEach(event => {
+      event.style.cssText = 'cursor: pointer !important; border-radius: 6px !important; font-weight: 700 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important; border: none !important; padding: 4px 6px !important; list-style: none !important;';
+      
+      if (event.classList.contains('invoice-draft')) {
+        event.style.background = '#0dcaf0 !important';
+        event.style.backgroundColor = '#0dcaf0 !important';
+        event.style.borderColor = '#0dcaf0 !important';
+        event.style.color = '#000000 !important';
+      } else if (event.classList.contains('invoice-sent')) {
+        event.style.background = '#ffc107 !important';
+        event.style.backgroundColor = '#ffc107 !important';
+        event.style.borderColor = '#ffc107 !important';
+        event.style.color = '#000000 !important';
+      } else if (event.classList.contains('invoice-paid')) {
+        event.style.background = '#198754 !important';
+        event.style.backgroundColor = '#198754 !important';
+        event.style.borderColor = '#198754 !important';
+        event.style.color = 'white !important';
+      } else if (event.classList.contains('not-invoiced')) {
+        event.style.background = '#6c757d !important';
+        event.style.backgroundColor = '#6c757d !important';
+        event.style.borderColor = '#6c757d !important';
+        event.style.color = 'white !important';
+      } else if (event.classList.contains('invoice-other')) {
+        event.style.background = '#6c757d !important';
+        event.style.backgroundColor = '#6c757d !important';
+        event.style.borderColor = '#6c757d !important';
+        event.style.color = 'white !important';
+      }
+      
+      const title = event.querySelector('.fc-event-title');
+      if (title) {
+        if (event.classList.contains('invoice-draft') || event.classList.contains('invoice-sent')) {
+          title.style.cssText = 'color: #000000 !important; font-weight: 700 !important; font-size: 1.05rem !important; text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5) !important;';
+        } else {
+          title.style.cssText = 'color: white !important; font-weight: 700 !important; font-size: 1.05rem !important; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;';
+        }
+      }
+      
+      const timeEl = event.querySelector('.fc-event-time');
+      if (timeEl) {
+        if (event.classList.contains('invoice-draft') || event.classList.contains('invoice-sent')) {
+          timeEl.style.cssText = 'color: #000000 !important; font-weight: 700 !important;';
+        } else {
+          timeEl.style.cssText = 'color: white !important; font-weight: 700 !important;';
+        }
+      }
+      
+      const main = event.querySelector('.fc-event-main');
+      if (main) {
+        main.style.cssText = 'padding: 4px 6px !important; background: transparent !important;';
+      }
+      
+      const content = event.querySelector('.fc-event-content');
+      if (content) {
+        content.style.cssText = 'line-height: 1.3 !important; white-space: normal !important;';
+        const br = content.querySelector('br');
+        if (br) {
+          br.style.cssText = 'display: block !important; margin-bottom: 2px !important;';
+        }
+      }
+    });
+  }
+  
+  // Function to force date alignment in month view
+  function forceDateAlignment() {
+    // Only apply to month view
+    if (!calendar || calendar.view.type !== 'dayGridMonth') {
+      return;
+    }
+
+    // Simple approach: just ensure date numbers are positioned at top
+    setTimeout(() => {
+      document.querySelectorAll('.fc-daygrid-day-number').forEach(dayNumber => {
+        // Use minimal CSS to keep dates at top without breaking layout
+        dayNumber.style.position = 'relative';
+        dayNumber.style.top = '0';
+        dayNumber.style.left = '0';
+        dayNumber.style.transform = 'none';
+        dayNumber.style.marginTop = '0';
+        dayNumber.style.paddingTop = '0';
+      });
+    }, 100);
+  }
+  
+  // Initialize calendar
+  function initializeCalendar() {
+    if (calendar) {
+      calendar.destroy();
+    }
+    
+    const entityId = entitySelect.value;
+    const viewType = viewTypeSelect.value;
+    const viewMode = viewModeSelect.value;
+    
+    if (!entityId) {
+      return;
+    }
+    
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: viewMode === 'week' ? 'timeGridWeek' : 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek'
+      },
+      contentHeight: 'auto',
+      eventDisplay: 'block',
+      eventContent: function(arg) {
+        return {
+          html: '<div class="fc-event-content">' + arg.event.title + '</div>'
+        };
+      },
+      slotLabelInterval: '01:00',
+      slotDuration: '00:30',
+      slotLabelFormat: {
+        meridiem: 'short',
+        hour: 'numeric',
+        minute: '2-digit'
+      },
+      scrollTime: '09:00:00',
+      slotMinTime: '00:00:00',
+      slotMaxTime: '24:00:00',
+      events: function(fetchInfo, successCallback, failureCallback) {
+        const params = new URLSearchParams({
+          start: fetchInfo.startStr,
+          end: fetchInfo.endStr,
+          view_type: viewType,
+          entity_id: entityId
+        });
+        
+        fetch(`/interventions/api/calendar_events?${params}`)
+          .then(response => response.json())
+          .then(data => {
+            successCallback(data);
+            // Force date alignment after events are loaded
+            setTimeout(() => {
+              forceDateAlignment();
+            }, 150);
+            // Scroll to 9 AM after events are loaded
+            if (viewMode === 'week') {
+              setTimeout(() => {
+                calendar.scrollToTime('09:00:00');
+              }, 100);
+            }
+          })
+          .catch(error => failureCallback(error));
+      },
+      eventClick: function(info) {
+        showEventDetails(info.event);
+      },
+      eventDidMount: function(info) {
+        // Add tooltip with basic info
+        info.el.title = `${info.event.title}\nDuration: ${info.event.extendedProps.duration} hours`;
+      },
+      datesSet: function(info) {
+        // Reapply date alignment when view changes
+        setTimeout(() => {
+          forceDateAlignment();
+        }, 50);
+      }
+    });
+    
+    calendar.render();
+    
+    applyInlineStyles();
+    forceDateAlignment();
+  }
+  
+  // Handle view type change
+  viewTypeSelect.addEventListener('change', function() {
+    const viewType = this.value;
+    entityLabel.textContent = viewType === 'client' ? 'Select Client' : 'Select Employee';
+    
+    // Update entity options
+    entitySelect.innerHTML = '<option value="">Choose...</option>';
+    
+    const entities = viewType === 'client' ? clientsData : employeesData;
+    
+    entities.forEach(entity => {
+      const option = document.createElement('option');
+      option.value = entity.id;
+      option.textContent = `${entity.firstname} ${entity.lastname}`;
+      entitySelect.appendChild(option);
+    });
+    
+    // Clear current selection
+    entitySelect.value = '';
+    
+    // Clear calendar if it exists
+    if (calendar) {
+      calendar.destroy();
+      calendar = null;
+      const calendarEl = document.getElementById('calendar');
+      calendarEl.innerHTML = '<div class="alert alert-info">Please select a client or employee to view their calendar.</div>';
+    }
+  });
+  
+  // Handle form submission
+  filterForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    initializeCalendar();
+    setTimeout(applyInlineStyles, 100);
+    
+    // Update URL
+    const formData = new FormData(this);
+    const params = new URLSearchParams(formData);
+    window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+  });
+  
+  // Handle view mode change
+  viewModeSelect.addEventListener('change', function() {
+    if (calendar) {
+      const viewMode = this.value;
+      const viewName = viewMode === 'week' ? 'timeGridWeek' : 'dayGridMonth';
+      calendar.changeView(viewName);
+      setTimeout(applyInlineStyles, 100);
+    }
+  });
+  
+  // Show event details in modal
+  function showEventDetails(event) {
+    const props = event.extendedProps;
+    const details = `
+      <p><strong>Client:</strong> ${props.client}</p>
+      <p><strong>Employee:</strong> ${props.employee}</p>
+      <p><strong>Type:</strong> ${props.type}</p>
+      <p><strong>Duration:</strong> ${props.duration} hours</p>
+      <p><strong>Status:</strong> ${props.invoiced ? 'Invoiced' : 'Not Invoiced'}</p>
+      <p><strong>Start:</strong> ${event.start.toLocaleString()}</p>
+      <p><strong>End:</strong> ${event.end.toLocaleString()}</p>
+    `;
+    
+    document.getElementById('eventDetails').innerHTML = details;
+    document.getElementById('editLink').href = `/interventions/update/${event.id}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('eventModal'));
+    modal.show();
+  }
+  
+  // Reset filters
+  window.resetFilters = function() {
+    filterForm.reset();
+    viewTypeSelect.dispatchEvent(new Event('change'));
+    if (calendar) {
+      calendar.destroy();
+      calendar = null;
+      const calendarEl = document.getElementById('calendar');
+      calendarEl.innerHTML = '<div class="alert alert-info">Please select a client or employee to view their calendar.</div>';
+    }
+    // Update URL
+    window.history.replaceState({}, '', window.location.pathname);
+  };
+  
+  // Initialize on page load if entity is selected
+  if (entitySelect.value) {
+    initializeCalendar();
+  } else {
+    // Show message to select an entity
+    const calendarEl = document.getElementById('calendar');
+    calendarEl.innerHTML = '<div class="alert alert-info">Please select a client or employee to view their calendar.</div>';
+  }
+});
+</script>
+{% endblock %}

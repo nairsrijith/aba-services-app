@@ -6,6 +6,7 @@ from app.users.forms import SetRoleForm, UpdatePasswordForm
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import os, string, secrets
+from app.utils.email_utils import queue_email
 from app.utils.settings_utils import get_org_settings
 from werkzeug.utils import secure_filename
 import time
@@ -107,6 +108,39 @@ def demote_user(id):
             flash(f"User account demoted from {previous_role.capitalize()} to {employee.user_type.capitalize()}.", 'success')
         else:
             flash(f"User's role already matches their position ({employee.user_type.capitalize()}).", 'info')
+            
+        return redirect(url_for('users.list_users'))
+    else:
+        abort(403)
+
+
+@users_bp.route('/send_activation/<int:id>', methods=['POST'])
+@login_required
+def send_activation_email(id):
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
+        employee = Employee.query.get_or_404(id)
+        
+        # Generate activation email content
+        subject = f"Account Activation - {get_org_settings()['org_name']}"
+        body_html = render_template('email/activation_email.html', 
+                                  firstname=employee.firstname,
+                                  activation_key=employee.activation_key)
+        body_text = render_template('email/activation_email.txt',
+                                  firstname=employee.firstname,
+                                  activation_key=employee.activation_key)
+        
+        # Send email
+        success = queue_email(
+            subject=subject,
+            recipients=[employee.email],
+            body_text=body_text,
+            body_html=body_html
+        )
+        
+        if success:
+            flash(f"Activation email sent to {employee.email}.", "success")
+        else:
+            flash(f"Failed to send activation email to {employee.email}.", "danger")
             
         return redirect(url_for('users.list_users'))
     else:

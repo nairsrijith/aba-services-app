@@ -8,6 +8,7 @@ from app.utils.settings_utils import get_org_settings
 import json
 from werkzeug.utils import secure_filename
 import shutil
+from datetime import datetime
 
 
 interventions_bp = Blueprint('interventions', __name__, template_folder='templates')
@@ -454,6 +455,174 @@ def update_intervention(intervention_id):
         return render_template('update_int.html', form=form, clients=Client.query.all(), employees=Employee.query.all(), org_name=settings['org_name'], intervention=intervention)
     else:
         abort(403)
+
+
+@interventions_bp.route('/calendar')
+@login_required
+def calendar_view():
+    # Allow viewing calendar for authorized users
+    if not current_user.is_authenticated:
+        abort(403)
+    
+    # Get filter parameters
+    view_type = request.args.get('view_type', 'client')  # 'client' or 'employee'
+    entity_id = request.args.get('entity_id', type=int)
+    view_mode = request.args.get('view', 'month')  # 'month' or 'week'
+    
+    # Get available clients and employees for dropdowns
+    clients = []
+    employees = []
+    
+    if current_user.user_type in ['admin', 'super']:
+        clients = Client.query.filter_by(is_active=True).all()
+        employees = Employee.query.filter(Employee.is_active==True, Employee.position!='Administrator').all()
+    elif current_user.user_type == 'supervisor':
+        emp = Employee.query.filter_by(email=current_user.email).first()
+        if emp:
+            clients = Client.query.filter_by(supervisor_id=emp.id, is_active=True).all()
+            # Supervisors can see their own sessions and sessions of their supervised clients
+            employees = Employee.query.filter(
+                db.or_(
+                    Employee.id == emp.id,
+                    Employee.id.in_([c.supervisor_id for c in clients if c.supervisor_id])
+                ),
+                Employee.is_active==True
+            ).all()
+    elif current_user.user_type == 'therapist':
+        emp = Employee.query.filter_by(email=current_user.email).first()
+        if emp:
+            # Therapists can only see their own calendar
+            employees = [emp]
+            clients = Client.query.filter_by(is_active=True).all()
+    
+    settings = get_org_settings()
+    return render_template('calendar.html', 
+                         clients=clients, 
+                         employees=employees, 
+                         view_type=view_type,
+                         entity_id=entity_id,
+                         view_mode=view_mode,
+                         org_name=settings['org_name'])
+
+
+@interventions_bp.route('/api/calendar_events')
+@login_required
+def calendar_events():
+    # API endpoint to get calendar events in JSON format
+    if not current_user.is_authenticated:
+        abort(403)
+    
+    # Get parameters
+    start = request.args.get('start')
+    end = request.args.get('end')
+    view_type = request.args.get('view_type', 'client')
+    entity_id = request.args.get('entity_id', type=int)
+    
+    if not entity_id:
+        return app.response_class(
+            response=json.dumps([]),
+            status=200,
+            mimetype='application/json'
+        )
+    
+    # Build query based on view_type
+    query = Intervention.query.join(Client).join(Employee)
+    
+    if view_type == 'client':
+        query = query.filter(Intervention.client_id == entity_id)
+    elif view_type == 'employee':
+        query = query.filter(Intervention.employee_id == entity_id)
+    
+    # Apply role-based filters
+    if current_user.user_type == 'therapist':
+        emp = Employee.query.filter_by(email=current_user.email).first()
+        if emp:
+            query = query.filter(Intervention.employee_id == emp.id)
+    elif current_user.user_type == 'supervisor':
+        emp = Employee.query.filter_by(email=current_user.email).first()
+        if emp:
+            if view_type == 'client':
+                query = query.filter(Client.supervisor_id == emp.id)
+            else:
+                # For employee view, allow viewing own and supervised employees
+                supervised_client_ids = [c.id for c in Client.query.filter_by(supervisor_id=emp.id).all()]
+                query = query.filter(
+                    db.or_(
+                        Intervention.employee_id == emp.id,
+                        Intervention.client_id.in_(supervised_client_ids)
+                    )
+                )
+    
+    # Filter by date range if provided
+    if start:
+        query = query.filter(Intervention.date >= start)
+    if end:
+        query = query.filter(Intervention.date < end)
+    
+    interventions = query.all()
+    
+    # Convert to calendar events
+    events = []
+    for intv in interventions:
+        # Combine date and time for start/end
+        start_datetime = f"{intv.date}T{intv.start_time}"
+        end_datetime = f"{intv.date}T{intv.end_time}"
+        
+        # Format times for display
+        start_time_formatted = intv.start_time.strftime('%I:%M %p').lstrip('0')
+        end_time_formatted = intv.end_time.strftime('%I:%M %p').lstrip('0')
+        time_range = f"{start_time_formatted} - {end_time_formatted}"
+        
+        # Create title with time on first line, details on second line
+        if view_type == 'client':
+            details = f"{intv.employee.firstname} {intv.employee.lastname} - {intv.intervention_type}"
+        else:  # employee view
+            details = f"{intv.client.firstname} {intv.client.lastname} - {intv.intervention_type}"
+        
+        title = f"{time_range}<br>{details}"
+        
+        # Determine color based on invoice status
+        if intv.invoice:
+            inv_status = intv.invoice.status
+            if inv_status == 'Draft':
+                bg_color = '#0dcaf0'  # Bootstrap info color
+                class_name = 'invoice-draft'
+            elif inv_status == 'Sent':
+                bg_color = '#ffc107'  # Bootstrap warning color
+                class_name = 'invoice-sent'
+            elif inv_status == 'Paid':
+                bg_color = '#198754'  # Bootstrap success color
+                class_name = 'invoice-paid'
+            else:
+                bg_color = '#6c757d'  # Bootstrap secondary color
+                class_name = 'invoice-other'
+        else:
+            bg_color = '#6c757d'  # Bootstrap secondary color for not invoiced
+            class_name = 'not-invoiced'
+        
+        events.append({
+            'id': intv.id,
+            'title': title,
+            'start': start_datetime,
+            'end': end_datetime,
+            'backgroundColor': bg_color,
+            'borderColor': bg_color,
+            'textColor': '#ffffff',
+            'className': class_name,
+            'extendedProps': {
+                'client': f"{intv.client.firstname} {intv.client.lastname}",
+                'employee': f"{intv.employee.firstname} {intv.employee.lastname}",
+                'type': intv.intervention_type,
+                'duration': intv.duration,
+                'invoiced': intv.invoiced
+            }
+        })
+    
+    return app.response_class(
+        response=json.dumps(events),
+        status=200,
+        mimetype='application/json'
+    )
 
 
 @interventions_bp.route('/get_activities/<int:employee_id>')

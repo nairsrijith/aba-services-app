@@ -24,9 +24,8 @@
     /* Centered organization name shown on all pages */
     .app-org-name {
       text-align: center;
-      font-weight: 600;
-      font-size: 1.5rem;
-      margin: 6px 0;
+      font-weight: 1000;
+      font-size: 2rem;
       color: var(--text-clr, inherit);
     }
     @media (max-width: 575.98px) {
@@ -212,11 +211,22 @@
             </a>
           </li>
         {% endif %}
-        <li class="{% if request.endpoint and request.endpoint.startswith('interventions.') %}active{% endif %}">
-          <a href="{{ url_for('interventions.list_interventions') }}">
+        <li>
+          <button onclick="toggleSubMenu(this)" class="dropdown-btn">
             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="200 -880 600 800" width="24px" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-160 0q-17 0-28.5-11.5T280-280q0-17 11.5-28.5T320-320q17 0 28.5 11.5T360-280q0 17-11.5 28.5T320-240Zm320 0q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z"/></svg>
             <span>Session</span>
-          </a>
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+          </button>
+          <ul class="sub-menu">
+            <div>
+                <li class="{% if request.endpoint and request.endpoint == 'interventions.list_interventions' %}active{% endif %}">
+                  <a href="{{ url_for('interventions.list_interventions') }}">List Sessions</a>
+                </li>
+                <li class="{% if request.endpoint and request.endpoint == 'interventions.calendar_view' %}active{% endif %}">
+                  <a href="{{ url_for('interventions.calendar_view') }}">Calendar View</a>
+                </li>
+            </div>
+          </ul>
         </li>
         {% if not current_user.user_type in ['admin', 'super'] %}
           <li class="{% if request.endpoint and (request.endpoint.startswith('payroll.list_paystubs') or request.endpoint.startswith('payroll.view_paystub')) %}active{% endif %}">
@@ -298,18 +308,23 @@
 
   <!-- Floating controls placed in the right pane (top-right) -->
   <div class="theme-toggle-float" aria-hidden="false">
-    <button onclick="toggleTheme()" id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle dark/light mode">
-      <span id="theme-toggle-icon" class="material-symbols-outlined theme-toggle-icon">dark_mode</span>
-    </button>
-    {% if current_user.is_authenticated %}
-    <a href="{{ url_for('logout') }}" class="theme-toggle-btn" title="Logout">
-      <span class="material-symbols-outlined theme-toggle-icon">logout</span>
-    </a>
-    {% else %}
-    <a href="{{ url_for('login') }}" class="theme-toggle-btn" title="Login">
-      <span class="material-symbols-outlined theme-toggle-icon">login</span>
-    </a>
-    {% endif %}
+    <div class="theme-toggle-controls">
+      <button onclick="toggleTheme()" id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle dark/light mode">
+        <span id="theme-toggle-icon" class="material-symbols-outlined theme-toggle-icon">dark_mode</span>
+      </button>
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('logout') }}" class="theme-toggle-btn" title="Logout">
+        <span class="material-symbols-outlined theme-toggle-icon">logout</span>
+      </a>
+      {% else %}
+      <a href="{{ url_for('login') }}" class="theme-toggle-btn" title="Login">
+        <span class="material-symbols-outlined theme-toggle-icon">login</span>
+      </a>
+      {% endif %}
+      <div class="theme-toggle-trigger">
+        <span class="material-symbols-outlined">bolt</span>
+      </div>
+    </div>
   </div>
 
   <div class="toast-container">
@@ -339,7 +354,7 @@
 
   <div class="container-fluid">
     <div class="row justify-content-center">
-      <div class="col-12 col-md-10 col-lg-8">
+      <div class="col-12">
         <header class="app-org-name" role="banner">
           {{ current_org_name() }}
         </header>
