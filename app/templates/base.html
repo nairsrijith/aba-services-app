@@ -269,8 +269,8 @@
             <li class="{% if request.endpoint and request.endpoint.startswith('users.list_users') %}active{% endif %}"><a href="{{ url_for('users.list_users') }}">Users</a></li>
             <li class="{% if request.endpoint and request.endpoint.startswith('manage.designations') %}active{% endif %}"><a href="{{ url_for('manage.designations') }}">Designations</a></li>
             <li class="{% if request.endpoint and request.endpoint.startswith('manage.activities') %}active{% endif %}"><a href="{{ url_for('manage.activities') }}">Activities</a></li>
-            <li class="{% if request.endpoint and request.endpoint.startswith('manage.settings') %}active{% endif %}"><a href="{{ url_for('manage.settings') }}">Org Settings</a></li>
             <li class="{% if request.endpoint and (request.endpoint.startswith('payroll.list_payrates') or request.endpoint.startswith('payroll.add_payrate') or request.endpoint.startswith('payroll.edit_payrate')) %}active{% endif %}"><a href="{{ url_for('payroll.list_payrates') }}">Pay Rates</a></li>
+            <li class="{% if request.endpoint and request.endpoint.startswith('manage.settings') %}active{% endif %}"><a href="{{ url_for('manage.settings') }}">Org Settings</a></li>
           </div>
         </ul>
       </li>
