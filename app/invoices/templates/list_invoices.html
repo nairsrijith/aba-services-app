@@ -37,7 +37,14 @@
                     <td class="text-end">{{ "%.2f"|format(invoice.total_cost|float) }}</td>
                     <td>
                         <a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-success btn-sm" title="Preview Invoice">View</a>
-                        <a href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-info btn-sm" target="_blank" title="Download Invoice">PDF</a>
+                        <a href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-info btn-sm" target="_blank" title="Download Invoice">Download</a>
+
+                        <form method="POST" action="{{ url_for('invoices.email_invoice', invoice_number=invoice.invoice_number) }}" style="display:inline;">
+                            {%- if csrf_token is defined -%}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {%- endif -%}
+                            <button type="submit" class="btn btn-warning btn-sm" title="Email Invoice">Email</button>
+                        </form>
 
                         {% if invoice.status == 'Draft' %}
                             <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal"

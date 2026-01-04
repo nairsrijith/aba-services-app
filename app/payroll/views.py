@@ -253,6 +253,77 @@ def export_paystub_pdf(id):
         return redirect(url_for('payroll.view_paystub', id=id))
 
 
+@payroll_bp.route('/paystubs/<int:id>/email', methods=['POST'])
+@login_required
+def email_paystub(id):
+    if not current_user.is_authenticated:
+        flash('Please log in to email paystubs.', 'danger')
+        return redirect(url_for('home'))
+    
+    paystub = PayStub.query.get_or_404(id)
+    
+    # Check if user has permission to email this paystub
+    if current_user.user_type not in ['admin', 'super']:
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('home'))
+    
+    try:
+        # Resolve org settings and logo
+        settings = get_org_settings()
+        logo_b64 = settings.get('logo_b64')
+        logo_file_uri = settings.get('logo_file_uri')
+        logo_web_path = settings.get('logo_web_path')
+        logo_url = settings.get('logo_url')
+        org_name = settings.get('org_name')
+        
+        # Generate PDF
+        html = render_template('paystub_pdf.html',
+               paystub=paystub,
+               logo_b64=logo_b64,
+               logo_path=logo_file_uri or logo_web_path,
+               logo_url=logo_url,
+               org_name=org_name,
+               download_time=datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
+        
+        pdf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        HTML(string=html, base_url=request.url_root).write_pdf(pdf_temp.name)
+        pdf_temp.close()
+        
+        with open(pdf_temp.name, 'rb') as f:
+            pdf_bytes = f.read()
+        
+        # Clean up temp file
+        os.unlink(pdf_temp.name)
+        
+        # Prepare email
+        filename = f"paystub_{paystub.period_start.strftime('%Y%m%d')}-{paystub.period_end.strftime('%Y%m%d')}_{paystub.employee.firstname}_{paystub.employee.lastname}.pdf"
+        body_text = render_template('email/paystub_email.txt', paystub=paystub, org_name=org_name)
+        body_html = render_template('email/paystub_email.html', paystub=paystub, org_name=org_name)
+        
+        # Resolve recipients and honor testing override
+        recipients = paystub.employee.email
+        try:
+            appsettings_obj = settings.get('appsettings')
+            if appsettings_obj and getattr(appsettings_obj, 'testing_mode', False) and getattr(appsettings_obj, 'testing_email', None):
+                test_addr = appsettings_obj.testing_email
+                recipients = test_addr
+        except Exception:
+            pass
+        
+        sent = queue_email_with_pdf(recipients=recipients, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
+        
+        if sent:
+            flash('Paystub emailed to employee.', 'success')
+        else:
+            flash('Failed to enqueue paystub email.', 'warning')
+        
+    except Exception as e:
+        current_app.logger.error(f'Email sending failed: {str(e)}')
+        flash('Error sending email. Please try again or contact support.', 'danger')
+    
+    return redirect(url_for('payroll.list_paystubs'))
+
+
 @payroll_bp.route('/paystubs/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_paystub(id):

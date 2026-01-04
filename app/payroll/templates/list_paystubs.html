@@ -28,6 +28,12 @@
           <a href="{{ url_for('payroll.view_paystub', id=ps.id) }}" class="btn btn-sm btn-success">View</a>
           <a href="{{ url_for('payroll.export_paystub_pdf', id=ps.id) }}" class="btn btn-sm btn-info" target="_blank">PDF</a>
           {% if current_user.user_type in ['admin', 'super'] %}
+          <form method="POST" action="{{ url_for('payroll.email_paystub', id=ps.id) }}" style="display:inline;">
+            {%- if csrf_token is defined -%}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {%- endif -%}
+            <button type="submit" class="btn btn-sm btn-warning">Email</button>
+          </form>
           <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ ps.id }})">Delete</button>
           {% endif %}
         </td>
