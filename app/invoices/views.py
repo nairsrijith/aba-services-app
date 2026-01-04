@@ -569,12 +569,138 @@ def mark_sent(invoice_number):
             if sent:
                 invoice.status = 'Sent'
                 db.session.commit()
-                flash('Invoice emailed to client and marked as Sent.', 'success')
+                flash('Invoice marked as Sent and is emailed to the client.', 'success')
             else:
                 flash('Failed to enqueue invoice email to client. Invoice remains in Draft.', 'warning')
         except Exception as e:
             db.session.rollback()
             flash(f'Error generating/sending invoice: {str(e)}. Invoice remains in Draft.', 'danger')
+
+        return redirect(url_for('invoices.list_invoices'))
+    else:
+        abort(403)
+
+
+@invoices_bp.route('/email_invoice/<invoice_number>', methods=['POST'])
+@login_required
+def email_invoice(invoice_number):
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
+        invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
+        client = invoice.client
+
+        # Build interventions list (use snapshot if available)
+        interventions = Intervention.query.filter_by(invoice_number=invoice_number).order_by(Intervention.date, Intervention.start_time).all()
+        import json as _json
+        if invoice.invoice_items:
+            try:
+                items = _json.loads(invoice.invoice_items)
+            except Exception:
+                items = []
+            items_map = {item.get('intervention_id'): item for item in items}
+            for i in interventions:
+                item = items_map.get(i.id)
+                if item:
+                    i.rate = item.get('rate', 0)
+                    i.cost = item.get('cost', 0)
+                    i._snapshot = item
+                else:
+                    from app.models import Activity
+                    activity_map = {a.activity_name: a.activity_category for a in Activity.query.all()}
+                    category = activity_map.get(i.intervention_type, '').lower()
+                    if category == 'therapy':
+                        rate = client.cost_therapy
+                    elif category == 'supervision':
+                        rate = client.cost_supervision
+                    else:
+                        rate = 0
+                    i.rate = rate
+                    try:
+                        i.cost = float(i.duration) * float(rate)
+                    except Exception:
+                        i.cost = 0
+
+        # prepare address and supervisor data
+        parent_name = getattr(client, 'parentname', '')
+        address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
+        supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
+        supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
+        supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
+
+        # Generate PDF and send email
+        try:
+            # Resolve org settings and logo context
+            settings = get_org_settings()
+            logo_b64 = settings.get('logo_b64')
+            logo_url = settings.get('logo_url')
+            logo_file_uri = settings.get('logo_file_uri')
+            logo_web_path = settings.get('logo_web_path')
+            
+
+            html = render_template(
+                'invoice_pdf.html',
+                parent_name=parent_name,
+                billing_address=address,
+                client=client,
+                invoice_number=invoice.invoice_number,
+                invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
+                payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
+                date_from=invoice.date_from.strftime('%Y-%m-%d'),
+                date_to=invoice.date_to.strftime('%Y-%m-%d'),
+                supervisor_name=supervisor_name,
+                supervisor_rba_number=supervisor_rba_number,
+                status=invoice.status or 'Pending',
+                paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
+                payment_comments=invoice.payment_comments,
+                interventions=interventions,
+                org_name=settings['org_name'],
+                org_address=settings['org_address'],
+                org_email=settings['org_email'],
+                payment_email=settings['payment_email'],
+                org_phone=settings['org_phone'],
+                logo_b64=logo_b64,
+                logo_url=logo_url,
+                logo_path=logo_file_uri or logo_web_path,
+                download_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            )
+            pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+            
+            subject = f"Invoice {invoice.invoice_number} from {settings['org_name']}"
+            # Render appropriate email templates based on invoice status
+            if invoice.status == 'Paid':
+                paid_date = invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else ''
+                body_text = render_template('email/paid_invoice_email.txt', client=client, invoice=invoice, org_name=settings['org_name'], paid_date=paid_date)
+                body_html = render_template('email/paid_invoice_email.html', client=client, invoice=invoice, org_name=settings['org_name'], paid_date=paid_date)
+            else:
+                body_text = render_template('email/invoice_email.txt', client=client, invoice=invoice, org_name=settings['org_name'])
+                body_html = render_template('email/invoice_email.html', client=client, invoice=invoice, org_name=settings['org_name'])
+            # Send to primary parent email and also to secondary parent email if present
+            recipients = []
+            if getattr(client, 'parentemail', None):
+                recipients.append(client.parentemail)
+            if getattr(client, 'parentemail2', None):
+                recipients.append(client.parentemail2)
+            # de-duplicate while preserving order
+            seen = set()
+            recipients = [x for x in recipients if x and not (x in seen or seen.add(x))]
+
+            # Enforce testing override at call site: if testing_mode is set in AppSettings,
+            # send emails only to testing_email to avoid accidental sends.
+            try:
+                appsettings_obj = settings.get('appsettings')
+                if appsettings_obj and getattr(appsettings_obj, 'testing_mode', False) and getattr(appsettings_obj, 'testing_email', None):
+                    test_addr = appsettings_obj.testing_email
+                    # preserve original recipients in X-Original-To header via the email util
+                    recipients = [test_addr]
+            except Exception:
+                pass
+
+            sent = queue_email_with_pdf(recipients=recipients, subject=subject, body_text=body_text, pdf_bytes=pdf_bytes, filename=f"{invoice.invoice_number}.pdf", body_html=body_html)
+            if sent:
+                flash('Invoice emailed to client.', 'success')
+            else:
+                flash('Failed to enqueue invoice email to client.', 'warning')
+        except Exception as e:
+            flash(f'Error generating/sending invoice: {str(e)}.', 'danger')
 
         return redirect(url_for('invoices.list_invoices'))
     else:
@@ -722,7 +848,7 @@ def mark_paid(invoice_number):
             # Log but don't fail the payment marking if email fails
             current_app.logger.exception(f'Failed to send paid invoice email for {invoice_number}: {e}')
         
-        flash('Invoice marked as Paid.', 'success')
+        flash('Invoice is marked as Paid and updated invoice mailed to the client.', 'success')
         return redirect(url_for('invoices.list_invoices'))
     else:
         abort(403)
