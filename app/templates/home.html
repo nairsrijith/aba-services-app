@@ -47,7 +47,7 @@
                 </div>
             </div>
 
-            {% if current_user.user_type in ["admin", "super"] and current_user.position not in ['Therapist', 'Senior Therapist', 'Behaviour Analyst'] %}
+            {% if current_user.user_type in ["admin", "super"] and current_user.position not in ['Therapist', 'Senior Therapist'] %}
                 
                 <!-- Monthly Earnings Graph -->
                 <div class="row mt-4">
