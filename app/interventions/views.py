@@ -34,6 +34,12 @@ def add_intervention():
             return redirect(url_for('interventions.list_interventions'))
 
         form = AddInterventionForm()
+        # Pre-fill date if provided in query
+        if request.args.get('date'):
+            try:
+                form.date.data = datetime.strptime(request.args.get('date'), '%Y-%m-%d').date()
+            except ValueError:
+                pass  # Ignore invalid date
         # Supervisor should only be able to pick from their supervised clients
         if current_user.user_type == 'supervisor' and emp:
             form.client_id.choices = [(c.id, f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(supervisor_id=emp.id, is_active=True).all()]
