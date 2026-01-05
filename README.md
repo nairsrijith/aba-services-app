@@ -18,9 +18,17 @@ This web application is designed to help ABA service providers manage their busi
    - Group clients by active/inactive status
 
 - **Session Management**
-   - Record therapy and supervision sessions
-   - CRUD operations for sessions (admin and user roles)
-   - Categorize sessions by activity type
+   - Add, update, delete therapy and supervision sessions
+   - Calendar view for visualizing and scheduling sessions
+   - File attachments for session documentation
+   - Future date scheduling capabilities
+   - Bulk upload and delete operations
+   - Role-based access control for session management
+   - Calendar view for scheduling and viewing sessions by client or employee
+   - Attach files to sessions (e.g., session notes, reports)
+   - Schedule sessions in advance (future dates allowed)
+   - Click on calendar dates to quickly add new sessions
+   - Bulk delete sessions with dependency checks
 
 - **Invoicing**
    - Generate invoices for clients based on session data and activity rates
@@ -29,11 +37,14 @@ This web application is designed to help ABA service providers manage their busi
    - Color-coded status badges and tooltips
    - Mark invoices as sent/paid, with confirmation modals
    - Prevent deletion of invoices unless in draft status
+   - Send email automatically upon marking the email as Sent or Paid
+   - Send ad-hoc email with invoice
 
 - **Payroll & Paystubs**
-   - Manage pay rates for employees
    - Generate paystubs based on sessions and rates
    - Download paystubs as PDF
+   - Automatically send emails to employee when the paystub is created
+   - Send ad-hoc email with paystub to employee
 
 - **Security & Access Control**
    - User roles: super user, admin, therapist (previously called "user"), supervisor
@@ -43,11 +54,18 @@ This web application is designed to help ABA service providers manage their busi
 - **Admin Tools**
    - CLI script for bulk activation/deactivation (`scripts/manage_activation.py`)
    - Designation and activity management
+   - Manage pay rates for employees
+   - User login management
+   - Organization settings management to update name, address, log etc
+   - Email OAuth settings to send outgoing emails using Gmail
+   - Setting app into email testing mode to prevent mails from been sent to actual client or employee 
 
 - **Data & Reporting**
-   - Persistent storage using SQLite (default)
+   - Persistent storage using SQLite (default) or Postgres
    - Data grouped and filtered by active/inactive status
    - Toggle to show/hide inactive records
+   - Calendar view for session visualization
+   - Dashboard with key statistics and metrics
 
 ## Setup & Deployment
 
@@ -66,34 +84,25 @@ https://hub.docker.com/r/nairsrijith/abawebapp
 3. **Create an environment file** (optional, recommended):
     - Create a file named `.env` in the same directory with the following variables:
        ```env
+       # These will be used in invoices and branding.
        ORG_NAME="Your Organization Name"
        ORG_ADDRESS="123 Main St, City, State"
        ORG_PHONE="555-123-4567"
        ORG_EMAIL="info@yourorg.com"
        PAYMENT_EMAIL="payments@yourorg.com"
+       
+       POSTGRES_USER="database_user"
+       POSTGRES_PASSWORD="supersecurepassword"
+       POSTGRES_DB="app_database"
+       POSTGRES_PORT="5432"
        ```
-    - These will be used in invoices and branding.
 4. **Edit `docker-compose.yml`** as needed:
     - Change the host port (left side of `1234:8080`) to your preferred port.
-    - Ensure the volume mapping (`./data:/myapp/app/data`) points to a persistent location.
+    - Ensure the volume mapping (`./db_data:/var/lib/postgresql/data`, `./data:/myapp/app/data`, `./assets/logo.png:/myapp/app/static/images/logo.png`) points to a persistent location.
 5. **Start the app:**
     ```sh
     docker compose up -d
     ```
-
-#### Example `docker-compose.yml` snippet:
-```yaml
-version: '3.8'
-services:
-   abawebapp:
-      image: nairsrijith/abawebapp:latest
-      ports:
-         - "1234:8080"
-      env_file:
-         - .env
-      volumes:
-         - ./data:/myapp/app/data
-```
 
 ### 2. Initial Login
 
@@ -105,30 +114,33 @@ username: admin@example.com
 password: Admin1!
 ```
 **Change the password immediately after first login.**
+**Create additional Admin user(/s)** 
 
 ## User Roles & Permissions
 
-- **Super User**: Can create other accounts and perform full system maintenance.
+- **Super**: Can create other accounts and perform full system maintenance.
 - **Admin**: Can manage employees, clients, sessions, invoices, paystubs and system configuration.
-- **Therapist**: (renamed from the old "user" role) Can manage their own sessions and view the parts of the app assigned to therapists.
-- **Supervisor**: A supervisor is typically an employee with the designation "Behaviour Analyst". Supervisors can add and manage sessions for their supervised clients and may assign those sessions to any employee with a Therapist or Senior Therapist designation.
-
-Note: to enable supervisor functionality, create a user account for the supervisor and ensure the account email matches the `email` field on the corresponding `employees` record. The application maps the logged-in user to the employee record by email to determine supervised clients.
+- **Therapist**: Can manage their own sessions and view the parts of the app assigned to therapists. Default role for 'Therapist' and 'Senior Therapist'
+- **Supervisor**: Supervisors can add and manage sessions for their supervised clients and may assign those sessions to any employee. Default role for 'Behaviour Analyst'
+- Users/Employees with "Therapist" or "Senior Therapist" or "Behaviour Analyst" position can be promoted from their initial role to Admin and demoted back to default role.
 
 ## Onboarding Workflow
 
 1. **Add Employees**
     - Go to Employees section, add new employee, assign designation and pay rate.
     - Activate/deactivate employees as needed.
-    - Assign employees as supervisors to clients.
 
 2. **Add Clients**
     - Go to Clients section, onboard new client.
-    - Assign supervisor (Behavior Analyst) and set rates for supervision/therapy.
+    - You cannot add a client without a Behaviour Analyst (Supervisor) in Employee Record.
+    - Assign supervisor and set rates for supervision/therapy.
     - Activate/deactivate clients as needed.
 
 3. **Add Sessions**
    - Record sessions for clients, specifying activity type and duration.
+   - Use the calendar view to visualize existing sessions and click on dates to add new ones.
+   - Attach files (e.g., session notes) to sessions.
+   - Schedule sessions in advance for future dates.
    - Admins can manage sessions for all; Therapists can manage sessions for themselves; Supervisors can create/manage sessions for clients they supervise and assign the delivering employee to any Therapist or Senior Therapist.
 
 4. **Generate Invoices**
@@ -136,41 +148,21 @@ Note: to enable supervisor functionality, create a user account for the supervis
     - Review invoice, download PDF, and share with client.
     - Mark invoice as sent/paid; status is shown with color-coded badges.
     - Only draft invoices can be deleted.
+    - Emails are sent to the primary and secondary email for client.
+    - Invoice PDFs are sent automatically via email when the invoice status is updated to Sent or Paid.
+    - Emails can be sent on ad-hoc basis as well.
 
 5. **Generate Paystubs**
     - Go to Payroll section, select employee and date range.
     - Generate paystub based on sessions and pay rates.
     - Download paystub as PDF.
+    - Paystub PDF is sent to the employee as soon as it is generated.
+    - Ad-hoc emails can be sent for the Paystub as well.
 
 ## Activation & Deactivation
 
 - Employees and clients can be activated/deactivated from the list views.
 - Deactivation checks for dependencies (e.g., active clients, unpaid invoices).
-
-### Notes about the role rename (existing deployments)
-
-If you are updating an existing deployment, user accounts created previously will have their role stored as the string `user`.
-The application code has been updated to treat that legacy value as the new `therapist` role. To permanently migrate the database rows you can run a small SQL update against the app database before restarting the app:
-
-For SQLite (example):
-
-```sql
-UPDATE users SET user_type = 'therapist' WHERE user_type = 'user';
-```
-
-Or from Python within the app context (quick one-off script):
-
-```py
-from app import app, db
-from app.models import User
-
-with app.app_context():
-   db.session.execute("UPDATE users SET user_type = 'therapist' WHERE user_type = 'user'")
-   db.session.commit()
-```
-
-Make a backup of your database before performing this migration.
-
 
 ## Data Persistence
 
