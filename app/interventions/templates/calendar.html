@@ -750,6 +750,9 @@ document.addEventListener('DOMContentLoaded', function() {
       eventClick: function(info) {
         showEventDetails(info.event);
       },
+      dateClick: function(info) {
+        window.location.href = '/interventions/add?date=' + info.dateStr;
+      },
       eventDidMount: function(info) {
         // Add tooltip with basic info
         info.el.title = `${info.event.title}\nDuration: ${info.event.extendedProps.duration} hours`;

@@ -22,7 +22,7 @@
                     <div>{{ form.intervention_type.label(class="col-form-label") }}{{ form.intervention_type(class="form-select", id="intervention_type") }}</div>
                 </div>
                 <div class="row mb-3">
-                    <div>{{ form.date.label(class="col-form-label") }}{{ form.date(class="form-control", type="date") }}</div>
+                    <div>{{ form.date.label(class="col-form-label") }}{{ form.date(class="form-control datepicker") }}</div>
                     <div>{{ form.start_time.label(class="col-form-label") }}{{ form.start_time(class="form-control", id="start_time", type="time") }}</div>
                     <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", id="end_time", type="time") }}</div>
                     <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", id="duration", readonly=True) }}</div>
@@ -70,5 +70,10 @@
                 }
             });
         });
-    </script>
+    // Initialize date picker
+    flatpickr('.datepicker', {
+        dateFormat: 'Y-m-d',
+        allowInput: true
+    });
+</script>
 {% endblock %}
