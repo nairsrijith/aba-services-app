@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .report-panel {
+    background: rgba(255,255,255,0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+  html.dark-mode .report-panel {
+    background: rgba(18,18,20,0.55);
+    color: #e9ecef;
+  }
+  .table-responsive {
+    margin-top: 20px;
+  }
+  .btn-print {
+    margin-bottom: 20px;
+  }
+  .filters {
+    margin-bottom: 20px;
+  }
+</style>
+<div class="container-fluid col-12">
+  <h2>Pay Stubs Report</h2>
+  <div class="report-panel">
+    <div class="filters">
+      <form method="get">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label for="start_date" class="form-label">Start Date</label>
+            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+          </div>
+          <div class="col-md-3">
+            <label for="end_date" class="form-label">End Date</label>
+            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+          </div>
+          <div class="col-md-3">
+            <label for="employee_id" class="form-label">Employee</label>
+            <select class="form-select" id="employee_id" name="employee_id">
+              <option value="">All Employees</option>
+              {% for employee in employees %}
+              <option value="{{ employee.id }}" {% if request.args.get('employee_id') == employee.id|string %}selected{% endif %}>{{ employee.firstname }} {{ employee.lastname }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">&nbsp;</label>
+            <div>
+              <button type="submit" class="btn btn-secondary me-1">Filter</button>
+              <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Period Start</th>
+            <th>Period End</th>
+            <th>Generated Date</th>
+            <th>Total Hours</th>
+            <th>Total Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for paystub in paystubs %}
+          <tr>
+            <td>{{ paystub.employee.firstname }} {{ paystub.employee.lastname }}</td>
+            <td>{{ paystub.period_start }}</td>
+            <td>{{ paystub.period_end }}</td>
+            <td>{{ paystub.generated_date }}</td>
+            <td>{{ paystub.total_hours }}</td>
+            <td>${{ "%.2f"|format(paystub.total_amount) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <script>
+      function exportCSV() {
+        const table = document.querySelector('table');
+        let csv = [];
+        const rows = table.querySelectorAll('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+          const row = [];
+          const cols = rows[i].querySelectorAll('td, th');
+          for (let j = 0; j < cols.length; j++) {
+            row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+          }
+          csv.push(row.join(','));
+        }
+        
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const dateStr = `${year}${month}${day}${hours}${minutes}`;
+        link.setAttribute('download', `paystubs_report_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    </script>
+  </div>
+</div>
+{% endblock %}

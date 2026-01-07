@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .report-panel {
+    background: rgba(255,255,255,0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+  html.dark-mode .report-panel {
+    background: rgba(18,18,20,0.55);
+    color: #e9ecef;
+  }
+  .table-responsive {
+    margin-top: 20px;
+  }
+  .btn-print {
+    margin-bottom: 20px;
+  }
+  .filters {
+    margin-bottom: 20px;
+  }
+</style>
+<div class="container-fluid col-12">
+  <h2>Employees Report</h2>
+  <div class="report-panel">
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Select Columns</label>
+          <div>
+            {% for subfield in form.columns %}
+            <div class="form-check form-check-inline">
+              {{ subfield(class="form-check-input column-checkbox") }}
+              {{ subfield.label(class="form-check-label") }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="row g-3">
+            <div class="col-md-3" id="position-filter" style="display: {{ 'block' if 'position' in selected_columns else 'none' }};">
+              {{ form.position_filter.label(class="form-label") }}
+              {{ form.position_filter(class="form-select", multiple=True) }}
+            </div>
+            <div class="col-md-3" id="city-filter" style="display: {{ 'block' if 'address' in selected_columns else 'none' }};">
+              {{ form.city_filter.label(class="form-label") }}
+              {{ form.city_filter(class="form-select", multiple=True) }}
+            </div>
+            <div class="col-md-3" id="state-filter" style="display: {{ 'block' if 'address' in selected_columns else 'none' }};">
+              {{ form.state_filter.label(class="form-label") }}
+              {{ form.state_filter(class="form-select", multiple=True) }}
+            </div>
+            <div class="col-md-3" id="active-filter" style="display: {{ 'block' if 'active' in selected_columns else 'none' }};">
+              {{ form.active_filter.label(class="form-label") }}
+              {{ form.active_filter(class="form-select") }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3">
+        {{ form.submit(class="btn btn-primary me-2") }}
+        <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </form>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.column-checkbox');
+        checkboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            const value = this.value;
+            if (value === 'position') {
+              document.getElementById('position-filter').style.display = this.checked ? 'block' : 'none';
+            } else if (value === 'address') {
+              document.getElementById('city-filter').style.display = this.checked ? 'block' : 'none';
+              document.getElementById('state-filter').style.display = this.checked ? 'block' : 'none';
+            } else if (value === 'active') {
+              document.getElementById('active-filter').style.display = this.checked ? 'block' : 'none';
+            }
+          });
+          // Trigger change on load to set initial state
+          checkbox.dispatchEvent(new Event('change'));
+        });
+      });
+
+      function exportCSV() {
+        const table = document.querySelector('table');
+        let csv = [];
+        const rows = table.querySelectorAll('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+          const row = [];
+          const cols = rows[i].querySelectorAll('td, th');
+          for (let j = 0; j < cols.length; j++) {
+            row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+          }
+          csv.push(row.join(','));
+        }
+        
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const dateStr = `${year}${month}${day}${hours}${minutes}`;
+        link.setAttribute('download', `employees_report_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    </script>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            {% if 'name' in selected_columns %}<th>Name</th>{% endif %}
+            {% if 'position' in selected_columns %}<th>Position</th>{% endif %}
+            {% if 'email' in selected_columns %}<th>Email</th>{% endif %}
+            {% if 'cell' in selected_columns %}<th>Cell</th>{% endif %}
+            {% if 'address' in selected_columns %}<th>Address</th>{% endif %}
+            {% if 'active' in selected_columns %}<th>Active</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for employee in employees %}
+          <tr>
+            {% if 'name' in selected_columns %}<td>{{ employee.firstname }} {{ employee.lastname }}</td>{% endif %}
+            {% if 'position' in selected_columns %}<td>{{ employee.position }}</td>{% endif %}
+            {% if 'email' in selected_columns %}<td>{{ employee.email }}</td>{% endif %}
+            {% if 'cell' in selected_columns %}<td>{{ employee.cell }}</td>{% endif %}
+            {% if 'address' in selected_columns %}<td>{{ employee.address1 }} {{ employee.address2 }}, {{ employee.city }}, {{ employee.state }} {{ employee.zipcode }}</td>{% endif %}
+            {% if 'active' in selected_columns %}<td>{{ 'Yes' if employee.is_active else 'No' }}</td>{% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

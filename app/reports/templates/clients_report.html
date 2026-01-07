@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .report-panel {
+    background: rgba(255,255,255,0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+  html.dark-mode .report-panel {
+    background: rgba(18,18,20,0.55);
+    color: #e9ecef;
+  }
+  .table-responsive {
+    margin-top: 20px;
+  }
+  .btn-print {
+    margin-bottom: 20px;
+  }
+  .filters {
+    margin-bottom: 20px;
+  }
+</style>
+<div class="container-fluid col-12">
+  <h2>Clients Report</h2>
+  <div class="report-panel">
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Select Columns</label>
+          <div>
+            {% for subfield in form.columns %}
+            <div class="form-check form-check-inline">
+              {{ subfield(class="form-check-input column-checkbox") }}
+              {{ subfield.label(class="form-check-label") }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-md-3" id="city-filter" style="display: {{ 'block' if 'city' in selected_columns else 'none' }};">
+          {{ form.city_filter.label(class="form-label") }}
+          {{ form.city_filter(class="form-select", multiple=True) }}
+        </div>
+        <div class="col-md-3" id="state-filter" style="display: {{ 'block' if 'state' in selected_columns else 'none' }};">
+          {{ form.state_filter.label(class="form-label") }}
+          {{ form.state_filter(class="form-select", multiple=True) }}
+        </div>
+      </div>
+      <div class="mt-3">
+        {{ form.submit(class="btn btn-primary me-2") }}
+        <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </form>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.column-checkbox');
+        checkboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            const value = this.value;
+            if (value === 'city') {
+              document.getElementById('city-filter').style.display = this.checked ? 'block' : 'none';
+            } else if (value === 'state') {
+              document.getElementById('state-filter').style.display = this.checked ? 'block' : 'none';
+            }
+          });
+          // Trigger change on load to set initial state
+          checkbox.dispatchEvent(new Event('change'));
+        });
+      });
+
+      function exportCSV() {
+        const table = document.querySelector('table');
+        let csv = [];
+        const rows = table.querySelectorAll('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+          const row = [];
+          const cols = rows[i].querySelectorAll('td, th');
+          for (let j = 0; j < cols.length; j++) {
+            row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+          }
+          csv.push(row.join(','));
+        }
+        
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const dateStr = `${year}${month}${day}${hours}${minutes}`;
+        link.setAttribute('download', `clients_report_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    </script>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            {% if 'name' in selected_columns %}<th>Name</th>{% endif %}
+            {% if 'dob' in selected_columns %}<th>DOB</th>{% endif %}
+            {% if 'gender' in selected_columns %}<th>Gender</th>{% endif %}
+            {% if 'parent' in selected_columns %}<th>Parent</th>{% endif %}
+            {% if 'parent_email' in selected_columns %}<th>Parent Email</th>{% endif %}
+            {% if 'parent_cell' in selected_columns %}<th>Parent Cell</th>{% endif %}
+            {% if 'supervisor' in selected_columns %}<th>Supervisor</th>{% endif %}
+            {% if 'active' in selected_columns %}<th>Active</th>{% endif %}
+            {% if 'city' in selected_columns %}<th>City</th>{% endif %}
+            {% if 'state' in selected_columns %}<th>State</th>{% endif %}
+            {% if 'zipcode' in selected_columns %}<th>Zipcode</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in clients %}
+          <tr>
+            {% if 'name' in selected_columns %}<td>{{ client.firstname }} {{ client.lastname }}</td>{% endif %}
+            {% if 'dob' in selected_columns %}<td>{{ client.dob }}</td>{% endif %}
+            {% if 'gender' in selected_columns %}<td>{{ client.gender }}</td>{% endif %}
+            {% if 'parent' in selected_columns %}<td>{{ client.parentname }}</td>{% endif %}
+            {% if 'parent_email' in selected_columns %}<td>{{ client.parentemail }}</td>{% endif %}
+            {% if 'parent_cell' in selected_columns %}<td>{{ client.parentcell }}</td>{% endif %}
+            {% if 'supervisor' in selected_columns %}<td>{{ client.supervisor.firstname if client.supervisor else 'N/A' }}</td>{% endif %}
+            {% if 'active' in selected_columns %}<td>{{ 'Yes' if client.is_active else 'No' }}</td>{% endif %}
+            {% if 'city' in selected_columns %}<td>{{ client.city }}</td>{% endif %}
+            {% if 'state' in selected_columns %}<td>{{ client.state }}</td>{% endif %}
+            {% if 'zipcode' in selected_columns %}<td>{{ client.zipcode }}</td>{% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
