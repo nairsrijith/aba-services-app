@@ -13,6 +13,27 @@ from gevent.pywsgi import WSGIServer
 from app.utils.settings_utils import get_org_settings
 
 
+# Register blueprints
+from app.employees.views import employees_bp
+app.register_blueprint(employees_bp, url_prefix='/employees')
+from app.clients.views import clients_bp
+app.register_blueprint(clients_bp, url_prefix='/clients')
+from app.interventions.views import interventions_bp
+app.register_blueprint(interventions_bp, url_prefix='/interventions')
+from app.invoices.views import invoices_bp
+app.register_blueprint(invoices_bp, url_prefix='/invoices')
+# payroll blueprint (admin-only features: paystubs, payrates)
+from app.payroll.views import payroll_bp
+app.register_blueprint(payroll_bp, url_prefix='/payroll')
+from app.users.views import users_bp
+app.register_blueprint(users_bp, url_prefix='/users')
+from app.manage.views import manage_bp
+app.register_blueprint(manage_bp, url_prefix='/manage')
+from app.reports.views import reports_bp
+app.register_blueprint(reports_bp, url_prefix='/reports')
+from app.error_pages.handlers import error_pages
+app.register_blueprint(error_pages)
+
 
 def get_date_ranges():
     today = date.today()
