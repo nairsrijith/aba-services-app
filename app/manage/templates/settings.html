@@ -89,6 +89,13 @@
       </div>
     </div>
 
+    <h4 class="section-header">Email Settings</h4>
+    <div class="mb-3">
+      {{ form.default_cc.label }}
+      {{ form.default_cc(class_='form-control', placeholder='email@example.com') }}
+      <small class="form-text text-muted">All emails will be CC'd to this address</small>
+    </div>
+
     <h4 class="section-header">Testing Mode</h4>
     <div class="form-check mb-3">
       {{ form.testing_mode(class_='form-check-input') }} {{ form.testing_mode.label(class_='form-check-label') }}

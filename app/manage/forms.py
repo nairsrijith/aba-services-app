@@ -33,5 +33,6 @@ class SettingsForm(FlaskForm):
 
     testing_mode = BooleanField('Enable Email Testing Mode')
     testing_email = StringField('Testing Email Address', validators=[length(max=120)])
+    default_cc = StringField('Default CC Email Address', validators=[length(max=120)])
 
     submit = SubmitField('Save Settings')

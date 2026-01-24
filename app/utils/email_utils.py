@@ -41,6 +41,15 @@ def _build_message(subject: str, recipients, body_text: Optional[str] = None, bo
 
     msg['From'] = from_addr or default_from
     msg['To'] = ', '.join(recipients)
+    
+    # Add CC for all outgoing emails if configured in AppSettings
+    try:
+        from app.models import AppSettings
+        s = AppSettings.get()
+        if s and s.default_cc:
+            msg['Cc'] = s.default_cc
+    except Exception:
+        pass
 
     # If testing mode is enabled in AppSettings, rewrite recipients now
     try:

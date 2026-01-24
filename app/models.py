@@ -435,6 +435,7 @@ class AppSettings(db.Model):
 
     testing_mode = db.Column(db.Boolean, default=False)
     testing_email = db.Column(db.String(120))
+    default_cc = db.Column(db.String(120))
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -454,16 +455,14 @@ class AppSettings(db.Model):
                 payment_email=os.environ.get('PAYMENT_EMAIL'),
                 logo_path=os.environ.get('LOGO_PATH'),
                 testing_mode=False,
-                testing_email=None
+                testing_email=None,
+                default_cc=None
             )
             try:
                 db.session.add(s)
                 db.session.commit()
-            except Exception:
-                try:
-                    db.session.rollback()
-                except Exception:
-                    pass
+            except Exception as e:
+                db.session.rollback()
             return s
         except Exception:
             return None

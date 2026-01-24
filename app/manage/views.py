@@ -111,39 +111,45 @@ def settings():
         form.gmail_refresh_token.data = settings.gmail_refresh_token
         form.testing_mode.data = bool(settings.testing_mode)
         form.testing_email.data = settings.testing_email
+        form.default_cc.data = settings.default_cc
 
     if form.validate_on_submit():
-        if not settings:
-            settings = AppSettings()
+        try:
+            if not settings:
+                settings = AppSettings()
 
-        settings.org_name = form.org_name.data or None
-        settings.org_address = form.org_address.data or None
-        settings.org_phone = form.org_phone.data or None
-        settings.org_email = form.org_email.data or None
-        settings.payment_email = form.payment_email.data or None
-        settings.gmail_client_id = form.gmail_client_id.data or None
-        if form.gmail_client_secret.data:
-            settings.gmail_client_secret = form.gmail_client_secret.data
-        if form.gmail_refresh_token.data:
-            settings.gmail_refresh_token = form.gmail_refresh_token.data
-        settings.testing_mode = bool(form.testing_mode.data)
-        settings.testing_email = form.testing_email.data or None
+            settings.org_name = form.org_name.data or None
+            settings.org_address = form.org_address.data or None
+            settings.org_phone = form.org_phone.data or None
+            settings.org_email = form.org_email.data or None
+            settings.payment_email = form.payment_email.data or None
+            settings.gmail_client_id = form.gmail_client_id.data or None
+            if form.gmail_client_secret.data:
+                settings.gmail_client_secret = form.gmail_client_secret.data
+            if form.gmail_refresh_token.data:
+                settings.gmail_refresh_token = form.gmail_refresh_token.data
+            settings.testing_mode = bool(form.testing_mode.data)
+            settings.testing_email = form.testing_email.data or None
+            settings.default_cc = form.default_cc.data or None
 
-        # handle logo upload
-        if form.logo_file.data:
-            f = form.logo_file.data
-            filename = secure_filename(f.filename)
-            images_dir = os.path.join(current_app.root_path, 'static', 'images', 'assets')
-            os.makedirs(images_dir, exist_ok=True)
-            save_path = os.path.join(images_dir, filename)
-            f.save(save_path)
-            # save relative path for templates
-            settings.logo_path = os.path.join('static', 'images', 'assets', filename)
+            # handle logo upload
+            if form.logo_file.data:
+                f = form.logo_file.data
+                filename = secure_filename(f.filename)
+                images_dir = os.path.join(current_app.root_path, 'static', 'images', 'assets')
+                os.makedirs(images_dir, exist_ok=True)
+                save_path = os.path.join(images_dir, filename)
+                f.save(save_path)
+                # save relative path for templates
+                settings.logo_path = os.path.join('static', 'images', 'assets', filename)
 
-        db.session.add(settings)
-        db.session.commit()
-        flash('Settings saved successfully.', 'success')
-        return redirect(url_for('manage.settings'))
+            db.session.add(settings)
+            db.session.commit()
+            flash('Settings saved successfully.', 'success')
+            return redirect(url_for('manage.settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error saving settings. Please try again.', 'danger')
 
     return render_template('settings.html', form=form)
 
