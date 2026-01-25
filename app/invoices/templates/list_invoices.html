@@ -1,5 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .due-date-badge {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .due-date-badge.overdue {
+    background-color: #dc3545; /* Red */
+  }
+  .due-date-badge.warning {
+    background-color: #ffc107; /* Amber */
+  }
+  .due-date-badge.ok {
+    background-color: #28a745; /* Green */
+  }
+
+  /* Actions responsive layout */
+  .actions-inline {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 1199px) {
+    .actions-inline {
+      display: none;
+    }
+    .actions-dropdown {
+      display: block;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .actions-dropdown {
+      display: none;
+    }
+    .actions-inline {
+      display: flex;
+    }
+  }
+
+  .actions-dropdown .dropdown-menu {
+    max-width: 200px;
+  }
+
+  .actions-dropdown .dropdown-menu .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .actions-dropdown form {
+    display: contents;
+  }
+</style>
 <div class="container-fluid">
     <div class="col-12">
         <h2>Invoices</h2>
@@ -10,9 +67,11 @@
                 <tr>
                     <th>Invoice Number</th>
                     <th class="text-end">Invoice Date</th>
+                    <th class="text-end">Due Date</th>
                     <th>Status</th>
                     <th>Client</th>
                     <th class="text-end">Amount</th>
+                    <th>Last Reminder</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -21,6 +80,10 @@
                 <tr>
                     <td>{{ invoice.invoice_number }}</td>
                     <td class="text-end">{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="text-end due-date-cell" data-due-date="{{ invoice.payby_date.strftime('%Y-%m-%d') }}">
+                        <span class="due-date-badge"></span>
+                        {{ invoice.payby_date.strftime('%Y-%m-%d') }}
+                    </td>
                     <td>
                         {%- set st = invoice.status -%}
                         {%- if st == 'Draft' -%}
@@ -36,52 +99,149 @@
                     <td>{{ invoice.client.firstname }} {{ invoice.client.lastname }}</td>
                     <td class="text-end">{{ "%.2f"|format(invoice.total_cost|float) }}</td>
                     <td>
-                        <a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-success btn-sm" title="Preview Invoice">View</a>
-                        <a href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-info btn-sm" target="_blank" title="Download Invoice">Download</a>
+                        {%- if invoice.last_reminder_sent_date -%}
+                            {{ invoice.last_reminder_sent_date.strftime('%Y-%m-%d') }}<br>
+                            <small class="text-muted">({{ invoice.reminder_count }} sent)</small>
+                        {%- else -%}
+                            <span class="text-muted">—</span>
+                        {%- endif -%}
+                    </td>
+                    <td>
+                        <!-- Desktop view: inline buttons -->
+                        <div class="actions-inline">
+                            <a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-success btn-sm" title="Preview Invoice">View</a>
+                            <a href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-info btn-sm" target="_blank" title="Download Invoice">Download</a>
 
-                        <form method="POST" action="{{ url_for('invoices.email_invoice', invoice_number=invoice.invoice_number) }}" style="display:inline;">
-                            {%- if csrf_token is defined -%}
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            {%- endif -%}
-                            <button type="submit" class="btn btn-warning btn-sm" title="Email Invoice">Email</button>
-                        </form>
-
-                        {% if invoice.status == 'Draft' %}
-                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal"
-                                    data-invoice-number="{{ invoice.invoice_number }}"
-                                    data-client-name="{{ invoice.client.firstname }} {{ invoice.client.lastname }}"
-                                    data-invoice-date="{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}"
-                                    data-total-cost="{{ "%.2f"|format(invoice.total_cost|float) }}"
-                                    title="Delete Invoice">
-                                Delete
-                            </button>
-                        {% else %}
-                            <button type="button" class="btn btn-secondary btn-sm" disabled title="Cannot delete a paid invoice">Delete</button>
-                        {% endif %}
-
-                        {% if invoice.status != 'Draft' %}
-                            <form method="POST" action="{{ url_for('invoices.mark_draft', invoice_number=invoice.invoice_number) }}" style="display:inline;">
+                            <form method="POST" action="{{ url_for('invoices.email_invoice', invoice_number=invoice.invoice_number) }}" style="display:inline;">
                                 {%- if csrf_token is defined -%}
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 {%- endif -%}
-                                <button type="submit" class="btn btn-primary btn-sm" title="Send back to Draft">Draft</button>
+                                <button type="submit" class="btn btn-warning btn-sm" title="Email Invoice">Email</button>
                             </form>
-                        {% else %}
-                            <button type="button" class="btn btn-secondary btn-sm" disabled title="Invoice is a draft">Draft</button>
-                        {% endif %}
 
-                        {% if invoice.status == 'Draft' %}
-                            <form method="POST" action="{{ url_for('invoices.mark_sent', invoice_number=invoice.invoice_number) }}" style="display:inline;">
-                                {%- if csrf_token is defined -%}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                {%- endif -%}
-                                <button type="submit" class="btn btn-primary btn-sm" title="Mark as Sent">Send</button>
-                            </form>
-                        {% elif invoice.status == 'Sent' %}
-                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#markPaidModal" data-invoice="{{ invoice.invoice_number }}" title="Mark as Paid">Paid</button>
-                        {% else %}
-                            <button type="button" class="btn btn-secondary btn-sm" disabled title="Invoice already paid">Paid</button>
-                        {% endif %}
+                            {% if invoice.status != 'Paid' %}
+                                <form method="POST" action="{{ url_for('invoices.send_reminder', invoice_number=invoice.invoice_number) }}" style="display:inline;">
+                                    {%- if csrf_token is defined -%}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {%- endif -%}
+                                    <button type="submit" class="btn btn-warning btn-sm" title="Send Reminder Email">Remind</button>
+                                </form>
+                            {% else %}
+                                <button type="button" class="btn btn-warning btn-sm" disabled title="Invoice already paid">Remind</button>
+                            {% endif %}
+
+                            {% if invoice.status == 'Draft' %}
+                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal"
+                                        data-invoice-number="{{ invoice.invoice_number }}"
+                                        data-client-name="{{ invoice.client.firstname }} {{ invoice.client.lastname }}"
+                                        data-invoice-date="{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}"
+                                        data-total-cost="{{ "%.2f"|format(invoice.total_cost|float) }}"
+                                        title="Delete Invoice">
+                                    Delete
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Cannot delete a paid invoice">Delete</button>
+                            {% endif %}
+
+                            {% if invoice.status != 'Draft' %}
+                                <form method="POST" action="{{ url_for('invoices.mark_draft', invoice_number=invoice.invoice_number) }}" style="display:inline;">
+                                    {%- if csrf_token is defined -%}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {%- endif -%}
+                                    <button type="submit" class="btn btn-primary btn-sm" title="Send back to Draft">Draft</button>
+                                </form>
+                            {% else %}
+                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Invoice is a draft">Draft</button>
+                            {% endif %}
+
+                            {% if invoice.status == 'Draft' %}
+                                <form method="POST" action="{{ url_for('invoices.mark_sent', invoice_number=invoice.invoice_number) }}" style="display:inline;">
+                                    {%- if csrf_token is defined -%}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {%- endif -%}
+                                    <button type="submit" class="btn btn-primary btn-sm" title="Mark as Sent">Send</button>
+                                </form>
+                            {% elif invoice.status == 'Sent' %}
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#markPaidModal" data-invoice="{{ invoice.invoice_number }}" title="Mark as Paid">Paid</button>
+                            {% else %}
+                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Invoice already paid">Paid</button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Mobile view: dropdown menu -->
+                        <div class="actions-dropdown">
+                            <div class="dropdown">
+                                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Actions
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" title="Preview Invoice">View</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" target="_blank" title="Download Invoice">Download</a></li>
+                                    <li>
+                                        <form method="POST" action="{{ url_for('invoices.email_invoice', invoice_number=invoice.invoice_number) }}" style="display:contents;">
+                                            {%- if csrf_token is defined -%}
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            {%- endif -%}
+                                            <button type="submit" class="dropdown-item" title="Email Invoice">Email</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        {% if invoice.status != 'Paid' %}
+                                            <form method="POST" action="{{ url_for('invoices.send_reminder', invoice_number=invoice.invoice_number) }}" style="display:contents;">
+                                                {%- if csrf_token is defined -%}
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                {%- endif -%}
+                                                <button type="submit" class="dropdown-item" title="Send Reminder Email">Send Reminder</button>
+                                            </form>
+                                        {% else %}
+                                            <span class="dropdown-item disabled">Send Reminder</span>
+                                        {% endif %}
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        {% if invoice.status == 'Draft' %}
+                                            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal"
+                                                    data-invoice-number="{{ invoice.invoice_number }}"
+                                                    data-client-name="{{ invoice.client.firstname }} {{ invoice.client.lastname }}"
+                                                    data-invoice-date="{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}"
+                                                    data-total-cost="{{ "%.2f"|format(invoice.total_cost|float) }}"
+                                                    title="Delete Invoice">
+                                                Delete
+                                            </button>
+                                        {% else %}
+                                            <span class="dropdown-item disabled">Delete</span>
+                                        {% endif %}
+                                    </li>
+                                    <li>
+                                        {% if invoice.status != 'Draft' %}
+                                            <form method="POST" action="{{ url_for('invoices.mark_draft', invoice_number=invoice.invoice_number) }}" style="display:contents;">
+                                                {%- if csrf_token is defined -%}
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                {%- endif -%}
+                                                <button type="submit" class="dropdown-item" title="Send back to Draft">Mark as Draft</button>
+                                            </form>
+                                        {% else %}
+                                            <span class="dropdown-item disabled">Mark as Draft</span>
+                                        {% endif %}
+                                    </li>
+                                    <li>
+                                        {% if invoice.status == 'Draft' %}
+                                            <form method="POST" action="{{ url_for('invoices.mark_sent', invoice_number=invoice.invoice_number) }}" style="display:contents;">
+                                                {%- if csrf_token is defined -%}
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                {%- endif -%}
+                                                <button type="submit" class="dropdown-item" title="Mark as Sent">Mark as Sent</button>
+                                            </form>
+                                        {% elif invoice.status == 'Sent' %}
+                                            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#markPaidModal" data-invoice="{{ invoice.invoice_number }}" title="Mark as Paid">Mark as Paid</button>
+                                        {% else %}
+                                            <span class="dropdown-item disabled">Mark as Paid</span>
+                                        {% endif %}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
@@ -160,6 +320,34 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Update due date badges
+    const dueDateCells = document.querySelectorAll('.due-date-cell');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    dueDateCells.forEach(cell => {
+        const dueDateStr = cell.getAttribute('data-due-date');
+        const dueDate = new Date(dueDateStr);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        const daysDifference = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+        const badge = cell.querySelector('.due-date-badge');
+        
+        if (daysDifference <= 0) {
+          // Overdue or due today
+          badge.classList.add('overdue');
+          cell.title = daysDifference === 0 ? 'Due today' : 'Overdue by ' + Math.abs(daysDifference) + ' days';
+        } else if (daysDifference <= 2) {
+          // Due within 2 days
+          badge.classList.add('warning');
+          cell.title = 'Due in ' + daysDifference + ' day' + (daysDifference > 1 ? 's' : '');
+        } else {
+          // Due in more than 2 days
+          badge.classList.add('ok');
+          cell.title = 'Due in ' + daysDifference + ' days';
+        }
+    });
+
     // Mark Paid Modal Handler
     var markPaidModal = document.getElementById('markPaidModal');
     markPaidModal.addEventListener('show.bs.modal', function (event) {

@@ -852,3 +852,46 @@ def mark_paid(invoice_number):
         return redirect(url_for('invoices.list_invoices'))
     else:
         abort(403)
+
+
+@invoices_bp.route('/send_reminder/<invoice_number>', methods=['POST'])
+@login_required
+def send_reminder(invoice_number):
+    """Manually trigger sending a reminder email for an unpaid invoice."""
+    if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
+        try:
+            from app.utils.invoice_reminder import send_invoice_reminder
+            
+            invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
+            
+            # Check if invoice is paid
+            if invoice.status == 'Paid':
+                flash('Cannot send reminder for a paid invoice.', 'warning')
+                return redirect(url_for('invoices.list_invoices'))
+            
+            # Get app settings
+            settings = AppSettings.get()
+            if not settings:
+                flash('Application settings not configured.', 'danger')
+                return redirect(url_for('invoices.list_invoices'))
+            
+            # Check if Gmail is configured
+            if not settings.gmail_client_id or not settings.gmail_client_secret or not settings.gmail_refresh_token:
+                flash('Gmail OAuth not configured. Please configure it in Application Settings.', 'danger')
+                return redirect(url_for('invoices.list_invoices'))
+            
+            # Send the reminder
+            success = send_invoice_reminder(invoice, settings)
+            
+            if success:
+                flash(f'Reminder sent successfully for invoice {invoice_number}. Total reminders sent: {invoice.reminder_count}', 'success')
+            else:
+                flash(f'Failed to send reminder for invoice {invoice_number}. Check logs for details.', 'danger')
+            
+        except Exception as e:
+            current_app.logger.exception(f'Error sending reminder for invoice {invoice_number}: {e}')
+            flash(f'Error sending reminder: {str(e)}', 'danger')
+        
+        return redirect(url_for('invoices.list_invoices'))
+    else:
+        abort(403)

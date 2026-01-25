@@ -1,5 +1,44 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  /* Actions responsive layout */
+  .actions-inline {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 1199px) {
+    .actions-inline {
+      display: none;
+    }
+    .actions-dropdown {
+      display: block;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .actions-dropdown {
+      display: none;
+    }
+    .actions-inline {
+      display: flex;
+    }
+  }
+
+  .actions-dropdown .dropdown-menu {
+    max-width: 200px;
+  }
+
+  .actions-dropdown .dropdown-menu .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .actions-dropdown form {
+    display: contents;
+  }
+</style>
 <div class="container-fluid col-12">
   <h2>Paystubs</h2>
   {% if current_user.user_type in ['admin', 'super'] %}
@@ -25,17 +64,47 @@
         <td class="text-end">{{ "%.2f"|format(ps.total_hours|float) }}</td>
         <td class="text-end">{{ "%.2f"|format(ps.total_amount|float) }}</td>
         <td>
-          <a href="{{ url_for('payroll.view_paystub', id=ps.id) }}" class="btn btn-sm btn-success">View</a>
-          <a href="{{ url_for('payroll.export_paystub_pdf', id=ps.id) }}" class="btn btn-sm btn-info" target="_blank">PDF</a>
-          {% if current_user.user_type in ['admin', 'super'] %}
-          <form method="POST" action="{{ url_for('payroll.email_paystub', id=ps.id) }}" style="display:inline;">
-            {%- if csrf_token is defined -%}
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            {%- endif -%}
-            <button type="submit" class="btn btn-sm btn-warning">Email</button>
-          </form>
-          <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ ps.id }})">Delete</button>
-          {% endif %}
+          <!-- Desktop view: inline buttons -->
+          <div class="actions-inline">
+            <a href="{{ url_for('payroll.view_paystub', id=ps.id) }}" class="btn btn-sm btn-success">View</a>
+            <a href="{{ url_for('payroll.export_paystub_pdf', id=ps.id) }}" class="btn btn-sm btn-info" target="_blank">PDF</a>
+            {% if current_user.user_type in ['admin', 'super'] %}
+            <form method="POST" action="{{ url_for('payroll.email_paystub', id=ps.id) }}" style="display:inline;">
+              {%- if csrf_token is defined -%}
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {%- endif -%}
+              <button type="submit" class="btn btn-sm btn-warning">Email</button>
+            </form>
+            <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ ps.id }})">Delete</button>
+            {% endif %}
+          </div>
+
+          <!-- Mobile view: dropdown menu -->
+          <div class="actions-dropdown">
+            <div class="dropdown">
+              <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Actions
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('payroll.view_paystub', id=ps.id) }}">View</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('payroll.export_paystub_pdf', id=ps.id) }}" target="_blank">PDF</a></li>
+                {% if current_user.user_type in ['admin', 'super'] %}
+                <li>
+                  <form method="POST" action="{{ url_for('payroll.email_paystub', id=ps.id) }}" style="display:contents;">
+                    {%- if csrf_token is defined -%}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {%- endif -%}
+                    <button type="submit" class="dropdown-item">Email</button>
+                  </form>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <button class="dropdown-item text-danger" onclick="confirmDelete({{ ps.id }})">Delete</button>
+                </li>
+                {% endif %}
+              </ul>
+            </div>
+          </div>
         </td>
       </tr>
       {% else %}

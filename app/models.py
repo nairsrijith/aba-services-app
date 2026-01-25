@@ -341,6 +341,8 @@ class Invoice(db.Model):
     status = db.Column(db.String(25)) # Draft, Sent, Paid
     paid_date = db.Column(db.Date)
     payment_comments = db.Column(db.Text)
+    last_reminder_sent_date = db.Column(db.DateTime, nullable=True)  # Tracks when last reminder was sent
+    reminder_count = db.Column(db.Integer, default=0)  # Tracks how many reminders have been sent
 
     client = db.relationship('Client', backref='invoices')
 
@@ -356,6 +358,8 @@ class Invoice(db.Model):
         self.paid_date = paid_date
         self.payment_comments = payment_comments
         self.invoice_items = invoice_items
+        self.last_reminder_sent_date = None
+        self.reminder_count = 0
 
     @staticmethod
     def generate_invoice_number():
@@ -435,6 +439,13 @@ class AppSettings(db.Model):
 
     testing_mode = db.Column(db.Boolean, default=False)
     testing_email = db.Column(db.String(120))
+    default_cc = db.Column(db.String(120))
+
+    # Invoice reminder settings
+    invoice_reminder_enabled = db.Column(db.Boolean, default=False)
+    invoice_reminder_days = db.Column(db.Integer, default=5)  # Send reminder X days before due date
+    invoice_reminder_repeat_enabled = db.Column(db.Boolean, default=False)
+    invoice_reminder_repeat_days = db.Column(db.Integer, default=3)  # Repeat reminder every X days
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -454,16 +465,14 @@ class AppSettings(db.Model):
                 payment_email=os.environ.get('PAYMENT_EMAIL'),
                 logo_path=os.environ.get('LOGO_PATH'),
                 testing_mode=False,
-                testing_email=None
+                testing_email=None,
+                default_cc=None
             )
             try:
                 db.session.add(s)
                 db.session.commit()
-            except Exception:
-                try:
-                    db.session.rollback()
-                except Exception:
-                    pass
+            except Exception as e:
+                db.session.rollback()
             return s
         except Exception:
             return None

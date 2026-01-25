@@ -1,0 +1,56 @@
+<html>
+  <body style="font-family: Arial, Helvetica, sans-serif; color: #222;">
+    <div style="max-width:700px;margin:0 auto;padding:20px;border:1px solid #eee;border-radius:6px;">
+      <p>Dear {{ client_name }},</p>
+
+      <p>This is a <strong>{{ reminder_type }}</strong> for Invoice <strong>{{ invoice_number }}</strong>.</p>
+
+      <div style="background-color: {% if status == 'overdue' %}#f8d7da{% elif status == 'due_today' %}#fff3cd{% else %}#d1ecf1{% endif %}; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid {% if status == 'overdue' %}#c82333{% elif status == 'due_today' %}#ff7f00{% else %}#17a2b8{% endif %};">
+        <p style="margin: 0; color: {% if status == 'overdue' %}#721c24{% elif status == 'due_today' %}#856404{% else %}#0c5460{% endif %}; font-weight: bold; font-size: 1.1em;">
+          {{ status_message }}
+        </p>
+      </div>
+
+      <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <p style="margin-top: 0;"><strong>Invoice Details:</strong></p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px;border:1px solid #ddd;"><strong>Invoice Number</strong></td>
+            <td style="padding:8px;border:1px solid #ddd;"><strong>{{ invoice_number }}</strong></td>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid #ddd;"><strong>Total Amount</strong></td>
+            <td style="padding:8px;border:1px solid #ddd;"><strong>${{ "%.2f"|format(invoice_total) }}</strong></td>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid #ddd;"><strong>Due Date</strong></td>
+            <td style="padding:8px;border:1px solid #ddd;"><strong>{{ due_date }}</strong></td>
+          </tr>
+          {% if status == 'overdue' %}
+          <tr style="background-color: #f8d7da;">
+            <td style="padding:8px;border:1px solid #ddd;" colspan="2"><strong style="color: #d9534f;">⚠️ URGENT: Payment is now {{ days_overdue }} day{% if days_overdue != 1 %}s{% endif %} overdue. Please remit payment immediately.</strong></td>
+          </tr>
+          {% elif status == 'due_today' %}
+          <tr style="background-color: #fff3cd;">
+            <td style="padding:8px;border:1px solid #ddd;" colspan="2"><strong style="color: #ff7f00;">⚠️ ATTENTION: Payment is due TODAY. Please arrange payment immediately.</strong></td>
+          </tr>
+          {% else %}
+          <tr>
+            <td style="padding:8px;border:1px solid #ddd;"><strong>Days Until Due</strong></td>
+            <td style="padding:8px;border:1px solid #ddd;"><strong style="color: #0c5460;">{{ days_until_due }}</strong></td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+
+      {% if is_repeat %}
+        <p>This is a follow-up reminder. {% if status == 'overdue' %}Please arrange payment at your earliest convenience to avoid further delays.{% else %}Please arrange payment at your earliest convenience.{% endif %}</p>
+      {% else %}
+        <p>{% if status == 'overdue' %}This invoice is now overdue. Please remit payment immediately.{% elif status == 'due_today' %}Payment is due today. Please process payment immediately.{% else %}Please ensure payment is made by the due date.{% endif %}</p>
+      {% endif %}
+
+      <p>If you have already submitted payment, please disregard this notice.</p>
+      <p style="color:#888;font-size:0.9rem;">Thank you for your prompt attention to this matter.<br>{{ current_org_name() }}</p>
+    </div>
+  </body>
+</html>
