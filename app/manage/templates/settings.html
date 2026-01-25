@@ -22,6 +22,19 @@
     font-size: 1.05rem;
     font-weight: 600;
   }
+  /* Styling for disabled form fields */
+  .form-control:disabled,
+  .form-check-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .disabled-label {
+    opacity: 0.6;
+    color: #6c757d;
+  }
+  html.dark-mode .disabled-label {
+    color: #adb5bd;
+  }
 </style>
 <div class="container-fluid col-12">
   <h2>Organization Settings</h2>
@@ -90,25 +103,96 @@
     </div>
 
     <h4 class="section-header">Email Settings</h4>
-    <div class="mb-3">
-      {{ form.default_cc.label }}
-      {{ form.default_cc(class_='form-control', placeholder='email@example.com') }}
-      <small class="form-text text-muted">All emails will be CC'd to this address</small>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">{{ form.default_cc.label.text }}</label>
+        {{ form.default_cc(class_='form-control', placeholder='email@example.com') }}
+        <small class="form-text text-muted">All emails will be CC'd to this address</small>
+      </div>
     </div>
 
     <h4 class="section-header">Testing Mode</h4>
-    <div class="form-check mb-3">
-      {{ form.testing_mode(class_='form-check-input') }} {{ form.testing_mode.label(class_='form-check-label') }}
-    </div>
-    <div class="mb-3">
-      {{ form.testing_email.label }}
-      {{ form.testing_email(class_='form-control') }}
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="form-check">
+          {{ form.testing_mode(class_='form-check-input') }} {{ form.testing_mode.label(class_='form-check-label') }}
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.testing_email.label.text }}</label>
+        {{ form.testing_email(class_='form-control') }}
+      </div>
     </div>
 
-    <div class="mb-3">
+    <h4 class="section-header">Invoice Reminders</h4>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="form-check mb-2">
+          {{ form.invoice_reminder_enabled(class_='form-check-input') }} {{ form.invoice_reminder_enabled.label(class_='form-check-label') }}
+        </div>
+        <label class="form-label" for="invoice_reminder_days">{{ form.invoice_reminder_days.label.text }}</label>
+        {{ form.invoice_reminder_days(class_='form-control', type='number', min='1') }}
+        <small class="form-text text-muted">Days before due date</small>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check mb-2">
+          {{ form.invoice_reminder_repeat_enabled(class_='form-check-input') }} {{ form.invoice_reminder_repeat_enabled.label(class_='form-check-label') }}
+        </div>
+        <label class="form-label" for="invoice_reminder_repeat_days">{{ form.invoice_reminder_repeat_days.label.text }}</label>
+        {{ form.invoice_reminder_repeat_days(class_='form-control', type='number', min='1') }}
+        <small class="form-text text-muted">Days between reminders</small>
+      </div>
+    </div>
+
+    <div class="mb-3 mt-4">
       {{ form.submit(class_='btn btn-primary') }}
     </div>
   </form>
   </div>
 </div>
+
+<script>
+  // Invoice Reminder Fields Dependency Logic
+  function updateReminderFieldStates() {
+    const reminderEnabledCheckbox = document.getElementById('invoice_reminder_enabled');
+    const reminderDaysField = document.getElementById('invoice_reminder_days');
+    const reminderDaysLabel = document.querySelector('label[for="invoice_reminder_days"]');
+    const reminderDaysHelper = reminderDaysField.parentElement.querySelector('.form-text');
+    
+    const repeatEnabledCheckbox = document.getElementById('invoice_reminder_repeat_enabled');
+    const repeatDaysField = document.getElementById('invoice_reminder_repeat_days');
+    const repeatDaysLabel = document.querySelector('label[for="invoice_reminder_repeat_days"]');
+    const repeatDaysHelper = repeatDaysField.parentElement.querySelector('.form-text');
+    const repeatEnabledWrapper = repeatEnabledCheckbox.parentElement.parentElement;
+    
+    // Enable/disable reminder days based on main checkbox
+    const mainEnabled = reminderEnabledCheckbox.checked;
+    reminderDaysField.disabled = !mainEnabled;
+    if (reminderDaysLabel) reminderDaysLabel.classList.toggle('disabled-label', !mainEnabled);
+    if (reminderDaysHelper) reminderDaysHelper.classList.toggle('disabled-label', !mainEnabled);
+    
+    // Enable/disable repeat reminder settings based on main checkbox
+    repeatEnabledCheckbox.disabled = !mainEnabled;
+    repeatEnabledWrapper.classList.toggle('disabled-label', !mainEnabled);
+    
+    // Enable/disable repeat days based on both checkboxes
+    const repeatEnabled = repeatEnabledCheckbox.checked && mainEnabled;
+    repeatDaysField.disabled = !repeatEnabled;
+    if (repeatDaysLabel) repeatDaysLabel.classList.toggle('disabled-label', !repeatEnabled);
+    if (repeatDaysHelper) repeatDaysHelper.classList.toggle('disabled-label', !repeatEnabled);
+  }
+  
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    const reminderEnabledCheckbox = document.getElementById('invoice_reminder_enabled');
+    const repeatEnabledCheckbox = document.getElementById('invoice_reminder_repeat_enabled');
+    
+    // Set initial states
+    updateReminderFieldStates();
+    
+    // Add event listeners
+    reminderEnabledCheckbox.addEventListener('change', updateReminderFieldStates);
+    repeatEnabledCheckbox.addEventListener('change', updateReminderFieldStates);
+  });
+</script>
 {% endblock %}

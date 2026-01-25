@@ -19,6 +19,13 @@ flask db upgrade
 # run DB initializer to insert default rows
 python init_db.py
 
+# Set up cron job for invoice reminders (every day at 6 AM)
+echo "Setting up cron job for invoice reminders..."
+echo "0 6 * * * cd /myapp && /usr/bin/python send_reminders.py >> /var/log/invoice_reminders.log 2>&1" | crontab -
+
+# Start cron daemon in background
+cron
+echo "Cron daemon started."
+
 # start app
 exec python app.py
-

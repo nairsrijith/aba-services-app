@@ -1,0 +1,30 @@
+Dear {{ client_name }},
+
+This is a {{ reminder_type.lower() }} for Invoice {{ invoice_number }}.
+
+{{ status_message }}
+
+Invoice Details:
+Invoice Number: {{ invoice_number }}
+Total Amount: ${{ "%.2f"|format(invoice_total) }}
+Due Date: {{ due_date }}
+
+{% if status == 'overdue' %}
+⚠️ URGENT: Payment is now {{ days_overdue }} day{% if days_overdue != 1 %}s{% endif %} overdue.
+Please remit payment immediately.
+{% elif status == 'due_today' %}
+⚠️ ATTENTION: Payment is due TODAY.
+Please arrange payment immediately.
+{% else %}
+Days Until Due: {{ days_until_due }}
+{% endif %}
+
+{% if is_repeat %}
+This is a follow-up reminder. {% if status == 'overdue' %}Please arrange payment at your earliest convenience to avoid further delays.{% else %}Please arrange payment at your earliest convenience.{% endif %}
+{% else %}
+{% if status == 'overdue' %}This invoice is now overdue. Please remit payment immediately.{% elif status == 'due_today' %}Payment is due today. Please process payment immediately.{% else %}Please ensure payment is made by the due date.{% endif %}
+{% endif %}
+
+If you have already submitted payment, please disregard this notice.
+
+Thank you for your prompt attention to this matter.

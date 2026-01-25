@@ -35,4 +35,10 @@ class SettingsForm(FlaskForm):
     testing_email = StringField('Testing Email Address', validators=[length(max=120)])
     default_cc = StringField('Default CC Email Address', validators=[length(max=120)])
 
+    # Invoice reminder settings
+    invoice_reminder_enabled = BooleanField('Enable Invoice Reminders')
+    invoice_reminder_days = IntegerField('Send Reminder Days Before Due Date')
+    invoice_reminder_repeat_enabled = BooleanField('Enable Repeat Reminders')
+    invoice_reminder_repeat_days = IntegerField('Repeat Reminder Every X Days')
+
     submit = SubmitField('Save Settings')

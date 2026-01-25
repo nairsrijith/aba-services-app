@@ -69,6 +69,10 @@ body.dark-mode {
   background: transparent;
   color: var(--text-clr);
 }
+
+html.dark-mode .text-muted {
+  color: #adb5bd !important;
+}
 *{
   margin: 0;
   padding: 0;

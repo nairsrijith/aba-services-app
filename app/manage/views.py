@@ -112,6 +112,10 @@ def settings():
         form.testing_mode.data = bool(settings.testing_mode)
         form.testing_email.data = settings.testing_email
         form.default_cc.data = settings.default_cc
+        form.invoice_reminder_enabled.data = bool(settings.invoice_reminder_enabled)
+        form.invoice_reminder_days.data = settings.invoice_reminder_days or 2
+        form.invoice_reminder_repeat_enabled.data = bool(settings.invoice_reminder_repeat_enabled)
+        form.invoice_reminder_repeat_days.data = settings.invoice_reminder_repeat_days or 2
 
     if form.validate_on_submit():
         try:
@@ -131,6 +135,10 @@ def settings():
             settings.testing_mode = bool(form.testing_mode.data)
             settings.testing_email = form.testing_email.data or None
             settings.default_cc = form.default_cc.data or None
+            settings.invoice_reminder_enabled = bool(form.invoice_reminder_enabled.data)
+            settings.invoice_reminder_days = form.invoice_reminder_days.data or 2
+            settings.invoice_reminder_repeat_enabled = bool(form.invoice_reminder_repeat_enabled.data)
+            settings.invoice_reminder_repeat_days = form.invoice_reminder_repeat_days.data or 2
 
             # handle logo upload
             if form.logo_file.data:

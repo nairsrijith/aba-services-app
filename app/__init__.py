@@ -342,3 +342,46 @@ def init_settings():
             print('Failed to initialize AppSettings — check database/migrations.')
     except Exception as e:
         print('Error initializing settings:', e)
+
+
+# Register CLI commands
+@app.cli.command('send-invoice-reminders')
+def send_invoice_reminders():
+    """Process and send invoice reminder emails.
+    
+    Usage:
+      flask send-invoice-reminders
+    """
+    import sys
+    from app.utils.invoice_reminder import process_invoice_reminders
+    
+    # Set up logging to both console and file
+    import logging
+    log_file = '/var/log/invoice_reminders.log'
+    
+    # Try to write to /var/log, fall back to /tmp if permission denied
+    try:
+        with open(log_file, 'a'):
+            pass
+    except (PermissionError, FileNotFoundError):
+        log_file = '/tmp/invoice_reminders.log'
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+    
+    logger = logging.getLogger(__name__)
+    logger.info('Starting invoice reminders processing...')
+    
+    try:
+        process_invoice_reminders()
+        logger.info('Invoice reminders processing completed successfully')
+    except Exception as e:
+        logger.exception(f'Error processing invoice reminders: {e}')
+        sys.exit(1)
