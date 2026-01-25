@@ -193,9 +193,9 @@
   
   /* Sent Events - Orange */
   .fc-event.invoice-sent {
-    background-color: #ffc107 !important;
-    border-color: #ffc107 !important;
-    background: #ffc107 !important;
+    background-color: #d48717 !important;
+    border-color: #d48717 !important;
+    background: #d48717 !important;
   }
   
   .fc-event.invoice-sent .fc-event-main {
@@ -210,9 +210,9 @@
   
   /* Paid Events - Green */
   .fc-event.invoice-paid {
-    background-color: #198754 !important;
-    border-color: #198754 !important;
-    background: #198754 !important;
+    background-color: #606e30 !important;
+    border-color: #606e30 !important;
+    background: #606e30 !important;
   }
   
   .fc-event.invoice-paid .fc-event-main {
@@ -499,10 +499,10 @@ function applyCalendarStyles() {
     .fc-event.invoice-draft { background: #0dcaf0 !important; border: none !important; }
     .fc-event.invoice-draft .fc-event-title { color: #000000 !important; font-weight: 600 !important; }
     .fc-event.invoice-draft .fc-event-time { color: #000000 !important; font-weight: 600 !important; }
-    .fc-event.invoice-sent { background: #ffc107 !important; border: none !important; }
+    .fc-event.invoice-sent { background: #d48717 !important; border: none !important; }
     .fc-event.invoice-sent .fc-event-title { color: #000000 !important; font-weight: 600 !important; }
     .fc-event.invoice-sent .fc-event-time { color: #000000 !important; font-weight: 600 !important; }
-    .fc-event.invoice-paid { background: #198754 !important; border: none !important; }
+    .fc-event.invoice-paid { background: #606e30 !important; border: none !important; }
     .fc-event.invoice-paid .fc-event-title { color: #ffffff !important; font-weight: 600 !important; }
     .fc-event.invoice-paid .fc-event-time { color: white !important; font-weight: 600 !important; }
     .fc-event.not-invoiced { background: #6c757d !important; border: none !important; }
@@ -606,14 +606,14 @@ document.addEventListener('DOMContentLoaded', function() {
         event.style.borderColor = '#0dcaf0 !important';
         event.style.color = '#000000 !important';
       } else if (event.classList.contains('invoice-sent')) {
-        event.style.background = '#ffc107 !important';
-        event.style.backgroundColor = '#ffc107 !important';
-        event.style.borderColor = '#ffc107 !important';
+        event.style.background = '#d48717 !important';
+        event.style.backgroundColor = '#d48717 !important';
+        event.style.borderColor = '#d48717 !important';
         event.style.color = '#000000 !important';
       } else if (event.classList.contains('invoice-paid')) {
-        event.style.background = '#198754 !important';
-        event.style.backgroundColor = '#198754 !important';
-        event.style.borderColor = '#198754 !important';
+        event.style.background = '#606e30 !important';
+        event.style.backgroundColor = '#606e30 !important';
+        event.style.borderColor = '#606e30 !important';
         event.style.color = 'white !important';
       } else if (event.classList.contains('not-invoiced')) {
         event.style.background = '#6c757d !important';

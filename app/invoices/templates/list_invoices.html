@@ -10,13 +10,13 @@
     vertical-align: middle;
   }
   .due-date-badge.overdue {
-    background-color: #dc3545; /* Red */
+    background-color: #b7410e; /* Red */
   }
   .due-date-badge.warning {
-    background-color: #ffc107; /* Amber */
+    background-color: #d48717; /* Amber */
   }
   .due-date-badge.ok {
-    background-color: #28a745; /* Green */
+    background-color: #606e30; /* Green */
   }
 
   /* Actions responsive layout */
@@ -100,7 +100,7 @@
                     <td class="text-end">{{ "%.2f"|format(invoice.total_cost|float) }}</td>
                     <td>
                         {%- if invoice.last_reminder_sent_date -%}
-                            {{ invoice.last_reminder_sent_date.strftime('%Y-%m-%d') }}<br>
+                            {{ invoice.last_reminder_sent_date.strftime('%Y-%m-%d') }}
                             <small class="text-muted">({{ invoice.reminder_count }} sent)</small>
                         {%- else -%}
                             <span class="text-muted">—</span>

@@ -596,10 +596,10 @@ def calendar_events():
                 bg_color = '#0dcaf0'  # Bootstrap info color
                 class_name = 'invoice-draft'
             elif inv_status == 'Sent':
-                bg_color = '#ffc107'  # Bootstrap warning color
+                bg_color = '#d48717'  # Bootstrap warning color
                 class_name = 'invoice-sent'
             elif inv_status == 'Paid':
-                bg_color = '#198754'  # Bootstrap success color
+                bg_color = '#606e30'  # Bootstrap success color
                 class_name = 'invoice-paid'
             else:
                 bg_color = '#6c757d'  # Bootstrap secondary color

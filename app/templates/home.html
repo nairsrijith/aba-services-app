@@ -130,7 +130,7 @@
                                     {
                                         label: 'Received',
                                         data: JSON.parse('{{ monthly_paid_invoices | tojson | safe }}'),
-                                        borderColor: '#28a745',
+                                        borderColor: '#606e30',
                                         backgroundColor: 'rgba(40, 167, 69, 0.25)',
                                         fill: true,
                                         tension: 0.4,
@@ -139,7 +139,7 @@
                                     {
                                         label: 'Paid',
                                         data: JSON.parse('{{ monthly_paystubs | tojson | safe }}'),
-                                        borderColor: '#dc3545',
+                                        borderColor: '#b7410e',
                                         backgroundColor: 'rgba(220, 53, 69, 0.25)',
                                         fill: true,
                                         tension: 0.4,
@@ -148,7 +148,7 @@
                                     {
                                         label: 'Earning',
                                         data: JSON.parse('{{ monthly_earnings | tojson | safe }}'),
-                                        borderColor: '#ffc107',
+                                        borderColor: '#d48717',
                                         backgroundColor: 'rgba(255, 193, 7, 0.25)',
                                         fill: true,
                                         tension: 0.4,

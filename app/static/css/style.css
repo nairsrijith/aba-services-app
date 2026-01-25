@@ -10,9 +10,11 @@
   --secondary-text-clr: #626986;
   --text-clr-brightness: 1; /* For dark theme, invert icons */
   /* Action colors */
-  --danger-clr: #dc3545; /* red for delete */
-  --action-blue: #0dcaf0; /* aqua for edit/view/download */
-  --success-clr: #198754; /* green for success */
+  --danger-clr: #b7410e; /* red for delete */
+  --action-blue: #5ea0ed; /* blue for edit/view/download */
+  --success-clr: #606e30; /* green for success */
+  --warning-clr: #d48717; /* orange for warning */
+  --info-clr: #5ea0ed; /* blue for info */
 }
 
 html {
@@ -519,6 +521,22 @@ html.dark-mode .table.table-striped > tbody > tr:nth-of-type(odd) {
 /* Badges */
 .badge {
     color: var(--base-clr) !important;
+}
+
+.badge .bg-success {
+    background-color: var(--success-clr) !important;
+}
+
+.badge .bg-danger {
+    background-color: var(--danger-clr) !important;
+}
+
+.badge .bg-warning {
+    background-color: var(--warning-clr) !important;
+}
+
+.badge .bg-info {
+    background-color: var(--info-clr) !important;
 }
 
 /* Links */
@@ -1178,7 +1196,7 @@ body.pdf-document {
 
 .pdf-header h2 { 
     margin: 0; 
-    color: #0d6efd; 
+    color: #1b85b8; 
 }
 
 .pdf-header .right {
@@ -1212,7 +1230,7 @@ body.pdf-document {
 
 .pdf-info-section h3, 
 .pdf-section-title { 
-    color: #0d6efd; 
+    color: #1b85b8; 
     margin: 0 0 8px 0; 
     font-size: 13pt; 
 }
@@ -1259,7 +1277,7 @@ body.pdf-document {
 }
 
 .pdf-table th { 
-    background: #0d6efd; 
+    background: #1b85b8; 
     color: #fff; 
     font-weight: 600; 
     padding: 10px 8px; 
@@ -1285,7 +1303,7 @@ body.pdf-document {
 .pdf-table tr.total-row td { 
     background: #e9ecef; 
     font-weight: bold; 
-    color: #0d6efd; 
+    color: #1b85b8; 
 }
 
 .pdf-table th:first-child, 
@@ -1304,14 +1322,14 @@ body.pdf-document {
 }
 
 .pdf-status-paid {
-    background: #056627;
+    background: #606e30;
     color: #fff;
     border-radius: 4px;
     padding: 2px 8px;
 }
 
 .pdf-status-unpaid {
-    background: #ffc721;
+    background: #d48717;
     color: #212529;
     border-radius: 4px;
     padding: 2px 8px;
