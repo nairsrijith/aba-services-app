@@ -73,7 +73,21 @@
 
             <div class="mt-4 d-flex justify-content-between">
                 <a href="{{ url_for('payroll.list_paystubs') }}" class="btn btn-secondary">Back to List</a>
-                <a href="{{ url_for('payroll.export_paystub_pdf', id=paystub.id) }}" class="btn btn-primary">Export as PDF</a>
+                <div>
+                    <a href="{{ url_for('payroll.export_paystub_pdf', id=paystub.id) }}" class="btn btn-primary">Export as PDF</a>
+                    {% if current_user.user_type in ['admin', 'super'] %}
+                    <form method="POST" action="{{ url_for('payroll.email_paystub', id=paystub.id) }}" style="display:inline;">
+                      {%- if csrf_token is defined -%}
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      {%- endif -%}
+                      {% if paystub.email_sent %}
+                        <button type="submit" class="btn btn-success" title="Email already sent">Email ✓</button>
+                      {% else %}
+                        <button type="submit" class="btn btn-warning">Send Email</button>
+                      {% endif %}
+                    </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

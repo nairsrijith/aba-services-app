@@ -23,6 +23,8 @@ def list_paystubs():
     
     # Get filters
     month = request.args.get('month', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
     
     # Build query based on user role
     query = PayStub.query
@@ -47,8 +49,11 @@ def list_paystubs():
             extract('month', PayStub.period_start) == month
         )
         
-    # Get results
-    paystubs = query.order_by(PayStub.generated_date.desc()).all()
+    # Get results with pagination
+    pagination = query.order_by(PayStub.generated_date.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    paystubs = pagination.items
     
     # Get employee list for filter (only for admin/super)
     if current_user.user_type in ['admin', 'super']:
@@ -59,7 +64,7 @@ def list_paystubs():
     else:
         employees = None
     
-    return render_template('list_paystubs.html', paystubs=paystubs, employees=employees)
+    return render_template('list_paystubs.html', paystubs=paystubs, employees=employees, pagination=pagination, per_page=per_page)
 
 
 @payroll_bp.route('/payrates')
@@ -313,6 +318,9 @@ def email_paystub(id):
         sent = queue_email_with_pdf(recipients=recipients, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
         
         if sent:
+            # Mark email as sent
+            paystub.email_sent = True
+            db.session.commit()
             flash('Paystub emailed to employee.', 'success')
         else:
             flash('Failed to enqueue paystub email.', 'warning')
@@ -422,7 +430,7 @@ def create_paystub():
 
         if 'save' in request.form and preview and not missing_rates:
             # save paystub and items
-            ps = PayStub(employee_id=emp_id, period_start=start, period_end=end, generated_date=date.today(), total_hours=preview['total_hours'], total_amount=preview['total_amount'])
+            ps = PayStub(employee_id=emp_id, period_start=start, period_end=end, generated_date=date.today(), total_hours=preview['total_hours'], total_amount=preview['total_amount'], email_sent=False)
             db.session.add(ps)
             db.session.flush()  # get ps.id
             for ln in preview['lines']:
@@ -432,41 +440,7 @@ def create_paystub():
                 # Mark intervention as paid
                 ln['intervention'].is_paid = True
             db.session.commit()
-            # Attempt to generate PDF and email to employee
-            try:
-                paystub = ps
-                # Resolve org settings for paystub rendering and email
-                settings = get_org_settings()
-                html = render_template('paystub_pdf.html', paystub=paystub, org_name=settings['org_name'], logo_b64=settings.get('logo_b64'), logo_url=settings.get('logo_url'), logo_path=(settings.get('logo_file_uri') or settings.get('logo_web_path')), download_time=datetime.now().strftime('%Y/%m/%d %H:%M:%S'))
-                pdf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-                HTML(string=html, base_url=request.url_root).write_pdf(pdf_temp.name)
-                pdf_temp.close()
-                with open(pdf_temp.name, 'rb') as f:
-                    pdf_bytes = f.read()
-                
-                filename = f"paystub_{paystub.period_start.strftime('%Y%m%d')}-{paystub.period_end.strftime('%Y%m%d')}_{paystub.employee.firstname}_{paystub.employee.lastname}.pdf"
-                body_text = render_template('email/paystub_email.txt', paystub=paystub, org_name=settings['org_name'])
-                body_html = render_template('email/paystub_email.html', paystub=paystub, org_name=settings['org_name'])
-                # Resolve recipients and honor testing override in AppSettings at call site
-                recipients = paystub.employee.email
-                try:
-                    appsettings_obj = settings.get('appsettings')
-                    if appsettings_obj and getattr(appsettings_obj, 'testing_mode', False) and getattr(appsettings_obj, 'testing_email', None):
-                        recipients = appsettings_obj.testing_email
-                except Exception:
-                    pass
-
-                sent = queue_email_with_pdf(recipients=recipients, subject=f"Paystub {paystub.period_start} - {paystub.period_end}", body_text=body_text, body_html=body_html, pdf_bytes=pdf_bytes, filename=filename)
-                try:
-                    os.unlink(pdf_temp.name)
-                except Exception:
-                    pass
-                if sent:
-                    flash('Paystub saved and emailed to employee.', 'success')
-                else:
-                    flash('Paystub saved but failed to email to employee.', 'warning')
-            except Exception as e:
-                flash(f'Paystub saved but failed to generate/email PDF: {str(e)}', 'warning')
+            flash('Paystub saved successfully. Use the "Email" button to send it to the employee.', 'success')
             return redirect(url_for('payroll.list_paystubs'))
 
         if missing_rates:

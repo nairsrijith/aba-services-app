@@ -1,33 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  /* Actions responsive layout */
-  .actions-inline {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  @media (max-width: 1199px) {
-    .actions-inline {
-      display: none;
-    }
-    .actions-dropdown {
-      display: block;
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .actions-dropdown {
-      display: none;
-    }
-    .actions-inline {
-      display: flex;
-    }
+  .actions-dropdown {
+    position: relative;
   }
 
   .actions-dropdown .dropdown-menu {
+    display: block !important;
     max-width: 200px;
+    z-index: 9999 !important;
+    position: fixed !important;
+  }
+
+  .table-wrapper {
+    overflow: visible !important;
+  }
+
+  table {
+    overflow: visible !important;
   }
 
   .actions-dropdown .dropdown-menu .dropdown-item {
@@ -44,6 +34,24 @@
   {% if current_user.user_type in ['admin', 'super'] %}
   <a href="{{ url_for('payroll.create_paystub') }}" class="btn btn-outline-primary mb-3" title="Create new Paystub">Create</a>
   {% endif %}
+  
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <form method="get" class="d-flex align-items-center">
+      <label for="per_page" class="me-2">Rows per page:</label>
+      <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
+        <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+      </select>
+      <input type="hidden" name="page" value="{{ pagination.page }}">
+      {% if current_user.user_type in ['admin', 'super'] %}
+      <input type="hidden" name="employee" value="{{ request.args.get('employee', '') }}">
+      {% endif %}
+      <input type="hidden" name="month" value="{{ request.args.get('month', '') }}">
+    </form>
+  </div>
+  
+  <div class="table-wrapper">
   <table class="table table-hover">
     <thead>
       <tr>
@@ -64,22 +72,7 @@
         <td class="text-end">{{ "%.2f"|format(ps.total_hours|float) }}</td>
         <td class="text-end">{{ "%.2f"|format(ps.total_amount|float) }}</td>
         <td>
-          <!-- Desktop view: inline buttons -->
-          <div class="actions-inline">
-            <a href="{{ url_for('payroll.view_paystub', id=ps.id) }}" class="btn btn-sm btn-success">View</a>
-            <a href="{{ url_for('payroll.export_paystub_pdf', id=ps.id) }}" class="btn btn-sm btn-info" target="_blank">PDF</a>
-            {% if current_user.user_type in ['admin', 'super'] %}
-            <form method="POST" action="{{ url_for('payroll.email_paystub', id=ps.id) }}" style="display:inline;">
-              {%- if csrf_token is defined -%}
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              {%- endif -%}
-              <button type="submit" class="btn btn-sm btn-warning">Email</button>
-            </form>
-            <button class="btn btn-sm btn-danger" onclick="confirmDelete({{ ps.id }})">Delete</button>
-            {% endif %}
-          </div>
-
-          <!-- Mobile view: dropdown menu -->
+          <!-- Actions dropdown menu -->
           <div class="actions-dropdown">
             <div class="dropdown">
               <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -94,7 +87,11 @@
                     {%- if csrf_token is defined -%}
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     {%- endif -%}
-                    <button type="submit" class="dropdown-item">Email</button>
+                    {% if ps.email_sent %}
+                      <button type="submit" class="dropdown-item">Email ✓</button>
+                    {% else %}
+                      <button type="submit" class="dropdown-item">Email</button>
+                    {% endif %}
                   </form>
                 </li>
                 <li><hr class="dropdown-divider"></li>
@@ -112,6 +109,52 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
+
+  <!-- Pagination Navigation -->
+  {% if pagination.pages > 1 %}
+  <nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-end">
+      {% if pagination.has_prev %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('payroll.list_paystubs', page=pagination.prev_num, per_page=per_page, employee=request.args.get('employee', ''), month=request.args.get('month', '')) }}">Previous</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Previous</span>
+      </li>
+      {% endif %}
+
+      {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if page_num %}
+          {% if page_num == pagination.page %}
+          <li class="page-item active">
+            <span class="page-link">{{ page_num }}</span>
+          </li>
+          {% else %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('payroll.list_paystubs', page=page_num, per_page=per_page, employee=request.args.get('employee', ''), month=request.args.get('month', '')) }}">{{ page_num }}</a>
+          </li>
+          {% endif %}
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">...</span>
+        </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if pagination.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('payroll.list_paystubs', page=pagination.next_num, per_page=per_page, employee=request.args.get('employee', ''), month=request.args.get('month', '')) }}">Next</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Next</span>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
 </div>
 
 <!-- Delete Confirmation Modal -->

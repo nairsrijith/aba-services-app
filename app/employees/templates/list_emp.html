@@ -1,5 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .actions-dropdown {
+    position: relative;
+  }
+
+  .actions-dropdown .dropdown-menu {
+    display: block !important;
+    max-width: 200px;
+    z-index: 9999 !important;
+    position: fixed !important;
+  }
+
+  .table-wrapper {
+    overflow: visible !important;
+  }
+
+  table {
+    overflow: visible;
+  }
+
+  .actions-dropdown .dropdown-menu .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .actions-dropdown form {
+    display: contents;
+  }
+</style>
 <div class="container-fluid">
     <div class="col-12">
         <h2>Employees</h2>
@@ -70,15 +99,29 @@
                             <td>{{ employee.city }}</td>
                             <td>{{ employee.state }}</td>
                             <td>
-                                <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-info btn-sm" title="Edit Employee">Edit</a>
-                                <button type="button" class="btn btn-warning btn-sm" title="Deactivate Employee"
-                                    data-bs-toggle="modal" data-bs-target="#deactivateModal"
-                                    data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
-                                    Deactivate
-                                </button>
-                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
-                                    Delete
-                                </button>
+                                <div class="actions-dropdown">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Actions
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" title="Edit Employee">Edit</a></li>
+                                            <li>
+                                                <button type="button" class="dropdown-item" title="Deactivate Employee"
+                                                    data-bs-toggle="modal" data-bs-target="#deactivateModal"
+                                                    data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}">
+                                                    Deactivate
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
+                                                    Delete
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
@@ -93,17 +136,31 @@
                                 <td>{{ employee.city }}</td>
                                 <td>{{ employee.state }}</td>
                                 <td>
-                                    <a href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" class="btn btn-primary btn-sm" title="Edit Employee">Edit</a>
-                                    <button type="button" class="btn btn-success btn-sm" title="Reactivate Employee"
-                                        data-bs-toggle="modal" data-bs-target="#reactivateModal"
-                                        data-employee-id="{{ employee.id }}" 
-                                        data-employee-name="{{ employee.firstname }} {{ employee.lastname }}"
-                                        data-reactivate-url="{{ url_for('employees.reactivate_employee', employee_id=employee.id, next=url_for('employees.list_employees')) }}">
-                                        Reactivate
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
-                                        Delete
-                                    </button>
+                                    <div class="actions-dropdown">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="{{ url_for('employees.update_employee', employee_id=employee.id) }}" title="Edit Employee">Edit</a></li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item" title="Reactivate Employee"
+                                                        data-bs-toggle="modal" data-bs-target="#reactivateModal"
+                                                        data-employee-id="{{ employee.id }}" 
+                                                        data-employee-name="{{ employee.firstname }} {{ employee.lastname }}"
+                                                        data-reactivate-url="{{ url_for('employees.reactivate_employee', employee_id=employee.id, next=url_for('employees.list_employees')) }}">
+                                                        Reactivate
+                                                    </button>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.id }}" data-employee-name="{{ employee.firstname }} {{ employee.lastname }}" title="Delete Employee">
+                                                        Delete
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -111,6 +168,7 @@
                 {% endif %}
             </tbody>
         </table>
+        </div>
         <nav>
             <ul class="pagination justify-content-end">
                 {# Previous #}

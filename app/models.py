@@ -398,6 +398,7 @@ class PayStub(db.Model):
     total_hours = db.Column(db.Float, nullable=False, default=0.0)
     total_amount = db.Column(db.Float, nullable=False, default=0.0)
     notes = db.Column(db.Text)
+    email_sent = db.Column(db.Boolean, default=False, nullable=False)
 
     employee = db.relationship('Employee', backref='paystubs')
     items = db.relationship('PayStubItem', backref='paystub', cascade='all, delete-orphan')

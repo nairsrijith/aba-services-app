@@ -1,5 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .actions-dropdown {
+    position: relative;
+  }
+
+  .actions-dropdown .dropdown-menu {
+    display: block !important;
+    max-width: 200px;
+    z-index: 9999 !important;
+    position: fixed !important;
+  }
+
+  .table-wrapper {
+    overflow: visible !important;
+  }
+
+  table {
+    overflow: visible;
+  }
+
+  .actions-dropdown .dropdown-menu .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .actions-dropdown form {
+    display: contents;
+  }
+</style>
 
 <div class="container-fluid col-12">
     <h2>Users</h2>
@@ -39,29 +68,47 @@
                         <td class="text-center"><input type="checkbox" disabled {% if user.login_enabled %}checked{% endif %}></td>
                         <td>{{user.activation_key}}</td>
                         <td>
-                            {% if user.user_type in ['therapist', 'supervisor'] %}
-                                <button class="btn btn-success btn-sm" title="Promote to Admin" data-action="{{ url_for('users.promote_user', id=user.id) }}">
-                                    Promote
-                                </button>
-                            {% elif user.user_type == "admin" %}
-                                <button class="btn btn-danger btn-sm" title="Remove admin privileges (role will be based on position)" data-action="{{ url_for('users.demote_user', id=user.id) }}" {% if user.position == "Administrator" %}disabled{% else %}enabled{% endif %}>
-                                    Demote
-                                </button>
-                            {% endif %}
-                            {% if user.locked_until %}
-                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">
-                                    Unlock
-                                </button>
-                            {% else %}
-                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Lock User">
-                                    Lock
-                                </button>
-                            {% endif %}
-                            {% if user.activation_key %}
-                                <button class="btn btn-info btn-sm" title="Send Activation Email" data-action="{{ url_for('users.send_activation_email', id=user.id) }}">
-                                    Send Activation
-                                </button>
-                            {% endif %}
+                            <div class="actions-dropdown">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Actions
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        {% if user.user_type in ['therapist', 'supervisor'] %}
+                                            <li>
+                                                <button class="dropdown-item" title="Promote to Admin" data-action="{{ url_for('users.promote_user', id=user.id) }}">
+                                                    Promote to Admin
+                                                </button>
+                                            </li>
+                                        {% elif user.user_type == "admin" %}
+                                            <li>
+                                                <button class="dropdown-item" title="Remove admin privileges (role will be based on position)" data-action="{{ url_for('users.demote_user', id=user.id) }}" {% if user.position == "Administrator" %}disabled{% else %}enabled{% endif %}>
+                                                    Demote from Admin
+                                                </button>
+                                            </li>
+                                        {% endif %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            {% if user.locked_until %}
+                                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#unlockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Unlock User">
+                                                    Unlock User
+                                                </button>
+                                            {% else %}
+                                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#lockModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Lock User">
+                                                    Lock User
+                                                </button>
+                                            {% endif %}
+                                        </li>
+                                        {% if user.activation_key %}
+                                            <li>
+                                                <button class="dropdown-item" title="Send Activation Email" data-action="{{ url_for('users.send_activation_email', id=user.id) }}">
+                                                    Send Activation Email
+                                                </button>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
                             <form id="roleForm-{{ user.id }}" method="POST" style="display:none;"></form>
                         </td>
                     </tr>
@@ -69,6 +116,7 @@
             {% endif %}
         </tbody>
     </table>
+    </div>
     <nav>
         <ul class="pagination justify-content-end">
             {# Previous #}

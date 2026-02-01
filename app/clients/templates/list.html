@@ -1,5 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .actions-dropdown {
+    position: relative;
+  }
+
+  .actions-dropdown .dropdown-menu {
+    display: block !important;
+    max-width: 200px;
+    z-index: 9999 !important;
+    position: fixed !important;
+  }
+
+  .table-wrapper {
+    overflow: visible !important;
+  }
+
+  table {
+    overflow: visible;
+  }
+
+  .actions-dropdown .dropdown-menu .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .actions-dropdown form {
+    display: contents;
+  }
+</style>
 <div class="container-fluid">
     <div class="col-12">
         
@@ -79,15 +108,29 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('clients.update_client', client_id=client.id) }}" class="btn btn-info btn-sm" title="Edit Client">Edit</a>
-                                <button type="button" class="btn btn-warning btn-sm" title="Deactivate Client"
-                                    data-bs-toggle="modal" data-bs-target="#deactivateClientModal"
-                                    data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
-                                    Deactivate
-                                </button>
-                                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
-                                    Delete
-                                </button>
+                                <div class="actions-dropdown">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Actions
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{{ url_for('clients.update_client', client_id=client.id) }}" title="Edit Client">Edit</a></li>
+                                            <li>
+                                                <button type="button" class="dropdown-item" title="Deactivate Client"
+                                                    data-bs-toggle="modal" data-bs-target="#deactivateClientModal"
+                                                    data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                                                    Deactivate
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
+                                                    Delete
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
@@ -109,15 +152,29 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('clients.update_client', client_id=client.id) }}" class="btn btn-primary btn-sm" title="Edit Client">Edit</a>
-                                    <button type="button" class="btn btn-success btn-sm" title="Reactivate Client"
-                                        data-bs-toggle="modal" data-bs-target="#reactivateClientModal"
-                                        data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
-                                        Reactivate
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
-                                        Delete
-                                    </button>
+                                    <div class="actions-dropdown">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                Actions
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="{{ url_for('clients.update_client', client_id=client.id) }}" title="Edit Client">Edit</a></li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item" title="Reactivate Client"
+                                                        data-bs-toggle="modal" data-bs-target="#reactivateClientModal"
+                                                        data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                                                        Reactivate
+                                                    </button>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
+                                                        Delete
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -125,6 +182,7 @@
                 {% endif %}
             </tbody>
         </table>
+        </div>
         <nav>
             <ul class="pagination justify-content-end">
                 {# Previous #}

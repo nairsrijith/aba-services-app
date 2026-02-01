@@ -19,33 +19,23 @@
     background-color: #606e30; /* Green */
   }
 
-  /* Actions responsive layout */
-  .actions-inline {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  @media (max-width: 1199px) {
-    .actions-inline {
-      display: none;
-    }
-    .actions-dropdown {
-      display: block;
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .actions-dropdown {
-      display: none;
-    }
-    .actions-inline {
-      display: flex;
-    }
+  .actions-dropdown {
+    position: relative;
   }
 
   .actions-dropdown .dropdown-menu {
+    display: block !important;
     max-width: 200px;
+    z-index: 9999 !important;
+    position: fixed !important;
+  }
+
+  .table-wrapper {
+    overflow: visible !important;
+  }
+
+  table {
+    overflow: visible !important;
   }
 
   .actions-dropdown .dropdown-menu .dropdown-item {
@@ -62,6 +52,19 @@
         <h2>Invoices</h2>
         <a href="{{ url_for('invoices.invoice_client_select') }}" title="Create New Invoice" class="btn btn-outline-primary mb-3">Create</a>
         
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <form method="get" class="d-flex align-items-center">
+                <label for="per_page" class="me-2">Rows per page:</label>
+                <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
+                    <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                </select>
+                <input type="hidden" name="page" value="{{ pagination.page }}">
+            </form>
+        </div>
+        
+        <div class="table-wrapper">
         <table class="table table-hover">
             <thead>
                 <tr>
@@ -80,7 +83,7 @@
                 <tr>
                     <td>{{ invoice.invoice_number }}</td>
                     <td class="text-end">{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}</td>
-                    <td class="text-end due-date-cell" data-due-date="{{ invoice.payby_date.strftime('%Y-%m-%d') }}">
+                    <td class="text-end due-date-cell" data-due-date="{{ invoice.payby_date.strftime('%Y-%m-%d') }}" data-paid-date="{% if invoice.paid_date %}{{ invoice.paid_date.strftime('%Y-%m-%d') }}{% endif %}" data-status="{{ invoice.status }}">
                         <span class="due-date-badge"></span>
                         {{ invoice.payby_date.strftime('%Y-%m-%d') }}
                     </td>
@@ -107,68 +110,7 @@
                         {%- endif -%}
                     </td>
                     <td>
-                        <!-- Desktop view: inline buttons -->
-                        <div class="actions-inline">
-                            <a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-success btn-sm" title="Preview Invoice">View</a>
-                            <a href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" class="btn btn-info btn-sm" target="_blank" title="Download Invoice">Download</a>
-
-                            <form method="POST" action="{{ url_for('invoices.email_invoice', invoice_number=invoice.invoice_number) }}" style="display:inline;">
-                                {%- if csrf_token is defined -%}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                {%- endif -%}
-                                <button type="submit" class="btn btn-warning btn-sm" title="Email Invoice">Email</button>
-                            </form>
-
-                            {% if invoice.status != 'Paid' %}
-                                <form method="POST" action="{{ url_for('invoices.send_reminder', invoice_number=invoice.invoice_number) }}" style="display:inline;">
-                                    {%- if csrf_token is defined -%}
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {%- endif -%}
-                                    <button type="submit" class="btn btn-warning btn-sm" title="Send Reminder Email">Remind</button>
-                                </form>
-                            {% else %}
-                                <button type="button" class="btn btn-warning btn-sm" disabled title="Invoice already paid">Remind</button>
-                            {% endif %}
-
-                            {% if invoice.status == 'Draft' %}
-                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal"
-                                        data-invoice-number="{{ invoice.invoice_number }}"
-                                        data-client-name="{{ invoice.client.firstname }} {{ invoice.client.lastname }}"
-                                        data-invoice-date="{{ invoice.invoiced_date.strftime('%Y-%m-%d') }}"
-                                        data-total-cost="{{ "%.2f"|format(invoice.total_cost|float) }}"
-                                        title="Delete Invoice">
-                                    Delete
-                                </button>
-                            {% else %}
-                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Cannot delete a paid invoice">Delete</button>
-                            {% endif %}
-
-                            {% if invoice.status != 'Draft' %}
-                                <form method="POST" action="{{ url_for('invoices.mark_draft', invoice_number=invoice.invoice_number) }}" style="display:inline;">
-                                    {%- if csrf_token is defined -%}
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {%- endif -%}
-                                    <button type="submit" class="btn btn-primary btn-sm" title="Send back to Draft">Draft</button>
-                                </form>
-                            {% else %}
-                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Invoice is a draft">Draft</button>
-                            {% endif %}
-
-                            {% if invoice.status == 'Draft' %}
-                                <form method="POST" action="{{ url_for('invoices.mark_sent', invoice_number=invoice.invoice_number) }}" style="display:inline;">
-                                    {%- if csrf_token is defined -%}
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {%- endif -%}
-                                    <button type="submit" class="btn btn-primary btn-sm" title="Mark as Sent">Send</button>
-                                </form>
-                            {% elif invoice.status == 'Sent' %}
-                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#markPaidModal" data-invoice="{{ invoice.invoice_number }}" title="Mark as Paid">Paid</button>
-                            {% else %}
-                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Invoice already paid">Paid</button>
-                            {% endif %}
-                        </div>
-
-                        <!-- Mobile view: dropdown menu -->
+                        <!-- Actions dropdown menu -->
                         <div class="actions-dropdown">
                             <div class="dropdown">
                                 <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -251,10 +193,52 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
+
+        <!-- Pagination -->
+        <nav>
+            <ul class="pagination justify-content-end">
+        {# Previous #}
+        {% set prev_args = request.args.to_dict() %}
+        {% set _ = prev_args.update({'page': pagination.prev_num, 'per_page': per_page}) %}
+        {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('invoices.list_invoices', **prev_args) }}">Previous</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+
+        {# Page numbers #}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                {% set page_args = request.args.to_dict() %}
+                {% set _ = page_args.update({'page': p, 'per_page': per_page}) %}
+                {% if p == pagination.page %}
+                    <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                {% else %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('invoices.list_invoices', **page_args) }}">{{ p }}</a></li>
+                {% endif %}
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+        {% endfor %}
+
+        {# Next #}
+        {% set next_args = request.args.to_dict() %}
+        {% set _ = next_args.update({'page': pagination.next_num, 'per_page': per_page}) %}
+        {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('invoices.list_invoices', **next_args) }}">Next</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+            </ul>
+        </nav>
     </div>
 </div>
 
-<!-- Delete Invoice Modal -->
 <div class="modal fade" id="deleteInvoiceModal" tabindex="-1" aria-labelledby="deleteInvoiceModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -327,24 +311,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
     dueDateCells.forEach(cell => {
         const dueDateStr = cell.getAttribute('data-due-date');
+        const paidDateStr = cell.getAttribute('data-paid-date');
+        const status = cell.getAttribute('data-status');
         const dueDate = new Date(dueDateStr);
         dueDate.setHours(0, 0, 0, 0);
         
-        const daysDifference = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
         const badge = cell.querySelector('.due-date-badge');
         
-        if (daysDifference <= 0) {
-          // Overdue or due today
-          badge.classList.add('overdue');
-          cell.title = daysDifference === 0 ? 'Due today' : 'Overdue by ' + Math.abs(daysDifference) + ' days';
-        } else if (daysDifference <= 2) {
-          // Due within 2 days
-          badge.classList.add('warning');
-          cell.title = 'Due in ' + daysDifference + ' day' + (daysDifference > 1 ? 's' : '');
+        // If invoice is paid, compare paid_date to due_date
+        if (status === 'Paid' && paidDateStr) {
+          const paidDate = new Date(paidDateStr);
+          paidDate.setHours(0, 0, 0, 0);
+          
+          const daysDifference = Math.floor((paidDate - dueDate) / (1000 * 60 * 60 * 24));
+          
+          if (daysDifference <= 0) {
+            // Paid on time or on due date
+            badge.classList.add('ok');
+            cell.title = daysDifference === 0 ? 'Paid on due date' : 'Paid ' + Math.abs(daysDifference) + ' day' + (Math.abs(daysDifference) > 1 ? 's' : '') + ' early';
+          } else if (daysDifference <= 3) {
+            // Paid late but within 3 days
+            badge.classList.add('warning');
+            cell.title = 'Paid ' + daysDifference + ' day' + (daysDifference > 1 ? 's' : '') + ' late';
+          } else {
+            // Paid significantly late
+            badge.classList.add('overdue');
+            cell.title = 'Paid ' + daysDifference + ' days late';
+          }
         } else {
-          // Due in more than 2 days
-          badge.classList.add('ok');
-          cell.title = 'Due in ' + daysDifference + ' days';
+          // Invoice not paid, compare due_date to today
+          const daysDifference = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+          
+          if (daysDifference <= 0) {
+            // Overdue or due today
+            badge.classList.add('overdue');
+            cell.title = daysDifference === 0 ? 'Due today' : 'Overdue by ' + Math.abs(daysDifference) + ' days';
+          } else if (daysDifference <= 2) {
+            // Due within 2 days
+            badge.classList.add('warning');
+            cell.title = 'Due in ' + daysDifference + ' day' + (daysDifference > 1 ? 's' : '');
+          } else {
+            // Due in more than 2 days
+            badge.classList.add('ok');
+            cell.title = 'Due in ' + daysDifference + ' days';
+          }
         }
     });
 

@@ -29,9 +29,18 @@ def parse_date(val):
 @login_required
 def list_invoices():
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
-        invoices = Invoice.query.order_by(Invoice.invoiced_date.desc()).all()
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        # Paginate invoices
+        pagination = Invoice.query.order_by(Invoice.invoiced_date.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        invoices = pagination.items
+        
         settings = get_org_settings()
-        return render_template('list_invoices.html', invoices=invoices, org_name=settings['org_name'])
+        return render_template('list_invoices.html', invoices=invoices, pagination=pagination, per_page=per_page, org_name=settings['org_name'])
     else:
         abort(403)
 
