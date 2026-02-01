@@ -119,15 +119,18 @@ def demote_user(id):
 def send_activation_email(id):
     if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         employee = Employee.query.get_or_404(id)
+        settings = get_org_settings()
         
         # Generate activation email content
-        subject = f"Account Activation - {get_org_settings()['org_name']}"
+        subject = f"Account Activation - {settings['org_name']}"
         body_html = render_template('email/activation_email.html', 
                                   firstname=employee.firstname,
-                                  activation_key=employee.activation_key)
+                                  activation_key=employee.activation_key,
+                                  org_name=settings['org_name'])
         body_text = render_template('email/activation_email.txt',
                                   firstname=employee.firstname,
-                                  activation_key=employee.activation_key)
+                                  activation_key=employee.activation_key,
+                                  org_name=settings['org_name'])
         
         # Send email
         success = queue_email(
