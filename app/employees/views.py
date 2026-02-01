@@ -146,17 +146,8 @@ def add_employee():
                 db.session.add(base_payrate)
                 
                 db.session.commit()
-                # Try to email the activation key to the employee
-                try:
-                    settings = get_org_settings()
-                    subject = f"{settings['org_name']} - Activation Key"
-                    body_text = render_template('email/activation_email.txt', firstname=new_employee.firstname, activation_key=activation_key, org_name=settings['org_name'])
-                    body_html = render_template('email/activation_email.html', firstname=new_employee.firstname, activation_key=activation_key, org_name=settings['org_name'])
-                    queue_email(subject=subject, recipients=new_employee.email, body_text=body_text, body_html=body_html)
-                    flash('Employee added successfully! Activation key emailed to user. Base pay rate set to CA${:.2f} effective {}.'.format(
-                        base_rate, date.today().strftime('%Y-%m-%d')), 'success')
-                except Exception:
-                    flash('Employee added successfully! Could not send activation email; display activation key: {}'.format(activation_key), 'warning')
+                flash('Employee added successfully! Base pay rate set to CA${:.2f} effective {}. Send activation email from Users page.'.format(
+                    base_rate, date.today().strftime('%Y-%m-%d')), 'success')
                 return redirect(url_for('employees.list_employees'))
             except Exception as e:
                 db.session.rollback()
