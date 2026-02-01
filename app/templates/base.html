@@ -410,5 +410,59 @@
     </script>
   {% endif %}
 
+  <script>
+    // Move action dropdown menus to document.body on show, restore on hide.
+    // This avoids clipping and stacking-context issues with tables and pagination.
+    document.addEventListener('DOMContentLoaded', function() {
+      function attachPortal(drop) {
+        const toggle = drop.querySelector('[data-bs-toggle="dropdown"]');
+        const menu = drop.querySelector('.dropdown-menu');
+        if (!toggle || !menu) return;
+
+        let isPortal = false;
+
+        function openHandler() {
+          // store dims
+          const rect = toggle.getBoundingClientRect();
+          // set styles for viewport positioning
+          menu.style.position = 'fixed';
+          menu.style.left = rect.left + 'px';
+          menu.style.top = rect.bottom + 'px';
+          menu.style.minWidth = Math.max(rect.width, 120) + 'px';
+          menu.style.zIndex = '20000';
+          document.body.appendChild(menu);
+          isPortal = true;
+        }
+
+        function closeHandler() {
+          if (!isPortal) return;
+          // restore menu into its dropdown element
+          drop.appendChild(menu);
+          menu.style.position = '';
+          menu.style.left = '';
+          menu.style.top = '';
+          menu.style.minWidth = '';
+          menu.style.zIndex = '';
+          isPortal = false;
+        }
+
+        drop.addEventListener('show.bs.dropdown', openHandler);
+        drop.addEventListener('hide.bs.dropdown', closeHandler);
+
+        // reposition while open on scroll/resize
+        ['scroll', 'resize'].forEach(ev => {
+          window.addEventListener(ev, function() {
+            if (!isPortal) return;
+            const rect = toggle.getBoundingClientRect();
+            menu.style.left = rect.left + 'px';
+            menu.style.top = rect.bottom + 'px';
+          }, { passive: true });
+        });
+      }
+
+      document.querySelectorAll('.actions-dropdown .dropdown').forEach(attachPortal);
+    });
+  </script>
+
 </body>
 </html>
