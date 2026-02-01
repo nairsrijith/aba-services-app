@@ -1,7 +1,6 @@
 import os
 import logging
 from email.message import EmailMessage
-from email.utils import getaddresses
 from threading import Thread
 from typing import List, Tuple, Optional
 import base64

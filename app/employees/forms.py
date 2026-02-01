@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, DecimalField
-from wtforms.validators import DataRequired, Email, length, ValidationError, NumberRange
+from wtforms.validators import DataRequired, Email, length, ValidationError
 from app.models import Employee
 from app.utils.validators import validate_phone_number
 

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from app import db
 from flask_login import login_required, current_user
 from app.models import Employee
-from app.users.forms import SetRoleForm, UpdatePasswordForm
+from app.users.forms import UpdatePasswordForm
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import os, string, secrets
