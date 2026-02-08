@@ -6,73 +6,144 @@
             <form method="POST">
                 {{ form.hidden_tag() }}
                 {{ form.employee_id(type="hidden") }}
-                <div class="row mb-3">
-                    <div>{{ form.firstname.label(class="col-form-label") }}{{ form.firstname(size=51, class="form-control", placeholder="First Name") }}</div>
-                    <div>{{ form.lastname.label(class="col-form-label") }}{{ form.lastname(size=51, class="form-control", placeholder="Last Name") }}</div>
-                    <div>
-                        {{ form.position.label(class="col-form-label") }}
-                        {{ form.position(class="form-select", placeholder="Designation") }}
-                        {% for error in form.position.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                        {% endfor %}
+                
+                <!-- First Row: Personal Information, Designation, Contact Details -->
+                <div class="row">
+                    <!-- Personal Information Section -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Personal Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.firstname.label(class="col-form-label") }}
+                                    {{ form.firstname(size=51, class="form-control", placeholder="First Name") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.lastname.label(class="col-form-label") }}
+                                    {{ form.lastname(size=51, class="form-control", placeholder="Last Name") }}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        {{ form.rba_number.label(class="col-form-label") }}
-                        {{ form.rba_number(size=25, class="form-control", placeholder="RBA Number", disabled=True) }}
-                        {% for error in form.rba_number.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                        {% endfor %}
+
+                    <!-- Designation Section -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Designation & Credentials</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.position.label(class="col-form-label") }}
+                                    {{ form.position(class="form-select", placeholder="Designation") }}
+                                    {% for error in form.position.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.rba_number.label(class="col-form-label") }}
+                                    {{ form.rba_number(size=25, class="form-control", placeholder="RBA Number", disabled=True) }}
+                                    {% for error in form.rba_number.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const positionSelect = document.querySelector('select[name="position"]');
-                            const rbaInput = document.querySelector('input[name="rba_number"]');
-                            
-                            function updateRbaField() {
-                                rbaInput.disabled = positionSelect.value !== 'Behaviour Analyst';
-                                if (rbaInput.disabled && !rbaInput.hasAttribute('data-initial-value')) {
-                                    rbaInput.value = '';
-                                }
-                            }
-                            
-                            // Store initial value if it exists (for update form)
-                            if (rbaInput.value) {
-                                rbaInput.setAttribute('data-initial-value', rbaInput.value);
-                            }
-                            
-                            positionSelect.addEventListener('change', updateRbaField);
-                            updateRbaField(); // Initial state
-                        });
-                    </script>
+
+                    <!-- Contact Details Section -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Contact Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.email.label(class="col-form-label") }}
+                                    {{ form.email(size=51, class="form-control", placeholder="your@email.com") }}
+                                    {% for error in form.email.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.cell.label(class="col-form-label") }}
+                                    {{ form.cell(class="form-control", type="tel", value=form.cell.data|format_phone) }}
+                                    {% for error in form.cell.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="row mb-3">
-                    <div>
-                        {{ form.email.label(class="col-form-label") }}
-                        {{ form.email(size=51, class="form-control", placeholder="your@email.com") }}
-                        {% for error in form.email.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div>
-                        {{ form.cell.label(class="col-form-label") }}
-                        {{ form.cell(class="form-control", type="tel", value=form.cell.data|format_phone) }}
-                        {% for error in form.cell.errors %}
-                            <div class="text-danger">{{ error }}</div>
-                        {% endfor %}
+
+                <!-- Address Information Section -->
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Address Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        {{ form.address1.label(class="col-form-label") }}
+                                        {{ form.address1(class="form-control", placeholder="123 King St.") }}
+                                    </div>
+                                    <div class="col-12">
+                                        {{ form.address2.label(class="col-form-label") }}
+                                        {{ form.address2(class="form-control", placeholder="Apt/Suite") }}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        {{ form.city.label(class="col-form-label") }}
+                                        {{ form.city(class="form-control", placeholder="City") }}
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        {{ form.state.label(class="col-form-label") }}
+                                        {{ form.state(class="form-select") }}
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        {{ form.zipcode.label(class="col-form-label") }}
+                                        {{ form.zipcode(size=6, class="form-control", placeholder="Zip Code") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="row mb-3">
-                    <div>{{ form.address1.label(class="col-form-label") }}{{ form.address1(class="form-control", placeholder="123 King St.") }}</div>
-                    <div>{{ form.address2.label(class="col-form-label") }}{{ form.address2(class="form-control", placeholder="Apt/Suite") }}</div>
-                    <div>{{ form.city.label(class="col-form-label") }}{{ form.city(class="form-control", placeholder="City") }}</div>
-                    <div>{{ form.state.label(class="col-form-label") }}{{ form.state(class="form-select") }}</div>
-                    <div>{{ form.zipcode.label(class="col-form-label") }}{{ form.zipcode(size=6, class="form-control", placeholder="Zip Code") }}</div>
-                </div>
-                <div class="col-auto">
-                    {{ form.submit(class="btn btn-outline-warning") }}
+
+                <!-- Action Buttons -->
+                <div class="col-auto mb-4">
+                    {{ form.submit(class="btn btn-warning") }}
                     <a href="{{ url_for('employees.list_employees') }}" class="btn btn-secondary ms-2">Cancel</a>
                 </div>
             </form>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const positionSelect = document.querySelector('select[name="position"]');
+            const rbaInput = document.querySelector('input[name="rba_number"]');
+            
+            function updateRbaField() {
+                rbaInput.disabled = positionSelect.value !== 'Behaviour Analyst';
+                if (rbaInput.disabled && !rbaInput.hasAttribute('data-initial-value')) {
+                    rbaInput.value = '';
+                }
+            }
+            
+            // Store initial value if it exists (for update form)
+            if (rbaInput.value) {
+                rbaInput.setAttribute('data-initial-value', rbaInput.value);
+            }
+            
+            positionSelect.addEventListener('change', updateRbaField);
+            updateRbaField(); // Initial state
+        });
+    </script>
 {% endblock %}

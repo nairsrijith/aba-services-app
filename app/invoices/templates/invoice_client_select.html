@@ -11,7 +11,7 @@
                 <div>{{ form.date_to.label(class="col-form-label") }}{{ form.date_to(class="form-control", type="date", **{"data-allow-future": ""}) }}</div>
             </div>
             <div class="col-auto">
-                {{ form.submit(class="btn btn-outline-primary") }}
+                {{ form.submit(class="btn btn-primary") }}
                 <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-secondary ms-2">Cancel</a>
             </div>
         </form>

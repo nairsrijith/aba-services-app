@@ -12,9 +12,9 @@
   <div class="row">
     <div class="col-12">
         <h2>Sessions</h2>
-        <a href="{{ url_for('interventions.add_intervention') }}" title="Add New Session" class="btn btn-outline-primary mb-3">Add</a>
-        <button type="button" class="btn btn-outline-secondary mb-3" data-bs-toggle="modal" data-bs-target="#bulkUploadModal" title="Bulk Upload Sessions">Bulk Upload</button>
-        <a href="{{ url_for('interventions.download_template') }}" class="btn btn-outline-info mb-3" title="Download Template">Download Template</a>
+        <a href="{{ url_for('interventions.add_intervention') }}" title="Add New Session" class="btn btn-primary mb-3">Add</a>
+        <button type="button" class="btn btn-secondary mb-3" data-bs-toggle="modal" data-bs-target="#bulkUploadModal" title="Bulk Upload Sessions">Bulk Upload</button>
+        <a href="{{ url_for('interventions.download_template') }}" class="btn btn-info mb-3" title="Download Template">Download Template</a>
 
         <!-- FILTERS AND PER PAGE SELECTOR -->
         <form method="GET" class="mb-3 row g-2 align-items-end">

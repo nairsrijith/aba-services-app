@@ -79,60 +79,147 @@ def add_intervention():
             # No employee selected yet, show all activities
             form.intervention_type.choices = []
 
-        if form.validate_on_submit():
-            # Check for overlapping sessions first
-            if not form.validate_session_time():
-                settings = get_org_settings()
-                return render_template('add_int.html', form=form, org_name=settings['org_name'])
-
+        if request.method == 'POST':
+            # Handle multiple sessions submission
             try:
-                client_id = form.client_id.data
+                client_id = request.form.get('client_id', '').strip()
+                employee_id = request.form.get('employee_id', '').strip()
+                
+                if not client_id or not employee_id:
+                    flash('Please select both client and employee.', 'danger')
+                    settings = get_org_settings()
+                    return render_template('add_int.html', form=form, org_name=settings['org_name'])
+                
                 client_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(client_id))
-                filenames = []
                 
                 try:
                     # Create upload directory
                     os.makedirs(client_folder, exist_ok=True)
                 except OSError as e:
                     flash('Error creating upload directory: ' + str(e), 'error')
-                    return render_template('add_int.html', form=form, org_name=org_name)
-
-                # Handle file uploads
-                for file_storage in request.files.getlist(form.file_names.name):
-                    if file_storage and file_storage.filename:
-                        if allowed_file(file_storage.filename):
-                            try:
-                                filename = secure_filename(file_storage.filename)
-                                file_path = os.path.join(client_folder, filename)
-                                file_storage.save(file_path)
-                                filenames.append(filename)
-                                flash(f"File added: {file_storage.filename}", "success")
-                            except Exception as e:
-                                flash(f'Error uploading file {file_storage.filename}: {str(e)}', 'error')
-                                continue
-                        else:
-                            flash(f"File type not allowed: {file_storage.filename}", "danger")
+                    return render_template('add_int.html', form=form, org_name=settings['org_name'])
                 
-                # Create and save new intervention
-                new_intervention = Intervention(
-                    client_id=client_id,
-                    employee_id=form.employee_id.data,
-                    intervention_type=form.intervention_type.data,
-                    date=form.date.data,
-                    start_time=form.start_time.data,
-                    end_time=form.end_time.data,
-                    duration=round(float(form.duration.data), 2),
-                    file_names=json.dumps(filenames)  # Save as JSON string
-                )
+                # Process multiple sessions
+                session_count = 0
+                error_count = 0
                 
-                db.session.add(new_intervention)
-                db.session.commit()
-                flash('Intervention added successfully!', 'success')
-                return redirect(url_for('interventions.list_interventions'))
+                # Find all session rows submitted
+                row_index = 0
+                while True:
+                    session_date_key = f'session_date_{row_index}'
+                    if session_date_key not in request.form:
+                        break
+                    
+                    try:
+                        # Get session data
+                        session_date_str = request.form.get(session_date_key, '').strip()
+                        start_time_str = request.form.get(f'session_start_time_{row_index}', '').strip()
+                        end_time_str = request.form.get(f'session_end_time_{row_index}', '').strip()
+                        session_type = request.form.get(f'session_type_{row_index}', '').strip()
+                        duration_str = request.form.get(f'session_duration_{row_index}', '').strip()
+                        
+                        # Skip empty rows
+                        if not session_date_str or not start_time_str or not end_time_str or not session_type:
+                            row_index += 1
+                            continue
+                        
+                        # Parse date and times
+                        try:
+                            session_date = datetime.strptime(session_date_str, '%Y-%m-%d').date()
+                            start_time = datetime.strptime(start_time_str, '%H:%M').time()
+                            end_time = datetime.strptime(end_time_str, '%H:%M').time()
+                        except ValueError as e:
+                            flash(f'Row {row_index + 1}: Invalid date or time format.', 'warning')
+                            error_count += 1
+                            row_index += 1
+                            continue
+                        
+                        # Validate times
+                        if start_time >= end_time:
+                            flash(f'Row {row_index + 1}: End time must be after start time.', 'warning')
+                            error_count += 1
+                            row_index += 1
+                            continue
+                        
+                        # Check for overlapping sessions
+                        if Intervention.has_overlap(
+                            employee_id=int(employee_id),
+                            date=session_date,
+                            start_time=start_time,
+                            end_time=end_time
+                        ):
+                            employee = Employee.query.get(int(employee_id))
+                            flash(f'Row {row_index + 1}: Schedule conflict - {employee.firstname} {employee.lastname} already has a session scheduled during {session_date.strftime("%Y-%m-%d")} {start_time.strftime("%H:%M")} - {end_time.strftime("%H:%M")}.', 'warning')
+                            error_count += 1
+                            row_index += 1
+                            continue
+                        
+                        # Parse duration
+                        try:
+                            duration = float(duration_str) if duration_str else 0.0
+                        except ValueError:
+                            flash(f'Row {row_index + 1}: Invalid duration.', 'warning')
+                            error_count += 1
+                            row_index += 1
+                            continue
+                        
+                        # Handle file uploads for this row
+                        filenames = []
+                        file_input_name = f'session_files_{row_index}'
+                        for file_storage in request.files.getlist(file_input_name):
+                            if file_storage and file_storage.filename:
+                                if allowed_file(file_storage.filename):
+                                    try:
+                                        filename = secure_filename(file_storage.filename)
+                                        file_path = os.path.join(client_folder, filename)
+                                        file_storage.save(file_path)
+                                        filenames.append(filename)
+                                    except Exception as e:
+                                        flash(f'Row {row_index + 1}: Error uploading file {file_storage.filename}: {str(e)}', 'warning')
+                                        continue
+                                else:
+                                    flash(f'Row {row_index + 1}: File type not allowed: {file_storage.filename}', 'warning')
+                        
+                        # Create intervention
+                        new_intervention = Intervention(
+                            client_id=int(client_id),
+                            employee_id=int(employee_id),
+                            intervention_type=session_type,
+                            date=session_date,
+                            start_time=start_time,
+                            end_time=end_time,
+                            duration=round(duration, 2),
+                            file_names=json.dumps(filenames)
+                        )
+                        
+                        db.session.add(new_intervention)
+                        session_count += 1
+                        
+                    except Exception as e:
+                        flash(f'Row {row_index + 1}: Unexpected error: {str(e)}', 'warning')
+                        error_count += 1
+                    
+                    row_index += 1
+                
+                # Commit all sessions
+                if session_count > 0:
+                    try:
+                        db.session.commit()
+                        flash(f'{session_count} session(s) added successfully!', 'success')
+                        return redirect(url_for('interventions.list_interventions'))
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Error saving sessions: {str(e)}', 'error')
+                        settings = get_org_settings()
+                        return render_template('add_int.html', form=form, org_name=settings['org_name'])
+                else:
+                    flash('No valid sessions to add. Please check the errors above.', 'danger')
+                    settings = get_org_settings()
+                    return render_template('add_int.html', form=form, org_name=settings['org_name'])
 
             except Exception as e:
                 db.session.rollback()
-                flash('Error adding intervention: ' + str(e), 'error')
+                flash('Error adding interventions: ' + str(e), 'error')
                 settings = get_org_settings()
                 return render_template('add_int.html', form=form, org_name=settings['org_name'])
             
@@ -140,6 +227,43 @@ def add_intervention():
         return render_template('add_int.html', form=form, org_name=settings['org_name'])
     else:
         abort(403)
+
+
+@interventions_bp.route('/get_intervention_types', methods=['GET'])
+@login_required
+def get_intervention_types():
+    """API endpoint to get intervention types available for a selected employee"""
+    employee_id = request.args.get('employee_id', type=int)
+    
+    if not employee_id:
+        return app.response_class(
+            response=json.dumps({'types': []}),
+            status=200,
+            mimetype='application/json'
+        )
+    
+    employee = Employee.query.get(employee_id)
+    
+    if not employee:
+        return app.response_class(
+            response=json.dumps({'types': []}),
+            status=200,
+            mimetype='application/json'
+        )
+    
+    # Get activities based on employee position
+    if employee.position == 'Behaviour Analyst':
+        activities = Activity.query.filter_by(activity_category='Supervision').all()
+    else:  # Therapist or Senior Therapist
+        activities = Activity.query.filter_by(activity_category='Therapy').all()
+    
+    types = [a.activity_name for a in activities]
+    
+    return app.response_class(
+        response=json.dumps({'types': types}),
+        status=200,
+        mimetype='application/json'
+    )
 
 
 @interventions_bp.route('/list', methods=['GET'])

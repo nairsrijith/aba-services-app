@@ -9,7 +9,7 @@
             <div>{{ form.email.label(class="col-form-label") }}{{ form.email(class="form-control", placeholder="email@example.com") }}</div>
             <div>{{ form.user_type.label(class="col-form-label") }}{{ form.user_type(class="form-select") }}</div>
         </div>
-        {{ form.submit(class="btn btn-outline-primary mb-3") }} <a href="{{ url_for('users.list_users') }}" class="btn btn-secondary ms-2 mb-3">Cancel</a>
+        {{ form.submit(class="btn btn-primary mb-3") }} <a href="{{ url_for('users.list_users') }}" class="btn btn-secondary ms-2 mb-3">Cancel</a>
     </form>
 </div>
 

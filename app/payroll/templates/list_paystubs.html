@@ -31,7 +31,7 @@
 <div class="container-fluid col-12">
   <h2>Paystubs</h2>
   {% if current_user.user_type in ['admin', 'super'] %}
-  <a href="{{ url_for('payroll.create_paystub') }}" class="btn btn-outline-primary mb-3" title="Create new Paystub">Create</a>
+  <a href="{{ url_for('payroll.create_paystub') }}" class="btn btn-primary mb-3" title="Create new Paystub">Create</a>
   {% endif %}
   
   <div class="d-flex justify-content-between align-items-center mb-3">

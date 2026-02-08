@@ -470,11 +470,11 @@ html.dark-mode .table.table-striped > tbody > tr:nth-of-type(odd) {
     border-color: var(--accent-clr) !important;
     color: var(--base-clr) !important;
 }
-.btn-outline-primary {
+.btn-primary {
     color: var(--accent-clr) !important;
     border-color: var(--accent-clr) !important;
 }
-.btn-outline-primary:hover {
+.btn-primary:hover {
     background-color: var(--accent-clr) !important;
     color: var(--base-clr) !important;
 }

@@ -3,24 +3,71 @@
 <div class="container-fluid">
     <div class="col-12">
         <h2>Add Session Record</h2>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" id="sessionsForm">
             {{ form.hidden_tag() }}
-            <div class="row mb-3">
-                <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select") }}</div>
-                <div>{{ form.employee_id.label(class="col-form-label") }}{{ form.employee_id(class="form-select", id="employee_id") }}</div>
+            
+            <!-- Client and Employee Selection -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Client & Employee Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.client_id.label(class="col-form-label") }}
+                            {{ form.client_id(class="form-select", id="client_id") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.employee_id.label(class="col-form-label") }}
+                            {{ form.employee_id(class="form-select", id="employee_id") }}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="row mb-3">
-                <div>{{ form.intervention_type.label(class="col-form-label") }}{{ form.intervention_type(class="form-select", id="intervention_type") }}</div>
-                <div>{{ form.date.label(class="col-form-label") }}{{ form.date(class="form-control datepicker", placeholder="YYYY-MM-DD") }}</div>
-                <div>{{ form.start_time.label(class="col-form-label") }}{{ form.start_time(class="form-control", placeholder="Start Time", id="start_time", type="time") }}</div>
-                <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", placeholder="End Time", id="end_time", type="time") }}</div>
-                <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", placeholder="0.0", id="duration", readonly=True) }}</div>
+
+            <!-- Sessions Table -->
+            <div class="card mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Session Details</h5>
+                    <button type="button" class="btn btn-sm btn-primary" id="addRowBtn">+ Add Row</button>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="sessionsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 12%">Date</th>
+                                    <th style="width: 12%">Start Time</th>
+                                    <th style="width: 12%">End Time</th>
+                                    <th style="width: 12%">Duration (hrs)</th>
+                                    <th style="width: 20%">Type</th>
+                                    <th style="width: 25%">Files</th>
+                                    <th style="width: 7%">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessionsTableBody">
+                                <tr class="session-row" data-row-index="0">
+                                    <td><input type="date" name="session_date_0" class="form-control session-date" required></td>
+                                    <td><input type="time" name="session_start_time_0" class="form-control session-start-time" required></td>
+                                    <td><input type="time" name="session_end_time_0" class="form-control session-end-time" required></td>
+                                    <td><input type="text" name="session_duration_0" class="form-control session-duration" readonly></td>
+                                    <td>
+                                        <select name="session_type_0" class="form-select session-type" required>
+                                            <option value="">Select Type</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="file" name="session_files_0" class="form-control session-files" multiple></td>
+                                    <td><button type="button" class="btn btn-sm btn-danger deleteRowBtn">Remove</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="row mb-3">
-                <div>{{ form.file_names.label(class="col-form-label") }}{{ form.file_names(class="form-control", type="file", multiple=True ) }}</div>
-            </div>
-            <div class="col-auto">
-                {{ form.submit(class="btn btn-outline-primary") }}
+
+            <!-- Submit Buttons -->
+            <div class="col-auto mb-4">
+                {{ form.submit(class="btn btn-primary") }}
                 <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
             </div>
         </form>
@@ -30,11 +77,152 @@
 <script src="{{ url_for('static', filename='js/duration.js') }}"></script>
 <script src="{{ url_for('static', filename='js/intervention.js') }}"></script>
 <script>
-    setupDurationCalculation('start_time', 'end_time', 'duration');
-    // Initialize date picker
-    flatpickr('.datepicker', {
-        dateFormat: 'Y-m-d',
-        allowInput: true
+    // Store intervention types for each employee
+    const interventionTypes = {};
+    
+    // Get intervention types from the existing form field
+    const employeeSelect = document.getElementById('employee_id');
+    const interventionTypeSelect = document.querySelector('[name="intervention_type"]');
+    
+    // Initialize intervention types when employee is selected
+    function initializeInterventionTypes() {
+        const employeeOptions = employeeSelect.querySelectorAll('option');
+        employeeOptions.forEach(option => {
+            if (option.value) {
+                interventionTypes[option.value] = [];
+            }
+        });
+    }
+    
+    // Update session type options based on employee selection
+    function updateSessionTypeOptions() {
+        const selectedEmployeeId = document.getElementById('employee_id').value;
+        const sessionTypeSelects = document.querySelectorAll('.session-type');
+        
+        // Make an AJAX call to get the intervention types for the selected employee
+        if (selectedEmployeeId) {
+            fetch(`{{ url_for('interventions.get_intervention_types') }}?employee_id=${selectedEmployeeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    sessionTypeSelects.forEach(select => {
+                        const currentValue = select.value;
+                        select.innerHTML = '<option value="">Select Type</option>';
+                        data.types.forEach(type => {
+                            const option = document.createElement('option');
+                            option.value = type;
+                            option.textContent = type;
+                            select.appendChild(option);
+                        });
+                        select.value = currentValue;
+                    });
+                })
+                .catch(error => console.error('Error fetching intervention types:', error));
+        }
+    }
+    
+    // Set up duration calculation for a row
+    function setupRowDurationCalculation(rowIndex) {
+        const startTimeInput = document.querySelector(`input[name="session_start_time_${rowIndex}"]`);
+        const endTimeInput = document.querySelector(`input[name="session_end_time_${rowIndex}"]`);
+        const durationInput = document.querySelector(`input[name="session_duration_${rowIndex}"]`);
+        
+        if (startTimeInput && endTimeInput && durationInput) {
+            const calculateDuration = () => {
+                if (startTimeInput.value && endTimeInput.value) {
+                    const startTime = new Date(`2000-01-01 ${startTimeInput.value}`);
+                    const endTime = new Date(`2000-01-01 ${endTimeInput.value}`);
+                    const durationMs = endTime - startTime;
+                    
+                    if (durationMs > 0) {
+                        const durationHours = (durationMs / (1000 * 60 * 60)).toFixed(1);
+                        durationInput.value = durationHours;
+                    } else {
+                        durationInput.value = '';
+                    }
+                }
+            };
+            
+            startTimeInput.addEventListener('change', calculateDuration);
+            endTimeInput.addEventListener('change', calculateDuration);
+        }
+    }
+    
+    // Add a new row
+    function addNewRow() {
+        const tableBody = document.getElementById('sessionsTableBody');
+        const rowCount = tableBody.querySelectorAll('tr').length;
+        
+        const newRow = document.createElement('tr');
+        newRow.className = 'session-row';
+        newRow.setAttribute('data-row-index', rowCount);
+        newRow.innerHTML = `
+            <td><input type="date" name="session_date_${rowCount}" class="form-control session-date" required></td>
+            <td><input type="time" name="session_start_time_${rowCount}" class="form-control session-start-time" required></td>
+            <td><input type="time" name="session_end_time_${rowCount}" class="form-control session-end-time" required></td>
+            <td><input type="text" name="session_duration_${rowCount}" class="form-control session-duration" readonly></td>
+            <td>
+                <select name="session_type_${rowCount}" class="form-select session-type" required>
+                    <option value="">Select Type</option>
+                </select>
+            </td>
+            <td><input type="file" name="session_files_${rowCount}" class="form-control session-files" multiple></td>
+            <td><button type="button" class="btn btn-sm btn-danger deleteRowBtn">Remove</button></td>
+        `;
+        
+        tableBody.appendChild(newRow);
+        
+        // Initialize date picker for new row
+        flatpickr(newRow.querySelector('.session-date'), {
+            dateFormat: 'Y-m-d',
+            allowInput: true
+        });
+        
+        // Set up duration calculation
+        setupRowDurationCalculation(rowCount);
+        
+        // Update intervention types for new row
+        updateSessionTypeOptions();
+        
+        // Add delete button listener
+        newRow.querySelector('.deleteRowBtn').addEventListener('click', () => deleteRow(newRow));
+    }
+    
+    // Delete a row
+    function deleteRow(rowElement) {
+        if (document.querySelectorAll('.session-row').length > 1) {
+            rowElement.remove();
+        } else {
+            alert('You must keep at least one session row.');
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize date pickers for initial row
+        flatpickr('.session-date', {
+            dateFormat: 'Y-m-d',
+            allowInput: true
+        });
+        
+        // Set up duration calculation for initial row
+        setupRowDurationCalculation(0);
+        
+        // Update intervention types on employee change
+        document.getElementById('employee_id').addEventListener('change', updateSessionTypeOptions);
+        
+        // Add row button
+        document.getElementById('addRowBtn').addEventListener('click', addNewRow);
+        
+        // Delete row buttons
+        document.querySelectorAll('.deleteRowBtn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                deleteRow(e.target.closest('.session-row'));
+            });
+        });
+        
+        // Initialize intervention types for session dropdowns
+        initializeInterventionTypes();
+        updateSessionTypeOptions();
     });
 </script>
 {% endblock %}

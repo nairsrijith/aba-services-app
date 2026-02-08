@@ -9,7 +9,7 @@
             <div>{{ form.name.label(class="col-form-label") }}{{ form.name(class="form-control", placeholder="Activity Name") }}</div>
             <div>{{ form.category.label(class="col-form-label") }}{{ form.category(class="form-select", placeholder="Activity Category") }}</div> <!-- Select not showing correctly -->
         </div>
-        {{ form.submit(class="btn btn-outline-primary") }} <a href="{{ url_for('manage.activities') }}" class="btn btn-secondary ms-2">Clear</a>
+        {{ form.submit(class="btn btn-primary") }} <a href="{{ url_for('manage.activities') }}" class="btn btn-secondary ms-2">Clear</a>
     </form>
 </div>
 <table class="table table-hover">

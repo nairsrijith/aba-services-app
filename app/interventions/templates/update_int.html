@@ -43,7 +43,7 @@
                     {{ form.file_names.label(class="col-form-label") }} {{ form.file_names(class="form-control", type="file", multiple=True ) }}
                 </div>
                 <div class="col-auto">
-                    {{ form.submit(class="btn btn-outline-warning") }}
+                    {{ form.submit(class="btn btn-warning") }}
                     <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
                 </div>
             </form>
