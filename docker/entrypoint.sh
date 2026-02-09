@@ -23,9 +23,19 @@ python init_db.py
 echo "Setting up cron job for invoice reminders..."
 echo "0 6 * * * cd /myapp && /usr/bin/python send_reminders.py >> /var/log/invoice_reminders.log 2>&1" | crontab -
 
-# Start cron daemon in background
-cron
-echo "Cron daemon started."
+# Start cron daemon in background with error handling
+echo "Starting cron daemon..."
+if command -v crond &> /dev/null; then
+    crond -f &
+    CRON_PID=$!
+    echo "Cron daemon started with PID $CRON_PID"
+elif command -v cron &> /dev/null; then
+    service cron start
+    echo "Cron service started"
+else
+    echo "Warning: Neither crond nor cron service found. Invoice reminders will not run automatically."
+    echo "Please ensure the container has a cron service installed."
+fi
 
 # start app
 exec python app.py

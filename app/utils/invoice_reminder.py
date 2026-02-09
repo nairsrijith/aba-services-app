@@ -19,24 +19,42 @@ logger.setLevel(logging.INFO)
 
 
 def should_send_first_reminder(invoice: Invoice, settings: AppSettings) -> bool:
-    """Check if first reminder should be sent for an invoice."""
+    """Check if first reminder should be sent for an invoice.
+    
+    Sends when:
+    - Due date is nearing (within X days before due date)
+    - On the due date itself
+    - First reminder hasn't been sent yet
+    """
     if invoice.status == 'Paid':
         return False
     
     days_until_due = (invoice.payby_date - datetime.now().date()).days
     
-    # Send if within reminder window and no reminder sent yet
+    # Send if within reminder window (including due date) and no reminder sent yet
     return (days_until_due <= settings.invoice_reminder_days and 
-            days_until_due > 0 and 
+            days_until_due >= 0 and 
             invoice.reminder_count == 0)
 
 
 def should_send_repeat_reminder(invoice: Invoice, settings: AppSettings) -> bool:
-    """Check if repeat reminder should be sent for an invoice."""
+    """Check if repeat reminder should be sent for an invoice.
+    
+    Sends when:
+    - Invoice is overdue (due date has passed)
+    - Repeat reminders are enabled
+    - Enough days have passed since last reminder (X days per settings)
+    """
     if invoice.status == 'Paid' or not settings.invoice_reminder_repeat_enabled:
         return False
     
     if not invoice.last_reminder_sent_date:
+        return False
+    
+    days_until_due = (invoice.payby_date - datetime.now().date()).days
+    
+    # Only send repeat reminders after the due date (invoice is overdue)
+    if days_until_due >= 0:
         return False
     
     days_since_last_reminder = (datetime.now() - invoice.last_reminder_sent_date).days
