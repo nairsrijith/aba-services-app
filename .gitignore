@@ -9,3 +9,4 @@ data/*
 .git
 app/static/images/logo.png
 .venv/
+app/static/images/assets/*
