@@ -1,57 +1,96 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container-fluid">
-    <div class="col-12 col-md-10 col-lg-8">
-        <h3>My Profile</h3>
-        <form method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
-          <div class="row align-items-center g-2 mb-2">
-            <div class="col-12 col-md-4 text-center text-md-start">
-              {% if current_user.profile_pic %}
-                {% set pic = current_user.profile_pic.split('/')[-1] %}
-                <img id="profile-preview" src="{{ url_for('profile_pic', filename=pic) }}" alt="Profile" class="img-thumbnail" style="width:128px;height:128px;object-fit:cover;border-radius:12px;" onerror="this.style.display='none'" />
-              {% else %}
-                <img id="profile-preview" src="" alt="Profile" class="img-thumbnail" style="width:128px;height:128px;object-fit:cover;border-radius:12px;display:none;" />
-                <div id="profile-placeholder" class="border rounded" style="width:128px;height:128px;display:inline-block;background:#f6f6f6;line-height:128px;"> </div>
-              {% endif %}
-            </div>
-            <div class="col-12 col-md-8">
-              <div class="d-flex flex-column h-100 justify-content-center">
+<style>
+  /* Card styling for profile sections */
+  .profile-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    height: 100%;
+  }
+  
+  .profile-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0.875rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #212529;
+  }
+  
+  html.dark-mode .profile-card {
+    border-color: #495057;
+  }
+  
+  html.dark-mode .profile-card .card-header {
+    background-color: #343a40;
+    border-color: #495057;
+    color: #e9ecef;
+  }
+</style>
+
+<div class="container-fluid col-12">
+  <h2>My Profile</h2>
+  <form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    
+    <!-- Row 1: Profile Picture and Change Password -->
+    <div class="row g-4 mb-4">
+      <!-- Profile Picture Card -->
+      <div class="col-lg-6 col-md-12">
+        <div class="card profile-card">
+          <div class="card-header">Profile Picture</div>
+          <div class="card-body">
+            <div class="row g-3 align-items-center">
+              <div class="col-auto text-center">
+                {% if current_user.profile_pic %}
+                  {% set pic = current_user.profile_pic.split('/')[-1] %}
+                  <img id="profile-preview" src="{{ url_for('profile_pic', filename=pic) }}" alt="Profile" class="img-thumbnail" style="width:128px;height:128px;object-fit:cover;border-radius:12px;" onerror="this.style.display='none'" />
+                {% else %}
+                  <img id="profile-preview" src="" alt="Profile" class="img-thumbnail" style="width:128px;height:128px;object-fit:cover;border-radius:12px;display:none;" />
+                  <div id="profile-placeholder" class="border rounded" style="width:128px;height:128px;display:inline-block;background:#f6f6f6;line-height:128px;"> </div>
+                {% endif %}
+              </div>
+              <div class="col">
                 <label class="form-label" for="profile_pic">{{ form.profile_pic.label.text }}</label>
-                {{ form.profile_pic(class="form-control w-100 max-width", id='profile_pic') }}
-                <div class="form-text text-start">Upload a profile picture (jpg, png, gif).</div>
-                <div class="d-flex justify-content-end mt-2">
-                  <button type="submit" name="action" value="update_picture" class="btn btn-secondary">Update Picture</button>
+                {{ form.profile_pic(class="form-control", id='profile_pic') }}
+                <small class="form-text text-muted">Upload a profile picture (jpg, png, gif).</small>
+                <div class="mt-2">
+                  <button type="submit" name="action" value="update_picture" class="btn btn-primary">Update Picture</button>
                 </div>
               </div>
             </div>
           </div>
-          <hr />
-          <div class="row g-3">
-            <div class="col-12 col-md-4">
-              <div class="mb-0">
-                {{ form.current_password.label(class="form-label") }}
+        </div>
+      </div>
+      
+      <!-- Change Password Card -->
+      <div class="col-lg-6 col-md-12">
+        <div class="card profile-card">
+          <div class="card-header">Change Password</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="current_password">{{ form.current_password.label.text }}</label>
                 {{ form.current_password(class="form-control") }}
               </div>
-            </div>
-            <div class="col-12 col-md-4">
-              <div class="mb-0">
-                {{ form.new_password.label(class="form-label") }}
+              <div class="col-12">
+                <label class="form-label" for="new_password">{{ form.new_password.label.text }}</label>
                 {{ form.new_password(class="form-control") }}
               </div>
-            </div>
-            <div class="col-12 col-md-4">
-              <div class="mb-0">
-                {{ form.confirm_password.label(class="form-label") }}
+              <div class="col-12">
+                <label class="form-label" for="confirm_password">{{ form.confirm_password.label.text }}</label>
                 {{ form.confirm_password(class="form-control") }}
               </div>
             </div>
+            <div class="mt-3">
+              <button type="submit" name="action" value="update_password" class="btn btn-primary">Update Password</button>
+            </div>
           </div>
-          <div class="d-flex justify-content-end mt-3">
-            <button type="submit" name="action" value="update_password" class="btn btn-primary">Update Password</button>
-          </div>
-        </form>
+        </div>
+      </div>
     </div>
+  </form>
 </div>
 {% endblock %}
 

@@ -1,154 +1,211 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  /* Semi-transparent blurred panel for settings */
-  .settings-panel {
-    background: rgba(255,255,255,0.6);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  /* Card styling for settings sections */
+  .settings-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    height: 100%;
   }
-  /* Slightly darker panel for users who prefer dark mode (optional) */
-  html.dark-mode .settings-panel {
-    background: rgba(18,18,20,0.55);
+  
+  .settings-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0.875rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #212529;
+  }
+  
+  html.dark-mode .settings-card {
+    border-color: #495057;
+  }
+  
+  html.dark-mode .settings-card .card-header {
+    background-color: #343a40;
+    border-color: #495057;
     color: #e9ecef;
   }
-  /* uniform section header spacing inside the panel */
-  .settings-panel .section-header {
-    margin-top: 1.25rem;
-    margin-bottom: 0.75rem;
-    font-size: 1.05rem;
-    font-weight: 600;
-  }
+  
   /* Styling for disabled form fields */
   .form-control:disabled,
   .form-check-input:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
+  
   .disabled-label {
     opacity: 0.6;
     color: #6c757d;
   }
+  
   html.dark-mode .disabled-label {
     color: #adb5bd;
   }
 </style>
+
 <div class="container-fluid col-12">
   <h2>Organization Settings</h2>
-  <div class="settings-panel">
   <form method="post" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    <h4 class="section-header">Organization Information</h4>
-    <div class="row g-3">
-      <div class="col-md-8">
-        <label class="form-label">{{ form.org_name.label.text }}</label>
-        {{ form.org_name(class_='form-control') }}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">{{ form.org_phone.label.text }}</label>
-        {{ form.org_phone(class_='form-control') }}
-      </div>
-
-      <div class="col-12">
-        <label class="form-label">{{ form.org_address.label.text }}</label>
-        {{ form.org_address(class_='form-control') }}
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label">{{ form.org_email.label.text }}</label>
-        {{ form.org_email(class_='form-control') }}
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">{{ form.payment_email.label.text }}</label>
-        {{ form.payment_email(class_='form-control') }}
-      </div>
-    </div>
-
-    <h4 class="section-header">Logo</h4>
-    <div class="mb-3 d-flex align-items-center" style="gap:12px;">
-      <div style="min-width:96px;">
-        {% if logo_b64 %}
-          <img src="{{ logo_b64 }}" alt="Current logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
-        {% elif logo_url %}
-          <img src="{{ logo_url }}" alt="Current logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
-        {% elif logo_web_path %}
-          <img src="{{ logo_web_path }}" alt="Current logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
-        {% else %}
-          <img src="{{ current_org_logo() }}" alt="No logo" style="max-width:96px;max-height:96px;border-radius:6px;border:1px solid #e0e0e0;" />
-        {% endif %}
-      </div>
-      <div style="flex:1;">
-        {{ form.logo_file.label }}
-        {{ form.logo_file(class_='form-control') }}
-      </div>
-    </div>
-
-    <h4 class="section-header">Gmail OAuth Settings</h4>
-    <div class="row g-3">
-      <div class="col-12">
-        <label class="form-label">{{ form.gmail_client_id.label.text }}</label>
-        {{ form.gmail_client_id(class_='form-control') }}
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">{{ form.gmail_client_secret.label.text }}</label>
-        {{ form.gmail_client_secret(class_='form-control') }}
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">{{ form.gmail_refresh_token.label.text }}</label>
-        {{ form.gmail_refresh_token(class_='form-control') }}
-      </div>
-    </div>
-
-    <h4 class="section-header">Email Settings</h4>
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label">{{ form.default_cc.label.text }}</label>
-        {{ form.default_cc(class_='form-control', placeholder='email@example.com') }}
-        <small class="form-text text-muted">All emails will be CC'd to this address</small>
-      </div>
-    </div>
-
-    <h4 class="section-header">Testing Mode</h4>
-    <div class="row g-3">
-      <div class="col-12">
-        <div class="form-check">
-          {{ form.testing_mode(class_='form-check-input') }} {{ form.testing_mode.label(class_='form-check-label') }}
+    
+    <!-- Row 1: Organization Information and Logo -->
+    <div class="row g-4 mb-4">
+      <!-- Organization Information Card -->
+      <div class="col-lg-8 col-md-12">
+        <div class="card settings-card">
+          <div class="card-header">Organization Information</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-lg-8">
+                <label class="form-label">{{ form.org_name.label.text }}</label>
+                {{ form.org_name(class_='form-control') }}
+              </div>
+              <div class="col-lg-4">
+                <label class="form-label">{{ form.org_phone.label.text }}</label>
+                {{ form.org_phone(class_='form-control') }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ form.org_address.label.text }}</label>
+                {{ form.org_address(class_='form-control') }}
+              </div>
+              <div class="col-lg-6">
+                <label class="form-label">{{ form.org_email.label.text }}</label>
+                {{ form.org_email(class_='form-control') }}
+              </div>
+              <div class="col-lg-6">
+                <label class="form-label">{{ form.payment_email.label.text }}</label>
+                {{ form.payment_email(class_='form-control') }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="col-md-6">
-        <label class="form-label">{{ form.testing_email.label.text }}</label>
-        {{ form.testing_email(class_='form-control') }}
+      
+      <!-- Logo Card -->
+      <div class="col-lg-4 col-md-12">
+        <div class="card settings-card">
+          <div class="card-header">Logo</div>
+          <div class="card-body">
+            <div class="mb-3 text-center">
+              {% if logo_b64 %}
+                <img id="logo-preview" src="{{ logo_b64 }}" alt="Current logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+              {% elif logo_url %}
+                <img id="logo-preview" src="{{ logo_url }}" alt="Current logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+              {% elif logo_web_path %}
+                <img id="logo-preview" src="{{ logo_web_path }}" alt="Current logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+              {% else %}
+                <img id="logo-preview" src="{{ current_org_logo() }}" alt="No logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+              {% endif %}
+            </div>
+            <div>
+              {{ form.logo_file.label }}
+              {{ form.logo_file(class_='form-control', id='logo_file') }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <h4 class="section-header">Invoice Reminders</h4>
-    <div class="row g-3">
-      <div class="col-md-6">
-        <div class="form-check mb-2">
-          {{ form.invoice_reminder_enabled(class_='form-check-input') }} {{ form.invoice_reminder_enabled.label(class_='form-check-label') }}
+    
+    <!-- Row 2: Gmail OAuth Settings -->
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card settings-card">
+          <div class="card-header">Gmail OAuth Settings</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">{{ form.gmail_client_id.label.text }}</label>
+                {{ form.gmail_client_id(class_='form-control') }}
+              </div>
+              <div class="col-lg-6">
+                <label class="form-label">{{ form.gmail_client_secret.label.text }}</label>
+                {{ form.gmail_client_secret(class_='form-control') }}
+              </div>
+              <div class="col-lg-6">
+                <label class="form-label">{{ form.gmail_refresh_token.label.text }}</label>
+                {{ form.gmail_refresh_token(class_='form-control') }}
+              </div>
+            </div>
+          </div>
         </div>
-        <label class="form-label" for="invoice_reminder_days">{{ form.invoice_reminder_days.label.text }}</label>
-        {{ form.invoice_reminder_days(class_='form-control', type='number', min='1') }}
-        <small class="form-text text-muted">Days before due date</small>
-      </div>
-      <div class="col-md-6">
-        <div class="form-check mb-2">
-          {{ form.invoice_reminder_repeat_enabled(class_='form-check-input') }} {{ form.invoice_reminder_repeat_enabled.label(class_='form-check-label') }}
-        </div>
-        <label class="form-label" for="invoice_reminder_repeat_days">{{ form.invoice_reminder_repeat_days.label.text }}</label>
-        {{ form.invoice_reminder_repeat_days(class_='form-control', type='number', min='1') }}
-        <small class="form-text text-muted">Days between reminders</small>
       </div>
     </div>
-
-    <div class="mb-3 mt-4">
+    
+    <!-- Row 3: Email Settings and Testing Mode -->
+    <div class="row g-4 mb-4">
+      <!-- Email Settings Card -->
+      <div class="col-lg-6 col-md-12">
+        <div class="card settings-card">
+          <div class="card-header">Email Settings</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">{{ form.default_cc.label.text }}</label>
+                {{ form.default_cc(class_='form-control', placeholder='email@example.com') }}
+                <small class="form-text text-muted">All emails will be CC'd to this address</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Testing Mode Card -->
+      <div class="col-lg-6 col-md-12">
+        <div class="card settings-card">
+          <div class="card-header">Testing Mode</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="form-check mb-3">
+                  {{ form.testing_mode(class_='form-check-input') }} {{ form.testing_mode.label(class_='form-check-label') }}
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ form.testing_email.label.text }}</label>
+                {{ form.testing_email(class_='form-control') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 4: Invoice Reminders -->
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card settings-card">
+          <div class="card-header">Invoice Reminders</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-lg-6">
+                <div class="form-check mb-3">
+                  {{ form.invoice_reminder_enabled(class_='form-check-input') }} {{ form.invoice_reminder_enabled.label(class_='form-check-label') }}
+                </div>
+                <label class="form-label" for="invoice_reminder_days">{{ form.invoice_reminder_days.label.text }}</label>
+                {{ form.invoice_reminder_days(class_='form-control', type='number', min='1') }}
+                <small class="form-text text-muted">Days before due date</small>
+              </div>
+              <div class="col-lg-6">
+                <div class="form-check mb-3">
+                  {{ form.invoice_reminder_repeat_enabled(class_='form-check-input') }} {{ form.invoice_reminder_repeat_enabled.label(class_='form-check-label') }}
+                </div>
+                <label class="form-label" for="invoice_reminder_repeat_days">{{ form.invoice_reminder_repeat_days.label.text }}</label>
+                {{ form.invoice_reminder_repeat_days(class_='form-control', type='number', min='1') }}
+                <small class="form-text text-muted">Days between reminders</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Submit Button -->
+    <div class="mb-3">
       {{ form.submit(class_='btn btn-primary') }}
     </div>
   </form>
-  </div>
 </div>
 
 <script>
@@ -193,6 +250,32 @@
     // Add event listeners
     reminderEnabledCheckbox.addEventListener('change', updateReminderFieldStates);
     repeatEnabledCheckbox.addEventListener('change', updateReminderFieldStates);
+    
+    // Logo file preview
+    const logoInput = document.getElementById('logo_file');
+    if (logoInput) {
+      const logoPreview = document.getElementById('logo-preview');
+      let objectUrl = null;
+      
+      logoInput.addEventListener('change', function(e) {
+        const file = logoInput.files && logoInput.files[0];
+        if (!file) return;
+        
+        // Only images
+        if (!file.type.startsWith('image/')) return;
+        
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+        }
+        
+        objectUrl = URL.createObjectURL(file);
+        if (logoPreview) {
+          logoPreview.src = objectUrl;
+          logoPreview.style.display = 'inline-block';
+        }
+      });
+    }
   });
 </script>
 {% endblock %}
