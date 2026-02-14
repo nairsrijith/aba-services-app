@@ -3,7 +3,7 @@
     <div class="container-fluid">
         <div class="col-12">
             <h2>Update Session Record</h2>
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" id="updateSessionForm">
                 {{ form.hidden_tag() }}
                 {% if form.errors %}
                     <div class="alert alert-danger">
@@ -16,33 +16,76 @@
                         </ul>
                     </div>
                 {% endif %}
-                <div class="row mb-3">
-                    <div>{{ form.client_id.label(class="col-form-label") }}{{ form.client_id(class="form-select") }}</div>
-                    <div>{{ form.employee_id.label(class="col-form-label") }}{{ form.employee_id(class="form-select", id="employee_id") }}</div>
-                    <div>{{ form.intervention_type.label(class="col-form-label") }}{{ form.intervention_type(class="form-select", id="intervention_type") }}</div>
-                </div>
-                <div class="row mb-3">
-                    <div>{{ form.date.label(class="col-form-label") }}{{ form.date(class="form-control datepicker") }}</div>
-                    <div>{{ form.start_time.label(class="col-form-label") }}{{ form.start_time(class="form-control", id="start_time", type="time") }}</div>
-                    <div>{{ form.end_time.label(class="col-form-label") }}{{ form.end_time(class="form-control", id="end_time", type="time") }}</div>
-                    <div>{{ form.duration.label(class="col-form-label") }}{{ form.duration(class="form-control", id="duration", readonly=True) }}</div>
-                </div>
-                <div class="mb-3">
-                    <label>Existing Files:</label>
-                    {% for filename in intervention.get_file_names() %}
-                        <div class="file-row">
-                            <input type="checkbox" name="remove_files" value="{{ filename }}" class="remove-file-checkbox" id="remove_{{ loop.index }}">
-                            <span class="filename"></span>
-                            <a href="{{ url_for('interventions.get_file', client_id=intervention.client_id, filename=filename) }}" class="file-link ms-2">{{ filename }}</a>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Client & Employee Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.client_id.label(class="col-form-label") }}
+                                {{ form.client_id(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.employee_id.label(class="col-form-label") }}
+                                {{ form.employee_id(class="form-select", id="employee_id") }}
+                            </div>
                         </div>
-                    {% else %}
-                        <p style="color: rgb(126, 126, 126);">No files attached.</p>
-                    {% endfor %}
+                    </div>
                 </div>
-                <div class="mb-3">
-                    {{ form.file_names.label(class="col-form-label") }} {{ form.file_names(class="form-control", type="file", multiple=True ) }}
+
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Session Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-12">
+                            <div class="col-md-2">
+                                {{ form.date.label(class="col-form-label") }}
+                                {{ form.date(class="form-control datepicker") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.start_time.label(class="col-form-label") }}
+                                {{ form.start_time(class="form-control", id="start_time", type="time") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.end_time.label(class="col-form-label") }}
+                                {{ form.end_time(class="form-control", id="end_time", type="time") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.duration.label(class="col-form-label") }}
+                                {{ form.duration(class="form-control", id="duration", readonly=True) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.intervention_type.label(class="col-form-label") }}
+                                {{ form.intervention_type(class="form-select", id="intervention_type") }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="form-label">Existing Files:</label>
+                                {% for filename in intervention.get_file_names() %}
+                                    <div class="file-row mb-1">
+                                        <input type="checkbox" name="remove_files" value="{{ filename }}" class="remove-file-checkbox" id="remove_{{ loop.index }}">
+                                        <span class="filename ms-2">{{ filename }}</span>
+                                        <a href="{{ url_for('interventions.get_file', client_id=intervention.client_id, filename=filename) }}" class="file-link ms-2">Download</a>
+                                    </div>
+                                {% else %}
+                                    <p style="color: rgb(126, 126, 126);">No files attached.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                {{ form.file_names.label(class="col-form-label") }}
+                                {{ form.file_names(class="form-control", type="file", multiple=True ) }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-auto">
+
+                <div class="col-auto mb-4">
                     {{ form.submit(class="btn btn-warning") }}
                     <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-secondary ms-2">Cancel</a>
                 </div>
@@ -53,27 +96,27 @@
     <script src="{{ url_for('static', filename='js/duration.js') }}"></script>
     <script src="{{ url_for('static', filename='js/intervention.js') }}"></script>
     <script>
-        setupDurationCalculation('start_time', 'end_time', 'duration');
-    </script>
-    <script>
-        document.querySelectorAll('.remove-file-checkbox').forEach(function(checkbox) {
-            checkbox.addEventListener('change', function() {
-                const row = this.closest('.file-row');
-                const filenameSpan = row.querySelector('.filename');
-                const fileLink = row.querySelector('.file-link');
-                if (this.checked) {
-                    filenameSpan.classList.add('strikeout');
-                    fileLink.classList.add('strikeout');
-                } else {
-                    filenameSpan.classList.remove('strikeout');
-                    fileLink.classList.remove('strikeout');
-                }
+        // Initialize duration calculation and activity types
+        document.addEventListener('DOMContentLoaded', function() {
+            setupDurationCalculation('start_time', 'end_time', 'duration');
+            // intervention.js will auto-populate `intervention_type` when employee_id changes
+            flatpickr('.datepicker', { dateFormat: 'Y-m-d', allowInput: true });
+
+            // Strike-through preview for files marked for removal
+            document.querySelectorAll('.remove-file-checkbox').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const row = this.closest('.file-row');
+                    const filenameSpan = row.querySelector('.filename');
+                    const fileLink = row.querySelector('.file-link');
+                    if (this.checked) {
+                        filenameSpan.classList.add('strikeout');
+                        fileLink.classList.add('strikeout');
+                    } else {
+                        filenameSpan.classList.remove('strikeout');
+                        fileLink.classList.remove('strikeout');
+                    }
+                });
             });
         });
-    // Initialize date picker
-    flatpickr('.datepicker', {
-        dateFormat: 'Y-m-d',
-        allowInput: true
-    });
-</script>
+    </script>
 {% endblock %}
