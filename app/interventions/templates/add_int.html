@@ -134,7 +134,7 @@
                     const durationMs = endTime - startTime;
                     
                     if (durationMs > 0) {
-                        const durationHours = (durationMs / (1000 * 60 * 60)).toFixed(1);
+                        const durationHours = (durationMs / (1000 * 60 * 60)).toFixed(2);
                         durationInput.value = durationHours;
                     } else {
                         durationInput.value = '';
