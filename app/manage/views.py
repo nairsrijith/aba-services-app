@@ -21,7 +21,9 @@ def designations():
     if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
         form = DesignationForm()
         if form.validate_on_submit():
-            new_designation = Designation(designation=form.name.data.title())
+            # Strip whitespace from designation name to prevent duplicates due to spaces
+            designation_name = form.name.data.strip().title()
+            new_designation = Designation(designation=designation_name)
             db.session.add(new_designation)
             db.session.commit()
             flash('Designation added successfully.', 'success')
@@ -41,7 +43,9 @@ def activities():
         form = ActivityForm()
         form.category.choices = [("Therapy", "Therapy"), ("Supervision", "Supervision")]
         if form.validate_on_submit():
-            new_activity = Activity(activity_name=form.name.data.title(), activity_category=form.category.data.title())
+            # Strip whitespace from activity name to prevent duplicates due to spaces
+            activity_name = form.name.data.strip().title()
+            new_activity = Activity(activity_name=activity_name, activity_category=form.category.data.title())
             db.session.add(new_activity)
             db.session.commit()
             flash('Activity added successfully.', 'success')

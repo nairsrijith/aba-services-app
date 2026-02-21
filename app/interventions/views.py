@@ -180,6 +180,30 @@ def add_intervention():
                                 else:
                                     flash(f'Row {row_index + 1}: File type not allowed: {file_storage.filename}', 'warning')
                         
+                        # Validate that the intervention type (activity) exists
+                        activity = Activity.query.filter_by(activity_name=session_type).first()
+                        if not activity:
+                            available_activities = Activity.query.all()
+                            available_names = [a.activity_name for a in available_activities]
+                            flash(f'Row {row_index + 1}: Intervention type "{session_type}" not found. Available types: {", ".join(available_names) if available_names else "No activities defined"}', 'warning')
+                            error_count += 1
+                            row_index += 1
+                            continue
+                        
+                        # Validate that the activity category matches the employee's position
+                        selected_employee = Employee.query.get(int(employee_id))
+                        if selected_employee:
+                            if selected_employee.position == 'Behaviour Analyst' and activity.activity_category != 'Supervision':
+                                flash(f'Row {row_index + 1}: Behaviour Analysts can only perform "{activity.activity_category}" activities. Please select a Supervision activity.', 'warning')
+                                error_count += 1
+                                row_index += 1
+                                continue
+                            elif selected_employee.position in ['Therapist', 'Senior Therapist'] and activity.activity_category != 'Therapy':
+                                flash(f'Row {row_index + 1}: {selected_employee.position} can only perform "Therapy" activities. Please select a Therapy activity.', 'warning')
+                                error_count += 1
+                                row_index += 1
+                                continue
+                        
                         # Create intervention
                         new_intervention = Intervention(
                             client_id=int(client_id),
