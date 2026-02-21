@@ -21,7 +21,13 @@ python init_db.py
 
 # Set up cron job for invoice reminders (every day at 6 AM)
 echo "Setting up cron job for invoice reminders..."
-echo "0 6 * * * cd /myapp && /usr/bin/python send_reminders.py >> /var/log/invoice_reminders.log 2>&1" | crontab -
+# Use the same python executable the container will use so cron runs the
+# environment that has installed packages (avoid system/python path mismatch).
+PYTHON_BIN=$(command -v python || command -v python3 || true)
+if [ -z "$PYTHON_BIN" ]; then
+    PYTHON_BIN=/usr/bin/python
+fi
+echo "0 6 * * * cd /myapp && $PYTHON_BIN /myapp/send_reminders.py >> /var/log/invoice_reminders.log 2>&1" | crontab -
 
 # Start cron daemon in background with error handling
 echo "Starting cron daemon..."
