@@ -66,6 +66,11 @@ def should_send_repeat_reminder(invoice: Invoice, settings: AppSettings) -> bool
 def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
     """Send invoice reminder email to client."""
     try:
+        # Only send reminders for invoices that are in the 'Sent' state
+        if getattr(invoice, 'status', None) != 'Sent':
+            logger.info(f'Invoice {getattr(invoice, "invoice_number", "?")}: skipping reminder because status is not Sent')
+            return False
+
         client = invoice.client
         if not client or not client.parentemail:
             logger.warning(f'Invoice {invoice.invoice_number}: No client email found')
@@ -185,9 +190,9 @@ def process_invoice_reminders():
             logger.info('Invoice reminders are disabled')
             return
         
-        # Get unpaid invoices that need reminders
+        # Only process invoices that have been Sent to clients
         unpaid_invoices = Invoice.query.filter(
-            Invoice.status != 'Paid'
+            Invoice.status == 'Sent'
         ).all()
         
         reminders_sent = 0

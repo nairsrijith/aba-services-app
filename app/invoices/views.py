@@ -873,9 +873,9 @@ def send_reminder(invoice_number):
             
             invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
             
-            # Check if invoice is paid
-            if invoice.status == 'Paid':
-                flash('Cannot send reminder for a paid invoice.', 'warning')
+            # Only allow reminders for invoices that are in the 'Sent' state
+            if invoice.status != 'Sent':
+                flash('Reminders can only be sent for invoices with status Sent.', 'warning')
                 return redirect(url_for('invoices.list_invoices'))
             
             # Get app settings

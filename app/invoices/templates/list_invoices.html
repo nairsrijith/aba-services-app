@@ -119,16 +119,20 @@
                                     <li><a class="dropdown-item" href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=invoice.invoice_number) }}" title="Preview Invoice">View</a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('invoices.download_invoice_pdf_by_number', invoice_number=invoice.invoice_number) }}" target="_blank" title="Download Invoice">Download</a></li>
                                     <li>
-                                        <form method="POST" action="{{ url_for('invoices.email_invoice', invoice_number=invoice.invoice_number) }}" style="display:contents;">
-                                            {%- if csrf_token is defined -%}
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            {%- endif -%}
-                                            <button type="submit" class="dropdown-item" title="Email Invoice">Email</button>
-                                        </form>
+                                        {% if invoice.status != 'Draft' %}
+                                            <form method="POST" action="{{ url_for('invoices.email_invoice', invoice_number=invoice.invoice_number) }}" style="display:contents;">
+                                                {%- if csrf_token is defined -%}
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                {%- endif -%}
+                                                <button type="submit" class="dropdown-item" title="Email Invoice">Email</button>
+                                            </form>
+                                        {% else %}
+                                            <span class="dropdown-item disabled">Email</span>
+                                        {% endif %}
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        {% if invoice.status != 'Paid' %}
+                                        {% if invoice.status == 'Sent' %}
                                             <form method="POST" action="{{ url_for('invoices.send_reminder', invoice_number=invoice.invoice_number) }}" style="display:contents;">
                                                 {%- if csrf_token is defined -%}
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
