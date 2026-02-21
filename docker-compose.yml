@@ -27,6 +27,7 @@ services:
       - ./assets/logo.png:/myapp/app/static/images/logo.png
     env_file: .env
     environment:
+      TZ: ${TZ:-America/Toronto}  # Set timezone - adjust to your organization's timezone
       ORG_NAME: ${ORG_NAME:-Buzzing Minds}
       ORG_ADDRESS: ${ORG_ADDRESS:-123 Main St, Toronto, ON M4E 2V9}
       ORG_PHONE: ${ORG_PHONE:-(123) 456-7890}

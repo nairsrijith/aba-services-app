@@ -1,7 +1,7 @@
 import os
 import logging
 from email.message import EmailMessage
-from threading import Thread
+from threading import Thread, Lock
 from typing import List, Tuple, Optional
 import base64
 from google.oauth2.credentials import Credentials
@@ -22,6 +22,10 @@ logger.setLevel(logging.INFO)
 # Read configuration from environment variables
 DEFAULT_FROM = os.environ.get('ORG_EMAIL', 'no-reply@example.com')
 ORG_NAME = os.environ.get('ORG_NAME', '')
+
+# Track active background email threads
+_active_email_threads = []
+_email_thread_lock = Lock()
 
 # No Redis/RQ support in this deployment; always use threaded background send.
 def _build_message(subject: str, recipients, body_text: Optional[str] = None, body_html: Optional[str] = None, attachments: Optional[List[Tuple[str, bytes, str]]] = None, from_addr: Optional[str] = None) -> EmailMessage:
@@ -100,6 +104,14 @@ def _send_via_gmail_api(msg: EmailMessage, settings) -> bool:
         except Exception:
             logger.info('Sending email via Gmail API (subject=%s)', msg.get('Subject'))
 
+        if not settings:
+            logger.error('AppSettings is None, cannot send email via Gmail API')
+            return False
+
+        if not settings.gmail_refresh_token:
+            logger.error('Gmail refresh token not configured, cannot send email')
+            return False
+
         creds = Credentials(
             token=None,
             refresh_token=settings.gmail_refresh_token,
@@ -116,14 +128,15 @@ def _send_via_gmail_api(msg: EmailMessage, settings) -> bool:
         message = {'raw': raw_message}
 
         # Send the message
+        logger.debug('Executing Gmail API send request')
         sent_message = service.users().messages().send(userId='me', body=message).execute()
-        logger.info('Email sent via Gmail API, message ID: %s', sent_message['id'])
+        logger.info('Email sent via Gmail API successfully, message ID: %s', sent_message['id'])
         return True
     except HttpError as e:
-        logger.exception('Failed to send email via Gmail API: %s', e)
+        logger.error('Failed to send email via Gmail API - HTTP Error: %s', e)
         return False
     except Exception as e:
-        logger.exception('Failed to send email via Gmail API: %s', e)
+        logger.error('Failed to send email via Gmail API - Exception: %s', e)
         return False
 
 
@@ -187,12 +200,49 @@ def queue_email(subject: str, recipients, body_text: str = None, body_html: str 
 
     # Send in a background thread so request isn't blocked.
     def send_in_thread(msg):
-        with app.app_context():
-            _send_message(msg)
+        try:
+            with app.app_context():
+                result = _send_message(msg)
+                if result:
+                    logger.info('Email queued background thread: email sent successfully')
+                else:
+                    logger.error('Email queued background thread: email failed to send')
+        except Exception as e:
+            logger.exception(f'Email queued background thread: exception occurred: {e}')
 
-    t = Thread(target=send_in_thread, args=(msg,), daemon=True)
+    t = Thread(target=send_in_thread, args=(msg,), daemon=False)  # daemon=False to ensure thread completes
     t.start()
+    
+    # Track the thread so we can wait for it if needed
+    with _email_thread_lock:
+        _active_email_threads.append(t)
+    
     return True
+
+
+def wait_for_pending_emails(timeout: float = 30.0):
+    """Wait for all pending background email threads to complete.
+    
+    Args:
+        timeout: Maximum time to wait in seconds. Logs a warning if timeout is reached.
+    """
+    with _email_thread_lock:
+        threads_to_wait = list(_active_email_threads)
+        _active_email_threads.clear()
+    
+    if not threads_to_wait:
+        return
+    
+    logger.info(f'Waiting for {len(threads_to_wait)} pending email threads to complete (timeout: {timeout}s)')
+    
+    for i, t in enumerate(threads_to_wait, 1):
+        t.join(timeout=timeout)
+        if t.is_alive():
+            logger.warning(f'Email thread {i}/{len(threads_to_wait)} did not complete within {timeout}s')
+        else:
+            logger.info(f'Email thread {i}/{len(threads_to_wait)} completed')
+    
+    logger.info('All pending email threads processed')
 
 
 def queue_email_with_pdf(recipients, subject: str, body_text: str, pdf_bytes: bytes, filename: str, body_html: str = None, from_addr: str = None) -> bool:

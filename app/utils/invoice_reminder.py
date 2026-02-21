@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app import db
 from app.models import Invoice, Client, AppSettings
 from app.utils.email_utils import queue_email
@@ -25,11 +25,17 @@ def should_send_first_reminder(invoice: Invoice, settings: AppSettings) -> bool:
     - Due date is nearing (within X days before due date)
     - On the due date itself
     - First reminder hasn't been sent yet
+    
+    Uses UTC timezone for consistent behavior across different server locations.
     """
     if invoice.status == 'Paid':
         return False
     
-    days_until_due = (invoice.payby_date - datetime.now().date()).days
+    # Use UTC date for timezone-independent comparison
+    utc_today = datetime.utcnow().date()
+    days_until_due = (invoice.payby_date - utc_today).days
+    
+    logger.debug(f'Invoice {invoice.invoice_number}: UTC today={utc_today}, due={invoice.payby_date}, days_until={days_until_due}')
     
     # Send if within reminder window (including due date) and no reminder sent yet
     return (days_until_due <= settings.invoice_reminder_days and 
@@ -41,9 +47,11 @@ def should_send_repeat_reminder(invoice: Invoice, settings: AppSettings) -> bool
     """Check if repeat reminder should be sent for an invoice.
     
     Sends when:
-    - Invoice is overdue (due date has passed)
+    - Invoice is on or after the due date (due date today or overdue)
     - Repeat reminders are enabled
     - Enough days have passed since last reminder (X days per settings)
+    
+    Uses UTC timezone for consistent behavior across different server locations.
     """
     if invoice.status == 'Paid' or not settings.invoice_reminder_repeat_enabled:
         return False
@@ -51,13 +59,15 @@ def should_send_repeat_reminder(invoice: Invoice, settings: AppSettings) -> bool
     if not invoice.last_reminder_sent_date:
         return False
     
-    days_until_due = (invoice.payby_date - datetime.now().date()).days
+    # Use UTC date for timezone-independent comparison
+    utc_today = datetime.utcnow().date()
+    days_until_due = (invoice.payby_date - utc_today).days
     
-    # Only send repeat reminders after the due date (invoice is overdue)
-    if days_until_due >= 0:
+    # Send repeat reminders on the due date and after (including today when due)
+    if days_until_due > 0:
         return False
     
-    days_since_last_reminder = (datetime.now() - invoice.last_reminder_sent_date).days
+    days_since_last_reminder = (datetime.utcnow() - invoice.last_reminder_sent_date).days
     
     # Send if enough days have passed since last reminder
     return days_since_last_reminder >= settings.invoice_reminder_repeat_days
@@ -77,7 +87,9 @@ def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
             return False
         
         # Prepare email data
-        days_until_due = (invoice.payby_date - datetime.now().date()).days
+        # Prepare email data - use UTC for timezone-independent calculations
+        utc_today = datetime.utcnow().date()
+        days_until_due = (invoice.payby_date - utc_today).days
         
         # Determine if this is a repeat reminder
         is_repeat = invoice.reminder_count > 0
@@ -166,11 +178,12 @@ Thank you,
         )
         
         if success:
-            # Update invoice tracking
-            invoice.last_reminder_sent_date = datetime.now()
+            logger.info(f'Invoice {invoice.invoice_number}: Email queued successfully to {recipients}')
+            # Update invoice tracking using UTC timestamp for consistency
+            invoice.last_reminder_sent_date = datetime.utcnow()
             invoice.reminder_count += 1
             db.session.commit()
-            logger.info(f'Invoice {invoice.invoice_number}: Reminder sent (count: {invoice.reminder_count})')
+            logger.info(f'Invoice {invoice.invoice_number}: Reminder tracking updated (count: {invoice.reminder_count})')
             return True
         else:
             logger.error(f'Invoice {invoice.invoice_number}: Failed to queue email')
@@ -208,6 +221,12 @@ def process_invoice_reminders():
                     reminders_sent += 1
         
         logger.info(f'Processed {len(unpaid_invoices)} unpaid invoices, sent {reminders_sent} reminders')
+        
+        # Wait for all background email threads to complete before exiting
+        logger.info('Waiting for all queued emails to be sent...')
+        from app.utils.email_utils import wait_for_pending_emails
+        wait_for_pending_emails(timeout=30.0)
+        logger.info('All emails sent successfully')
         
     except Exception as e:
         logger.exception(f'Error in process_invoice_reminders: {e}')
