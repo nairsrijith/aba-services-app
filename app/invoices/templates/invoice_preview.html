@@ -82,8 +82,8 @@
             <tr>
                 <th>#</th>
                 <th>Details</th>
-                <th class="text-end">Duration</th>
-                <th class="text-end">Rate/Hr</th>
+                <th class="text-end">Units</th>
+                <th class="text-end">Rate (in CAD)</th>
                 <th class="text-end">Cost</th>
             </tr>
         </thead>
@@ -97,11 +97,25 @@
                     Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }}){% if i.employee and i.employee.position in ['Therapist', 'Senior Therapist'] %}, {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }}){% endif %}<br>
                     <small style="font-size: 10px;">{{ i.date }}{% if i.start_time and i.end_time %} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }}){% endif %}</small>
                 </td>
-                <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
-                <td style="text-align: right;">{{ "%.2f"|format(i.rate|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }} hr(s)</td>
+                <td style="text-align: right;">${{ "%.2f"|format(i.rate|float) }}/hr</td>
                 <td style="text-align: right;">{{ "%.2f"|format(i.cost|float) }}</td>
             </tr>
             {% set ns.total = ns.total + i.cost %}
+            {% endfor %}
+            {% for m in mileages %}
+            <tr>
+                <td>{{ loop.index + interventions|length }}</td>
+                <td style="text-align: left;">
+                    <strong>Travel - Mileage</strong><br>
+                    {{ m.description or 'Mileage' }}<br>
+                    <small style="font-size: 10px;">{{ m.date }}</small>
+                </td>
+                <td style="text-align: right;">{{ "%.2f"|format(m.distance|float) }} km</td>
+                <td style="text-align: right;">${{ "%.2f"|format(m.mileage_rate.rate|float) }}/km</td>
+                <td style="text-align: right;">{{ "%.2f"|format(m.cost|float) }}</td>
+            </tr>
+            {% set ns.total = ns.total + m.cost %}
             {% endfor %}
             <tr class="total-row">
                 <td colspan="4" style="text-align: right;">Total:</td>
@@ -119,8 +133,8 @@
             <tr>
                 <th style="width:38px;"><input type="checkbox" id="select_all" title="Select all" checked></th>
                 <th>Details</th>
-                <th class="text-end">Duration</th>
-                <th class="text-end">Rate/Hr</th>
+                <th class="text-end">Units</th>
+                <th class="text-end">Rate (in CAD)</th>
                 <th class="text-end">Cost</th>
             </tr>
         </thead>
@@ -136,11 +150,25 @@
                     Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }}){% if i.employee.position in ['Therapist', 'Senior Therapist'] %}, {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }}){% endif %}<br>
                     <small style="font-size: 10px;">{{ i.date }} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }})</small>
                 </td>
-                <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }}</td>
-                <td style="text-align: right;">{{ "%.2f"|format(i.rate|float) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }} hr(s)</td>
+                <td style="text-align: right;">${{ "%.2f"|format(i.rate|float) }}/hr</td>
                 <td style="text-align: right;" data-cost="{{ "%.2f"|format(i.cost|float) }}">{{ "%.2f"|format(i.cost|float) }}</td>
             </tr>
             {% set ns.total = ns.total + i.cost %}
+            {% endfor %}
+            {% for m in mileages %}
+            <tr>
+                <td></td>
+                <td style="text-align: left;">
+                    <strong>Travel - Mileage (Auto)</strong><br>
+                    {{ m.description or 'Mileage' }}<br>
+                    <small style="font-size: 10px;">{{ m.date }}</small>
+                </td>
+                <td style="text-align: right;">{{ "%.2f"|format(m.distance|float) }} km</td>
+                <td style="text-align: right;">${{ "%.2f"|format(m.mileage_rate.rate|float) }}/km</td>
+                <td style="text-align: right;" data-cost="{{ "%.2f"|format(m.cost|float) }}">{{ "%.2f"|format(m.cost|float) }}</td>
+            </tr>
+            {% set ns.total = ns.total + m.cost %}
             {% endfor %}
             <tr class="total-row">
                 <td colspan="4" style="text-align: right;">Total:</td>
@@ -199,6 +227,14 @@
                         const costTd = tr.querySelector('td[data-cost]');
                         if (costTd){ t += parseFloat(costTd.getAttribute('data-cost') || '0'); }
                     }
+                });
+                // Add mileage costs (no checkboxes, always included)
+                const mileageRows = Array.from(document.querySelectorAll('tr')).filter(r => 
+                    r.textContent.includes('Travel - Mileage')
+                );
+                mileageRows.forEach(tr => {
+                    const costTd = tr.querySelector('td[data-cost]');
+                    if (costTd){ t += parseFloat(costTd.getAttribute('data-cost') || '0'); }
                 });
                 if (totalEl) totalEl.textContent = t.toFixed(2);
             }
