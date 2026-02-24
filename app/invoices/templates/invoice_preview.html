@@ -112,7 +112,7 @@
                     <small style="font-size: 10px;">{{ m.date }}</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(m.distance|float) }} km</td>
-                <td style="text-align: right;">${{ "%.2f"|format(m.mileage_rate.rate|float) }}/km</td>
+                <td style="text-align: right;">${{ "%.2f"|format((m.mileage_rate.rate if m.mileage_rate else m.rate)|float) }}/km</td>
                 <td style="text-align: right;">{{ "%.2f"|format(m.cost|float) }}</td>
             </tr>
             {% set ns.total = ns.total + m.cost %}
@@ -167,7 +167,7 @@
                     <small style="font-size: 10px;">{{ m.date }}</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(m.distance|float) }} km</td>
-                <td style="text-align: right;">${{ "%.2f"|format(m.mileage_rate.rate|float) }}/km</td>
+                <td style="text-align: right;">${{ "%.2f"|format((m.mileage_rate.rate if m.mileage_rate else m.rate)|float) }}/km</td>
                 <td style="text-align: right;" data-cost="{{ "%.2f"|format(m.cost|float) }}">{{ "%.2f"|format(m.cost|float) }}</td>
             </tr>
             {% set ns.total = ns.total + m.cost %}
