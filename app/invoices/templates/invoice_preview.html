@@ -131,7 +131,7 @@
     <table class="pdf-table mt-3">
         <thead>
             <tr>
-                <th style="width:38px;"><input type="checkbox" id="select_all" title="Select all" checked></th>
+                <th style="width:38px;"><input type="checkbox" id="select_all" title="Select all sessions and mileage" checked></th>
                 <th>Details</th>
                 <th class="text-end">Units</th>
                 <th class="text-end">Rate (in CAD)</th>
@@ -158,9 +158,11 @@
             {% endfor %}
             {% for m in mileages %}
             <tr>
-                <td></td>
+                <td>
+                    <input type="checkbox" name="selected_mileages" value="{{ m.id }}" class="select-mileage" checked>
+                </td>
                 <td style="text-align: left;">
-                    <strong>Travel - Mileage (Auto)</strong><br>
+                    <strong>Travel - Mileage</strong><br>
                     {{ m.description or 'Mileage' }}<br>
                     <small style="font-size: 10px;">{{ m.date }}</small>
                 </td>
@@ -216,32 +218,26 @@
     (function(){
         try {
             const selectAll = document.getElementById('select_all');
-            const checkboxes = Array.from(document.querySelectorAll('.select-session'));
+            const sessionCheckboxes = Array.from(document.querySelectorAll('.select-session'));
+            const mileageCheckboxes = Array.from(document.querySelectorAll('.select-mileage'));
+            const allCheckboxes = [...sessionCheckboxes, ...mileageCheckboxes];
             const totalEl = document.getElementById('preview-total');
 
             function recalcTotal(){
                 let t = 0.0;
-                checkboxes.forEach(cb => {
+                allCheckboxes.forEach(cb => {
                     if (cb.checked){
                         const tr = cb.closest('tr');
                         const costTd = tr.querySelector('td[data-cost]');
                         if (costTd){ t += parseFloat(costTd.getAttribute('data-cost') || '0'); }
                     }
                 });
-                // Add mileage costs (no checkboxes, always included)
-                const mileageRows = Array.from(document.querySelectorAll('tr')).filter(r => 
-                    r.textContent.includes('Travel - Mileage')
-                );
-                mileageRows.forEach(tr => {
-                    const costTd = tr.querySelector('td[data-cost]');
-                    if (costTd){ t += parseFloat(costTd.getAttribute('data-cost') || '0'); }
-                });
                 if (totalEl) totalEl.textContent = t.toFixed(2);
             }
 
             if (selectAll){
                 selectAll.addEventListener('change', function(){
-                    checkboxes.forEach(cb => {
+                    allCheckboxes.forEach(cb => {
                         cb.checked = !!this.checked;
                         const row = cb.closest('tr');
                         if (row) row.classList.toggle('excluded', !this.checked);
@@ -250,19 +246,19 @@
                 });
             }
 
-            checkboxes.forEach(cb => cb.addEventListener('change', function(){
+            allCheckboxes.forEach(cb => cb.addEventListener('change', function(){
                         // toggle row styling when unchecked/checked
                         const row = this.closest('tr');
                         if (row) row.classList.toggle('excluded', !this.checked);
                         // if any unchecked, uncheck selectAll
                         if (!this.checked && selectAll) selectAll.checked = false;
                         // if all checked, ensure selectAll is checked
-                        if (checkboxes.every(c => c.checked) && selectAll) selectAll.checked = true;
+                        if (allCheckboxes.every(c => c.checked) && selectAll) selectAll.checked = true;
                         recalcTotal();
             }));
 
             // initial recalc and apply excluded class for rows (in case some are unchecked)
-            checkboxes.forEach(cb => {
+            allCheckboxes.forEach(cb => {
                 const row = cb.closest('tr');
                 if (row) row.classList.toggle('excluded', !cb.checked);
             });

@@ -3,10 +3,11 @@ from app import db
 import json
 import base64
 import os
-from app.models import Invoice, Intervention, Client, Activity, Employee, PayStubItem, AppSettings
+from app.models import Invoice, Intervention, Client, Activity, Employee, PayStubItem, AppSettings, Mileage
 from app.invoices.forms import InvoiceClientSelectionForm
 from datetime import date, timedelta, datetime
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 from flask_login import login_required, current_user
 from weasyprint import HTML
 from app.utils.email_utils import queue_email_with_pdf, queue_email
@@ -137,30 +138,61 @@ def invoice_preview():
 
         if request.method == 'POST':
             # Which interventions did the user select on the preview page?
-            selected_raw = request.form.getlist('selected_interventions')
+            selected_intervention_raw = request.form.getlist('selected_interventions')
             try:
-                selected_ids = set(int(x) for x in selected_raw if str(x).isdigit())
+                selected_intervention_ids = set(int(x) for x in selected_intervention_raw if str(x).isdigit())
             except Exception:
-                selected_ids = set()
+                selected_intervention_ids = set()
 
-            if not selected_ids:
-                flash('No sessions were selected for invoicing. Please pick at least one session.', 'warning')
+            # Which mileages did the user select?
+            selected_mileage_raw = request.form.getlist('selected_mileages')
+            try:
+                selected_mileage_ids = set(int(x) for x in selected_mileage_raw if str(x).isdigit())
+            except Exception:
+                selected_mileage_ids = set()
+
+            if not selected_intervention_ids and not selected_mileage_ids:
+                flash('No sessions or mileage were selected for invoicing. Please pick at least one.', 'warning')
                 # redirect back to the same preview so user can select
                 return redirect(url_for('invoices.invoice_preview', ci=client_id, df=date_from.strftime('%Y-%m-%d') if date_from else '', dt=date_to.strftime('%Y-%m-%d') if date_to else ''))
 
             # Filter interventions down to only those selected by the user
-            selected_interventions = [i for i in interventions if i.id in selected_ids]
+            selected_interventions = [i for i in interventions if i.id in selected_intervention_ids]
 
             # Build a snapshot of invoice line items from selected interventions
             invoice_items = []
             for i in selected_interventions:
                 invoice_items.append({
+                    'type': 'intervention',
                     'intervention_id': i.id,
                     'date': i.date.strftime('%Y-%m-%d'),
                     'activity': i.intervention_type,
                     'duration': float(i.duration) if i.duration is not None else 0,
                     'rate': float(i.rate) if hasattr(i, 'rate') and i.rate is not None else 0,
                     'cost': float(i.cost) if hasattr(i, 'cost') and i.cost is not None else 0
+                })
+
+            # Get all mileage entries for this client in the date range that haven't been invoiced
+            all_mileages = Mileage.query.filter(
+                Mileage.client_id == int(client_id),
+                Mileage.invoiced == False,
+                Mileage.date >= date_from,
+                Mileage.date <= date_to
+            ).order_by(Mileage.date).all()
+
+            # Filter mileages down to only those selected by the user
+            selected_mileages = [m for m in all_mileages if m.id in selected_mileage_ids]
+
+            # Add selected mileage entries to invoice items
+            for m in selected_mileages:
+                invoice_items.append({
+                    'type': 'mileage',
+                    'mileage_id': m.id,
+                    'date': m.date.strftime('%Y-%m-%d'),
+                    'description': m.description or 'Mileage',
+                    'distance': float(m.distance),
+                    'rate': float(m.mileage_rate.rate),
+                    'cost': float(m.cost)
                 })
 
             total_cost = sum(item['cost'] for item in invoice_items)
@@ -188,9 +220,25 @@ def invoice_preview():
                 intervention.invoice_number = invoice_number
                 db.session.add(intervention)
 
+            # 3. Mark only selected mileage entries as invoiced
+            for mileage in selected_mileages:
+                mileage.invoiced = True
+                mileage.invoice_number = invoice_number
+                db.session.add(mileage)
+
             db.session.commit()
-            flash('Invoice created and selected sessions updated (status: Draft). Use Send to email the invoice to the client.', 'success')
+            flash('Invoice created and saved (status: Draft). Use Send to email the invoice to the client.', 'success')
             return redirect(url_for('invoices.list_invoices'))
+
+        # For GET request - show the preview with both interventions and mileage
+        mileages = Mileage.query.options(
+            joinedload(Mileage.mileage_rate)
+        ).filter(
+            Mileage.client_id == int(client_id),
+            Mileage.invoiced == False,
+            Mileage.date >= date_from,
+            Mileage.date <= date_to
+        ).order_by(Mileage.date).all()
 
         settings = get_org_settings()
         
@@ -208,6 +256,7 @@ def invoice_preview():
             supervisor_name=supervisor_name,
             supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
+            mileages=mileages,
             org_name=settings['org_name'],
             org_address=settings['org_address'],
             org_email=settings['org_email'],
@@ -272,6 +321,24 @@ def download_invoice_pdf_by_number(invoice_number):
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
+        # Extract mileage items from invoice_items JSON for PDF
+        mileages = []
+        if invoice.invoice_items:
+            try:
+                items = json.loads(invoice.invoice_items)
+                mileage_items = [item for item in items if item.get('type') == 'mileage']
+                for m_item in mileage_items:
+                    class MileageSnapshot:
+                        def __init__(self, data):
+                            self.date = data.get('date')
+                            self.description = data.get('description')
+                            self.distance = data.get('distance')
+                            self.rate = data.get('rate')
+                            self.cost = data.get('cost')
+                    mileages.append(MileageSnapshot(m_item))
+            except Exception:
+                pass
+
         # Resolve org settings and logo context
         settings = get_org_settings()
         logo_b64 = settings.get('logo_b64')
@@ -296,6 +363,7 @@ def download_invoice_pdf_by_number(invoice_number):
             paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
             payment_comments=invoice.payment_comments,
             interventions=interventions,
+            mileages=mileages,
             org_name=settings['org_name'],
             org_address=settings['org_address'],
             org_email=settings['org_email'],
@@ -376,6 +444,25 @@ def preview_invoice_by_number(invoice_number):
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
+        # Extract mileage items from invoice_items JSON
+        mileages = []
+        if invoice.invoice_items:
+            try:
+                items = json.loads(invoice.invoice_items)
+                mileage_items = [item for item in items if item.get('type') == 'mileage']
+                # Convert mileage items to objects for template rendering
+                for m_item in mileage_items:
+                    class MileageSnapshot:
+                        def __init__(self, data):
+                            self.date = data.get('date')
+                            self.description = data.get('description')
+                            self.distance = data.get('distance')
+                            self.rate = data.get('rate')
+                            self.cost = data.get('cost')
+                    mileages.append(MileageSnapshot(m_item))
+            except Exception:
+                pass
+
         settings = get_org_settings()
         
         return render_template(
@@ -392,6 +479,7 @@ def preview_invoice_by_number(invoice_number):
             supervisor_name=supervisor_name,
             supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
+            mileages=mileages,
             total_cost=invoice.total_cost,
             org_name=settings['org_name'],
             org_address=settings['org_address'],
@@ -439,6 +527,15 @@ def delete_invoice(invoice_number):
                 synchronize_session=False
             )
 
+            # Update mileages linked to this invoice
+            mileage_updated_count = Mileage.query.filter_by(invoice_number=invoice_number).update(
+                {
+                    Mileage.invoiced: False,
+                    Mileage.invoice_number: None
+                },
+                synchronize_session=False
+            )
+
             # Delete the invoice
             db.session.delete(invoice)
             db.session.commit()
@@ -455,7 +552,7 @@ def delete_invoice(invoice_number):
             if still_linked:
                 flash(f'Warning: Found {len(still_linked)} sessions that may still be linked. Please check.', 'warning')
             
-            flash(f'Invoice deleted and {updated_count} sessions were marked as uninvoiced.', 'success')
+            flash(f'Invoice deleted, {updated_count} sessions and {mileage_updated_count} mileage entries were marked as uninvoiced.', 'success')
             
         except Exception as e:
             db.session.rollback()
@@ -511,6 +608,24 @@ def mark_sent(invoice_number):
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
         supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
 
+        # Extract mileage items from invoice_items JSON for email/PDF
+        mileages = []
+        if invoice.invoice_items:
+            try:
+                items = _json.loads(invoice.invoice_items)
+                mileage_items = [item for item in items if item.get('type') == 'mileage']
+                for m_item in mileage_items:
+                    class MileageSnapshot:
+                        def __init__(self, data):
+                            self.date = data.get('date')
+                            self.description = data.get('description')
+                            self.distance = data.get('distance')
+                            self.rate = data.get('rate')
+                            self.cost = data.get('cost')
+                    mileages.append(MileageSnapshot(m_item))
+            except Exception:
+                pass
+
         # Generate PDF and send email
         try:
             # Resolve org settings and logo context
@@ -537,6 +652,7 @@ def mark_sent(invoice_number):
                 paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
                 payment_comments=invoice.payment_comments,
                 interventions=interventions,
+                mileages=mileages,
                 org_name=settings['org_name'],
                 org_address=settings['org_address'],
                 org_email=settings['org_email'],
