@@ -176,7 +176,7 @@ def list_mileages():
 @mileage_bp.route('/mileages/add', methods=['GET', 'POST'])
 @login_required
 def add_mileage():
-    """Add a new mileage entry"""
+    """Add a new mileage entry or entries"""
     if not current_user.is_authenticated:
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
@@ -201,28 +201,103 @@ def add_mileage():
 
     form.client.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in client_q.order_by(Client.firstname, Client.lastname).all()]
     
-    if form.validate_on_submit():
-        # Get the effective mileage rate for the date
-        rate = Mileage.get_effective_rate(form.date.data)
+    if request.method == 'POST':
+        # Check if this is a bulk submission from dynamic rows (mileage_row_count in form data)
+        mileage_row_count = request.form.get('mileage_row_count')
         
-        if not rate:
-            flash('No mileage rate is configured for this date. Please set up a mileage rate first.', 'danger')
-            return redirect(url_for('mileage.add_mileage'))
+        if mileage_row_count:
+            # Bulk submission from dynamic table
+            try:
+                row_count = int(mileage_row_count)
+                created_count = 0
+                errors = []
+                
+                for i in range(row_count):
+                    date_str = request.form.get(f'date_{i}')
+                    distance_str = request.form.get(f'distance_{i}')
+                    employee_id_str = request.form.get(f'employee_{i}')
+                    client_id_str = request.form.get(f'client_{i}')
+                    description = request.form.get(f'description_{i}') or None
+                    
+                    # Skip empty rows
+                    if not date_str or not distance_str:
+                        continue
+                    
+                    try:
+                        # Parse date (expect YYYY-MM-DD format from datepicker)
+                        mileage_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                        distance = float(distance_str)
+                        employee_id = int(employee_id_str)
+                        client_id = int(client_id_str)
+                        
+                        # Get the effective mileage rate for this date
+                        rate = Mileage.get_effective_rate(mileage_date)
+                        if not rate:
+                            errors.append(f"Row {i+1}: No mileage rate configured for {mileage_date}")
+                            continue
+                        
+                        # Check permissions: supervisors can only add for their supervised clients
+                        if current_user.user_type == 'supervisor':
+                            client = Client.query.get(client_id)
+                            if not client or client.supervisor_id != current_user.id:
+                                errors.append(f"Row {i+1}: You can only add mileage for clients you supervise")
+                                continue
+                        
+                        mileage = Mileage(
+                            employee_id=employee_id,
+                            client_id=client_id,
+                            date=mileage_date,
+                            distance=distance,
+                            mileage_rate_id=rate.id,
+                            description=description
+                        )
+                        
+                        db.session.add(mileage)
+                        created_count += 1
+                    
+                    except (ValueError, TypeError) as e:
+                        errors.append(f"Row {i+1}: {str(e)}")
+                        continue
+                
+                db.session.commit()
+                
+                if created_count > 0:
+                    flash(f'Successfully added {created_count} mileage entry/entries', 'success')
+                
+                if errors:
+                    for error in errors:
+                        flash(error, 'warning')
+                
+                if created_count > 0:
+                    return redirect(url_for('mileage.list_mileages'))
+            
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error processing bulk submission: {str(e)}', 'danger')
         
-        mileage = Mileage(
-            employee_id=int(form.employee.data),
-            client_id=int(form.client.data),
-            date=form.date.data,
-            distance=float(form.distance.data),
-            mileage_rate_id=rate.id,
-            description=form.description.data if form.description.data else None
-        )
-        
-        db.session.add(mileage)
-        db.session.commit()
-        
-        flash(f'Mileage entry added: {form.distance.data} km @ ${rate.rate:.4f}/km = ${mileage.cost:.2f}', 'success')
-        return redirect(url_for('mileage.list_mileages'))
+        elif form.validate_on_submit():
+            # Standard single form submission
+            # Get the effective mileage rate for the date
+            rate = Mileage.get_effective_rate(form.date.data)
+            
+            if not rate:
+                flash('No mileage rate is configured for this date. Please set up a mileage rate first.', 'danger')
+                return redirect(url_for('mileage.add_mileage'))
+            
+            mileage = Mileage(
+                employee_id=int(form.employee.data),
+                client_id=int(form.client.data),
+                date=form.date.data,
+                distance=float(form.distance.data),
+                mileage_rate_id=rate.id,
+                description=form.description.data if form.description.data else None
+            )
+            
+            db.session.add(mileage)
+            db.session.commit()
+            
+            flash(f'Mileage entry added: {form.distance.data} km @ ${rate.rate:.4f}/km = ${mileage.cost:.2f}', 'success')
+            return redirect(url_for('mileage.list_mileages'))
     
     return render_template('add_mileage.html', form=form)
 

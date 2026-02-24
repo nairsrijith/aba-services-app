@@ -4,16 +4,62 @@
     <div class="col-12">
         <h2>Add Mileage Entry</h2>
         <form method="POST" id="mileageForm">
+            {{ form.hidden_tag() }}
+
             <div class="col-auto mb-4 d-flex gap-2">
                 <button type="button" id="addRowBtn" class="btn btn-sm btn-primary">+ Add Row</button>
                 {{ form.submit(class="btn btn-primary") }}
                 <a href="{{ url_for('mileage.list_mileages') }}" class="btn btn-secondary ms-2">Cancel</a>
                 <input type="hidden" name="mileage_row_count" id="mileage_row_count" value="1">
             </div>
-                    <h5 class="mb-0">Client & Employee Information</h5>
+
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Mileage Entries</h5>
                 </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="mileageTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 14%">Date</th>
+                                    <th style="width: 14%">Distance (km)</th>
+                                    <th style="width: 40%">Description</th>
+                                    <th style="width: 16%">Employee</th>
+                                    <th style="width: 16%">Client</th>
+                                    <th style="width: 5%">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mileageTableBody">
+                                <tr data-row-index="0">
+                                    <td><input type="text" name="date_0" class="form-control datepicker" required></td>
+                                    <td><input type="number" name="distance_0" class="form-control" step="0.01" required></td>
+                                    <td><input type="text" name="description_0" class="form-control" placeholder="Optional"></td>
+                                    <td>
+                                        <select name="employee_0" class="form-select">
+                                            {% for val,label in form.employee.choices %}
+                                                <option value="{{ val }}" {% if form.employee.data == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="client_0" class="form-select">
+                                            {% for val,label in form.client.choices %}
+                                                <option value="{{ val }}" {% if form.client.data == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td><button type="button" class="btn btn-sm btn-danger deleteRowBtn">-</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="{{ url_for('static', filename='js/flatpickr.js') }}"></script>
 <script>
     (function(){
@@ -80,12 +126,5 @@
             document.getElementById('addRowBtn').addEventListener('click', addRow);
         });
     })();
-</script>
-
-<script src="{{ url_for('static', filename='js/flatpickr.js') }}"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        flatpickr('.datepicker', { dateFormat: 'Y-m-d', allowInput: true });
-    });
 </script>
 {% endblock %}
