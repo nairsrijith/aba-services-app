@@ -392,9 +392,16 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0">Session Calendar</h2>
-        <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-warning" title="Switch to List View">List View</a>
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="mb-0">Session Calendar</h2>
+          <a href="{{ url_for('interventions.list_interventions') }}" class="btn btn-warning" title="Switch to List View">List View</a>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('interventions.add_intervention') }}" title="Add New Session" class="btn btn-primary">Add</a>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#bulkUploadModal" title="Bulk Upload Sessions">Bulk Upload</button>
+          <a href="{{ url_for('interventions.download_template') }}" class="btn btn-info" title="Download Template">Download Template</a>
+        </div>
       </div>
       
       <!-- Filter Section -->
@@ -869,4 +876,36 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-labelledby="bulkUploadModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bulkUploadModalLabel">Bulk Upload Sessions</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('interventions.bulk_upload') }}" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p>Upload a CSV file with session data. Use the template for the correct format.</p>
+          <div class="mb-3">
+            <label for="bulk_file" class="form-label">Select CSV File</label>
+            <input type="file" class="form-control" id="bulk_file" name="bulk_file" accept=".csv" required>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="skip_errors" name="skip_errors">
+            <label class="form-check-label" for="skip_errors">
+              Skip rows with errors and continue processing
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
