@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container col-md-6">
+    <h2>Add Mileage Rate</h2>
+    
+    <form method="POST" class="needs-validation">
+        {{ form.hidden_tag() }}
+        
+        <div class="mb-3">
+            {{ form.rate.label(class="form-label") }}
+            {% if form.rate.errors %}
+                {{ form.rate(class="form-control is-invalid") }}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.rate.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                {{ form.rate(class="form-control", placeholder="e.g., 0.3600", step="0.0001") }}
+                <small class="form-text text-muted">Enter the rate per kilometer (e.g., 0.3600 for $0.36 per km)</small>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.effective_date.label(class="form-label") }}
+            {% if form.effective_date.errors %}
+                {{ form.effective_date(class="form-control is-invalid") }}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.effective_date.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                {{ form.effective_date(class="form-control") }}
+                <small class="form-text text-muted">This rate will be used for all mileage entries on or after this date</small>
+            {% endif %}
+        </div>
+        
+        <div class="d-flex gap-2">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('mileage.list_mileage_rates') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

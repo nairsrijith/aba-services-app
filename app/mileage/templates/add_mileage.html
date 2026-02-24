@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="col-12">
+        <h2>Add Mileage Entry</h2>
+        <form method="POST" id="mileageForm">
+            {{ form.hidden_tag() }}
+
+            <div class="col-auto mb-4 d-flex gap-2">
+                <button type="button" id="addRowBtn" class="btn btn-sm btn-primary">+ Add Row</button>
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('mileage.list_mileages') }}" class="btn btn-secondary ms-2">Cancel</a>
+                <input type="hidden" name="mileage_row_count" id="mileage_row_count" value="1">
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Mileage Entries</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="mileageTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 14%">Date</th>
+                                    <th style="width: 14%">Distance (km)</th>
+                                    <th style="width: 40%">Description</th>
+                                    <th style="width: 16%">Employee</th>
+                                    <th style="width: 16%">Client</th>
+                                    <th style="width: 5%">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mileageTableBody">
+                                <tr data-row-index="0">
+                                    <td><input type="text" name="date_0" class="form-control datepicker" required></td>
+                                    <td><input type="number" name="distance_0" class="form-control" step="0.01" required></td>
+                                    <td><input type="text" name="description_0" class="form-control" placeholder="Optional"></td>
+                                    <td>
+                                        <select name="employee_0" class="form-select">
+                                            {% for val,label in form.employee.choices %}
+                                                <option value="{{ val }}" {% if form.employee.data == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="client_0" class="form-select">
+                                            {% for val,label in form.client.choices %}
+                                                <option value="{{ val }}" {% if form.client.data == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td><button type="button" class="btn btn-sm btn-danger deleteRowBtn">-</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    (function(){
+        function initDatepickers(root){
+            flatpickr(root.querySelectorAll('.datepicker'), { dateFormat: 'Y-m-d', allowInput: true });
+        }
+
+        function addRow(){
+            const tbody = document.getElementById('mileageTableBody');
+            const rowIndex = tbody.querySelectorAll('tr').length;
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-row-index', rowIndex);
+            tr.innerHTML = `
+                <td><input type="text" name="date_${rowIndex}" class="form-control datepicker" required></td>
+                <td><input type="number" name="distance_${rowIndex}" class="form-control" step="0.01" required></td>
+                <td><input type="text" name="description_${rowIndex}" class="form-control" placeholder="Optional"></td>
+                <td>
+                    <select name="employee_${rowIndex}" class="form-select">
+                        ${employeeOptionsHtml}
+                    </select>
+                </td>
+                <td>
+                    <select name="client_${rowIndex}" class="form-select">
+                        ${clientOptionsHtml}
+                    </select>
+                </td>
+                <td><button type="button" class="btn btn-sm btn-danger deleteRowBtn">-</button></td>
+            `;
+            tbody.appendChild(tr);
+            initDatepickers(tr);
+            attachDeleteHandlers();
+            document.getElementById('mileage_row_count').value = tbody.querySelectorAll('tr').length;
+        }
+
+        function attachDeleteHandlers(){
+            document.querySelectorAll('.deleteRowBtn').forEach(btn => {
+                btn.removeEventListener('click', btn._listener);
+                const listener = function(){
+                    const tbody = document.getElementById('mileageTableBody');
+                    if (tbody.querySelectorAll('tr').length <= 1) return; // keep at least one
+                    this.closest('tr').remove();
+                    document.getElementById('mileage_row_count').value = tbody.querySelectorAll('tr').length;
+                };
+                btn.addEventListener('click', listener);
+                btn._listener = listener;
+            });
+        }
+
+        // Build options HTML from server-rendered choices
+        const employeeOptionsHtml = `
+            {% for val,label in form.employee.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+        `.trim();
+        const clientOptionsHtml = `
+            {% for val,label in form.client.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+        `.trim();
+
+        document.addEventListener('DOMContentLoaded', function(){
+            initDatepickers(document);
+            attachDeleteHandlers();
+            document.getElementById('addRowBtn').addEventListener('click', addRow);
+        });
+    })();
+</script>
+{% endblock %}
