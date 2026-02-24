@@ -3,7 +3,7 @@ from app import db
 from app.mileage.forms import MileageRateForm, MileageForm
 from app.models import Employee, Client, MileageRate, Mileage
 from flask_login import login_required, current_user
-from datetime import date
+from datetime import date, datetime
 
 
 mileage_bp = Blueprint('mileage', __name__, template_folder='templates')
@@ -35,6 +35,7 @@ def add_mileage_rate():
     if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
         flash('Unauthorized', 'danger')
         return redirect(url_for('home'))
+    
     
     form = MileageRateForm()
     
