@@ -452,12 +452,16 @@ class AppSettings(db.Model):
 
     @classmethod
     def get(cls):
+        import logging
+        logger = logging.getLogger(__name__)
         try:
             s = cls.query.first()
             if s:
+                logger.debug(f'AppSettings retrieved from database (ID: {s.id}, invoice_reminder_enabled: {s.invoice_reminder_enabled})')
                 return s
 
             # If no AppSettings row exists, create one from environment defaults
+            logger.warning('No AppSettings row found in database, creating default from environment')
             s = cls(
                 org_name=os.environ.get('ORG_NAME'),
                 org_address=os.environ.get('ORG_ADDRESS'),
@@ -472,9 +476,12 @@ class AppSettings(db.Model):
             try:
                 db.session.add(s)
                 db.session.commit()
+                logger.info('Created default AppSettings row')
             except Exception as e:
+                logger.error(f'Failed to create default AppSettings: {e}')
                 db.session.rollback()
             return s
-        except Exception:
+        except Exception as e:
+            logger.error(f'Exception in AppSettings.get(): {e}', exc_info=True)
             return None
 

@@ -9,13 +9,7 @@ from app.utils.email_utils import queue_email
 from flask import render_template
 
 logger = logging.getLogger(__name__)
-
-# Ensure logs are visible in container stdout/stderr when not otherwise configured
-if not logger.handlers:
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s'))
-    logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def should_send_first_reminder(invoice: Invoice, settings: AppSettings) -> bool:
@@ -199,8 +193,12 @@ def process_invoice_reminders():
     try:
         settings = AppSettings.get()
         
-        if not settings or not settings.invoice_reminder_enabled:
-            logger.info('Invoice reminders are disabled')
+        if not settings:
+            logger.error('Failed to retrieve AppSettings from database - check database connection and migrations')
+            return
+        
+        if not settings.invoice_reminder_enabled:
+            logger.info('Invoice reminders are disabled in settings')
             return
         
         # Only process invoices that have been Sent to clients

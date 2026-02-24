@@ -12,12 +12,7 @@ from flask import render_template, current_app
 from app import app
 
 logger = logging.getLogger(__name__)
-# Ensure logs are visible in container stdout/stderr when not otherwise configured
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s'))
-    logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # Read configuration from environment variables
 DEFAULT_FROM = os.environ.get('ORG_EMAIL', 'no-reply@example.com')
