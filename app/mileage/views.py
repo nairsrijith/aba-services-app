@@ -127,13 +127,20 @@ def list_mileages():
     
     query = Mileage.query
 
-    # If user is not admin/super, restrict to their own mileage records
-    if current_user.user_type not in ['admin', 'super']:
-        # assume current_user.id corresponds to Employee.id
-        query = query.filter_by(employee_id=current_user.id)
-    else:
+    # Admins and top-level super can view all; supervisors can view mileages for clients they supervise;
+    # other users (therapists) can view only their own mileage records.
+    if current_user.user_type in ['admin', 'super']:
         if employee_id:
             query = query.filter_by(employee_id=employee_id)
+    elif current_user.user_type == 'supervisor':
+        # Supervisors see mileages for clients they supervise; optionally filter by employee
+        if employee_id:
+            query = query.filter_by(employee_id=employee_id).filter(Mileage.client.has(supervisor_id=current_user.id))
+        else:
+            query = query.filter(Mileage.client.has(supervisor_id=current_user.id))
+    else:
+        # assume current_user.id corresponds to Employee.id
+        query = query.filter_by(employee_id=current_user.id)
     
     if client_id:
         query = query.filter_by(client_id=client_id)
@@ -174,14 +181,24 @@ def add_mileage():
         return redirect(url_for('home'))
     
     form = MileageForm()
-    # Admins can choose any employee; therapists should be limited to themselves
-    if current_user.user_type in ['admin', 'super']:
+    # Admins and supervisors can choose any employee (supervisors act on behalf of clients);
+    # therapists are limited to themselves
+    if current_user.user_type in ['admin', 'super', 'supervisor']:
         form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).order_by(Employee.firstname, Employee.lastname).all()]
     else:
         # limit to current user
         form.employee.choices = [(str(current_user.id), f"{current_user.firstname} {current_user.lastname}")]
         form.employee.data = str(current_user.id)
-    form.client.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).order_by(Client.firstname, Client.lastname).all()]
+
+    # Client choices: admins see all; supervisors see only their supervised clients; others see all clients
+    if current_user.user_type in ['admin', 'super']:
+        client_q = Client.query.filter_by(is_active=True)
+    elif current_user.user_type == 'supervisor':
+        client_q = Client.query.filter_by(is_active=True, supervisor_id=current_user.id)
+    else:
+        client_q = Client.query.filter_by(is_active=True)
+
+    form.client.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in client_q.order_by(Client.firstname, Client.lastname).all()]
     
     if form.validate_on_submit():
         # Get the effective mileage rate for the date
@@ -219,8 +236,15 @@ def edit_mileage(mileage_id):
     
     mileage = Mileage.query.get_or_404(mileage_id)
 
-    # Non-admin users may only edit their own non-invoiced mileage
-    if current_user.user_type not in ['admin', 'super']:
+    # Non-admin users may only edit their own non-invoiced mileage, supervisors may edit mileages
+    # for clients they supervise
+    if current_user.user_type in ['admin', 'super']:
+        pass
+    elif current_user.user_type == 'supervisor':
+        if mileage.client and mileage.client.supervisor_id != current_user.id:
+            flash('Unauthorized', 'danger')
+            return redirect(url_for('mileage.list_mileages'))
+    else:
         if mileage.employee_id != current_user.id:
             flash('Unauthorized', 'danger')
             return redirect(url_for('mileage.list_mileages'))
@@ -230,11 +254,20 @@ def edit_mileage(mileage_id):
         return redirect(url_for('mileage.list_mileages'))
     
     form = MileageForm()
-    if current_user.user_type in ['admin', 'super']:
+    if current_user.user_type in ['admin', 'super', 'supervisor']:
         form.employee.choices = [(str(e.id), f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(is_active=True).order_by(Employee.firstname, Employee.lastname).all()]
     else:
         form.employee.choices = [(str(current_user.id), f"{current_user.firstname} {current_user.lastname}")]
-    form.client.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in Client.query.filter_by(is_active=True).order_by(Client.firstname, Client.lastname).all()]
+
+    # Client choices: supervisors limited to their clients
+    if current_user.user_type in ['admin', 'super']:
+        client_q = Client.query.filter_by(is_active=True)
+    elif current_user.user_type == 'supervisor':
+        client_q = Client.query.filter_by(is_active=True, supervisor_id=current_user.id)
+    else:
+        client_q = Client.query.filter_by(is_active=True)
+
+    form.client.choices = [(str(c.id), f"{c.firstname} {c.lastname}") for c in client_q.order_by(Client.firstname, Client.lastname).all()]
     
     if form.validate_on_submit():
         # Get the effective mileage rate for the new date
@@ -277,8 +310,13 @@ def delete_mileage(mileage_id):
     
     mileage = Mileage.query.get_or_404(mileage_id)
     
-    # Non-admins can only delete their own non-invoiced entries
-    if current_user.user_type not in ['admin', 'super']:
+    # Non-admins can only delete their own non-invoiced entries; supervisors can delete entries for their supervised clients
+    if current_user.user_type in ['admin', 'super']:
+        pass
+    elif current_user.user_type == 'supervisor':
+        if not (mileage.client and mileage.client.supervisor_id == current_user.id):
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    else:
         if mileage.employee_id != current_user.id:
             return jsonify({'success': False, 'message': 'Unauthorized'}), 403
 
