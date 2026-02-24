@@ -424,6 +424,63 @@ class PayStubItem(db.Model):
         return f"<PayStubItem paystub={self.paystub_id} int={self.intervention_id} amount={self.amount}>"
 
 
+class MileageRate(db.Model):
+    __tablename__ = 'mileage_rates'
+    id = db.Column(db.Integer, primary_key=True)
+    rate = db.Column(db.Float, nullable=False)  # Rate per kilometer (e.g., 0.36 for $0.36 per km)
+    effective_date = db.Column(db.Date, nullable=False)  # Date when this rate becomes effective
+    created_date = db.Column(db.Date, default=date.today)  # When the rate was created
+
+    mileages = db.relationship('Mileage', backref='mileage_rate', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f"<MileageRate rate=${self.rate}/km effective={self.effective_date}>"
+
+
+class Mileage(db.Model):
+    __tablename__ = 'mileages'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)  # Date of travel
+    distance = db.Column(db.Float, nullable=False)  # Distance in kilometers
+    description = db.Column(db.String(255), nullable=True)  # Optional: reason for travel (e.g., "Therapy session")
+    mileage_rate_id = db.Column(db.Integer, db.ForeignKey('mileage_rates.id'), nullable=False)  # Rate used for this entry
+    cost = db.Column(db.Float, nullable=False)  # Calculated cost (distance * rate)
+    invoice_number = db.Column(db.String(25), db.ForeignKey('invoices.invoice_number'), nullable=True)  # Invoice number if invoiced
+    invoiced = db.Column(db.Boolean, default=False)  # Indicates if included in an invoice
+    is_paid = db.Column(db.Boolean, default=False)  # Indicates if included in a paystub payment
+
+    employee = db.relationship('Employee', backref='mileages')
+    client = db.relationship('Client', backref='mileages')
+
+    def __init__(self, employee_id, client_id, date, distance, mileage_rate_id, description=None):
+        self.employee_id = employee_id
+        self.client_id = client_id
+        self.date = date
+        self.distance = distance
+        self.mileage_rate_id = mileage_rate_id
+        self.description = description
+        # Calculate cost based on the rate
+        mileage_rate = MileageRate.query.get(mileage_rate_id)
+        if mileage_rate:
+            self.cost = round(distance * mileage_rate.rate, 2)
+        else:
+            self.cost = 0.0
+
+    def __repr__(self):
+        return f"<Mileage emp={self.employee_id} client={self.client_id} date={self.date} dist={self.distance}km cost=${self.cost}>"
+
+    @staticmethod
+    def get_effective_rate(effective_date):
+        """Get the mileage rate that's effective on a given date."""
+        # Get the most recent rate that is on or before the effective_date
+        rate = MileageRate.query.filter(
+            MileageRate.effective_date <= effective_date
+        ).order_by(MileageRate.effective_date.desc()).first()
+        return rate
+
+
 class AppSettings(db.Model):
     __tablename__ = 'app_settings'
     id = db.Column(db.Integer, primary_key=True)

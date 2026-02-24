@@ -25,6 +25,8 @@ app.register_blueprint(invoices_bp, url_prefix='/invoices')
 # payroll blueprint (admin-only features: paystubs, payrates)
 from app.payroll.views import payroll_bp
 app.register_blueprint(payroll_bp, url_prefix='/payroll')
+from app.mileage.views import mileage_bp
+app.register_blueprint(mileage_bp, url_prefix='/mileage')
 from app.users.views import users_bp
 app.register_blueprint(users_bp, url_prefix='/users')
 from app.manage.views import manage_bp

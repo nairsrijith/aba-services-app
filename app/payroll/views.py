@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, current_app
 from app import db
 from app.payroll.forms import PayPeriodForm, PayRateForm
-from app.models import Employee, Intervention, PayRate, PayStub, PayStubItem, Client
+from app.models import Employee, Intervention, PayRate, PayStub, PayStubItem, Client, Mileage
 from sqlalchemy import extract
 from flask_login import login_required, current_user
 from datetime import date, datetime
@@ -390,9 +390,19 @@ def create_paystub():
             ~Intervention.id.in_(existing_session_ids) if existing_session_ids else True
         ).order_by(Intervention.date).all()
         
+        # Query mileage entries for the employee within date range
+        mileages = Mileage.query.filter(
+            Mileage.employee_id == emp_id,
+            Mileage.date >= start,
+            Mileage.date <= end,
+            Mileage.is_paid == False
+        ).order_by(Mileage.date).all()
+        
         lines = []
         total_hours = 0.0
         total_amount = 0.0
+        
+        # Process interventions
         for s in sessions:
             # 1. Try to find latest client-specific rate for employee-client pair
             rate = None
@@ -422,25 +432,74 @@ def create_paystub():
                 continue
 
             amount = round(rate * (s.duration or 0), 2)
-            lines.append({'intervention': s, 'client': s.client, 'rate': rate, 'hours': s.duration, 'amount': amount})
+            lines.append({
+                'type': 'intervention',
+                'intervention': s,
+                'client': s.client,
+                'rate': rate,
+                'hours': s.duration,
+                'amount': amount
+            })
             total_hours += s.duration or 0
             total_amount += amount
 
-        preview = {'lines': lines, 'total_hours': round(total_hours, 2), 'total_amount': round(total_amount, 2), 'start': start, 'end': end, 'employee': Employee.query.get(emp_id)}
+        # Process mileage entries
+        for m in mileages:
+            lines.append({
+                'type': 'mileage',
+                'mileage': m,
+                'client': m.client,
+                'description': m.description or 'Mileage',
+                'distance': m.distance,
+                'rate': m.mileage_rate.rate,
+                'amount': m.cost
+            })
+            total_amount += m.cost
+
+        preview = {
+            'lines': lines,
+            'total_hours': round(total_hours, 2),
+            'total_amount': round(total_amount, 2),
+            'start': start,
+            'end': end,
+            'employee': Employee.query.get(emp_id),
+            'has_mileage': any(line['type'] == 'mileage' for line in lines)
+        }
 
         if 'save' in request.form and preview and not missing_rates:
             # save paystub and items
-            ps = PayStub(employee_id=emp_id, period_start=start, period_end=end, generated_date=date.today(), total_hours=preview['total_hours'], total_amount=preview['total_amount'], email_sent=False)
+            ps = PayStub(
+                employee_id=emp_id,
+                period_start=start,
+                period_end=end,
+                generated_date=date.today(),
+                total_hours=preview['total_hours'],
+                total_amount=preview['total_amount'],
+                email_sent=False
+            )
             db.session.add(ps)
             db.session.flush()  # get ps.id
+            
             for ln in preview['lines']:
-                # Create paystub item
-                item = PayStubItem(paystub_id=ps.id, intervention_id=ln['intervention'].id, client_id=ln['client'].id, rate=ln['rate'], hours=ln['hours'], amount=ln['amount'])
-                db.session.add(item)
-                # Mark intervention as paid
-                ln['intervention'].is_paid = True
+                if ln['type'] == 'intervention':
+                    # Create paystub item for intervention
+                    item = PayStubItem(
+                        paystub_id=ps.id,
+                        intervention_id=ln['intervention'].id,
+                        client_id=ln['client'].id,
+                        rate=ln['rate'],
+                        hours=ln['hours'],
+                        amount=ln['amount']
+                    )
+                    db.session.add(item)
+                    # Mark intervention as paid
+                    ln['intervention'].is_paid = True
+                elif ln['type'] == 'mileage':
+                    # Mark mileage as paid
+                    ln['mileage'].is_paid = True
+            
             db.session.commit()
-            flash('Paystub saved successfully. Use the "Email" button to send it to the employee.', 'success')
+            flash('Paystub saved successfully with interventions and mileage. Use the "Email" button to send it to the employee.', 'success')
             return redirect(url_for('payroll.list_paystubs'))
 
         if missing_rates:
