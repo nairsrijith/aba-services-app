@@ -4,6 +4,7 @@ from app.models import Designation, Activity, Intervention, Employee
 from app.manage.forms import DesignationForm, ActivityForm
 from flask_login import login_required, current_user
 import os
+import subprocess
 from flask import request, current_app
 from werkzeug.utils import secure_filename
 from app.manage.forms import SettingsForm
@@ -159,6 +160,16 @@ def settings():
 
             db.session.add(settings)
             db.session.commit()
+            
+            # Update cron schedule if reminder settings changed
+            try:
+                subprocess.run(['python', 'setup_cron_schedule.py'], cwd=current_app.root_path, check=True, capture_output=True)
+                print("Cron schedule updated successfully")
+            except subprocess.CalledProcessError as e:
+                print(f"Warning: Failed to update cron schedule: {e.stderr.decode()}")
+            except Exception as e:
+                print(f"Warning: Could not update cron schedule: {e}")
+            
             flash('Settings saved successfully.', 'success')
             return redirect(url_for('manage.settings'))
         except Exception as e:
