@@ -230,6 +230,10 @@
     const repeatDaysHelper = repeatDaysField.parentElement.querySelector('.form-text');
     const repeatEnabledWrapper = repeatEnabledCheckbox.parentElement.parentElement;
     
+    const reminderTimeField = document.getElementById('invoice_reminder_time');
+    const reminderTimeLabel = document.querySelector('label[for="invoice_reminder_time"]');
+    const reminderTimeHelper = reminderTimeField ? reminderTimeField.parentElement.querySelector('.form-text') : null;
+    
     // Enable/disable reminder days based on main checkbox
     const mainEnabled = reminderEnabledCheckbox.checked;
     reminderDaysField.disabled = !mainEnabled;
@@ -245,6 +249,13 @@
     repeatDaysField.disabled = !repeatEnabled;
     if (repeatDaysLabel) repeatDaysLabel.classList.toggle('disabled-label', !repeatEnabled);
     if (repeatDaysHelper) repeatDaysHelper.classList.toggle('disabled-label', !repeatEnabled);
+    
+    // Enable/disable reminder time based on main checkbox
+    if (reminderTimeField) {
+      reminderTimeField.disabled = !mainEnabled;
+      if (reminderTimeLabel) reminderTimeLabel.classList.toggle('disabled-label', !mainEnabled);
+      if (reminderTimeHelper) reminderTimeHelper.classList.toggle('disabled-label', !mainEnabled);
+    }
   }
   
   // Initialize on page load
