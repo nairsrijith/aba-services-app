@@ -504,6 +504,7 @@ class AppSettings(db.Model):
     invoice_reminder_days = db.Column(db.Integer, default=5)  # Send reminder X days before due date
     invoice_reminder_repeat_enabled = db.Column(db.Boolean, default=False)
     invoice_reminder_repeat_days = db.Column(db.Integer, default=3)  # Repeat reminder every X days
+    invoice_reminder_time = db.Column(db.String(10), default='06:00')  # Time of day to send reminders (HH:MM)
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -528,7 +529,8 @@ class AppSettings(db.Model):
                 logo_path=os.environ.get('LOGO_PATH'),
                 testing_mode=False,
                 testing_email=None,
-                default_cc=None
+                default_cc=None,
+                invoice_reminder_time=os.environ.get('INVOICE_REMINDER_TIME', '06:00')
             )
             try:
                 db.session.add(s)
