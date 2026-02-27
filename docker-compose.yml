@@ -17,7 +17,7 @@ services:
 
   aba_app:
     build: .
-    image: nairsrijith/abawebapp:latest
+    image: nairsrijith/abawebapp:testing
     restart: unless-stopped
     container_name: aba_app
     ports:

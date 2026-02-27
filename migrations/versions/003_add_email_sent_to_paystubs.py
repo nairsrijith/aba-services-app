@@ -7,6 +7,7 @@ Create Date: 2026-02-01 12:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -17,10 +18,16 @@ depends_on = None
 
 
 def upgrade():
-    # Add email_sent column to paystubs table with default value False
-    op.add_column('paystubs', sa.Column('email_sent', sa.Boolean(), server_default='false', nullable=False))
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if 'paystubs' in inspector.get_table_names():
+        existing = {c['name'] for c in inspector.get_columns('paystubs')}
+        if 'email_sent' not in existing:
+            op.add_column('paystubs', sa.Column('email_sent', sa.Boolean(), server_default='false', nullable=False))
 
 
 def downgrade():
-    # Remove email_sent column from paystubs table
-    op.drop_column('paystubs', 'email_sent')
+    try:
+        op.drop_column('paystubs', 'email_sent')
+    except Exception:
+        pass
