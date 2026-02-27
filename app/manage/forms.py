@@ -40,5 +40,6 @@ class SettingsForm(FlaskForm):
     invoice_reminder_days = IntegerField('Send Reminder Days Before Due Date')
     invoice_reminder_repeat_enabled = BooleanField('Enable Repeat Reminders')
     invoice_reminder_repeat_days = IntegerField('Repeat Reminder Every X Days')
+    invoice_reminder_time = StringField('Reminder Time (HH:MM)')
 
     submit = SubmitField('Save Settings')

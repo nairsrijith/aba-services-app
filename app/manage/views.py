@@ -120,6 +120,7 @@ def settings():
         form.invoice_reminder_days.data = settings.invoice_reminder_days or 2
         form.invoice_reminder_repeat_enabled.data = bool(settings.invoice_reminder_repeat_enabled)
         form.invoice_reminder_repeat_days.data = settings.invoice_reminder_repeat_days or 2
+        form.invoice_reminder_time.data = settings.invoice_reminder_time or '06:00'
 
     if form.validate_on_submit():
         try:
@@ -143,6 +144,7 @@ def settings():
             settings.invoice_reminder_days = form.invoice_reminder_days.data or 2
             settings.invoice_reminder_repeat_enabled = bool(form.invoice_reminder_repeat_enabled.data)
             settings.invoice_reminder_repeat_days = form.invoice_reminder_repeat_days.data or 2
+            settings.invoice_reminder_time = form.invoice_reminder_time.data or '06:00'
 
             # handle logo upload
             if form.logo_file.data:

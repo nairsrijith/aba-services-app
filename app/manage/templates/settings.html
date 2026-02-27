@@ -196,6 +196,14 @@
                 <small class="form-text text-muted">Days between reminders</small>
               </div>
             </div>
+            <div class="row g-3 mt-2">
+              <div class="col-lg-6">
+                <label class="form-label" for="invoice_reminder_time">{{ form.invoice_reminder_time.label.text }}</label>
+                {{ form.invoice_reminder_time(class_='form-control', placeholder='06:00') }}
+                <small class="form-text text-muted">Time of day to send reminders (24‑hour HH:MM)</small>
+              </div>
+            </div>
+            </div>
           </div>
         </div>
       </div>
