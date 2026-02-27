@@ -4,6 +4,7 @@ from app.models import Designation, Activity, Intervention, Employee
 from app.manage.forms import DesignationForm, ActivityForm
 from flask_login import login_required, current_user
 import os
+import sys
 import subprocess
 from flask import request, current_app
 from werkzeug.utils import secure_filename
@@ -163,10 +164,21 @@ def settings():
             
             # Update cron schedule if reminder settings changed
             try:
-                subprocess.run(['python', 'setup_cron_schedule.py'], cwd=current_app.root_path, check=True, capture_output=True)
-                print("Cron schedule updated successfully")
-            except subprocess.CalledProcessError as e:
-                print(f"Warning: Failed to update cron schedule: {e.stderr.decode()}")
+                # Get the project root (parent of the app folder)
+                project_root = os.path.dirname(current_app.root_path)
+                result = subprocess.run(
+                    [sys.executable, os.path.join(project_root, 'setup_cron_schedule.py')],
+                    cwd=project_root,
+                    check=False,
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    print(f"Cron schedule updated: {result.stdout}")
+                else:
+                    print(f"Warning: Failed to update cron schedule.")
+                    print(f"  stdout: {result.stdout}")
+                    print(f"  stderr: {result.stderr}")
             except Exception as e:
                 print(f"Warning: Could not update cron schedule: {e}")
             

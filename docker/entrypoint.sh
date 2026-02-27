@@ -31,19 +31,24 @@ fi
 export PYTHON_BIN
 python setup_cron_schedule.py
 
-# Start cron daemon in background with error handling
-echo "Starting cron daemon..."
-if command -v crond &> /dev/null; then
-    crond -f &
-    CRON_PID=$!
-    echo "Cron daemon started with PID $CRON_PID"
-elif command -v cron &> /dev/null; then
-    service cron start
-    echo "Cron service started"
-else
-    echo "Warning: Neither crond nor cron service found. Invoice reminders will not run automatically."
-    echo "Please ensure the container has a cron service installed."
-fi
+# Create log directory for cron jobs if it doesn't exist
+mkdir -p /var/log
+chmod 777 /var/log
 
-# start app
-exec python app.py
+# Start cron daemon in the background with process supervision
+echo "Starting cron daemon..."
+# Run cron in foreground mode instead of using service (which creates background process)
+# This allows proper signal handling when container is shut down
+/usr/sbin/cron -f &
+CRON_PID=$!
+echo "Cron daemon started with PID $CRON_PID"
+
+# Trap signals to ensure cron is gracefully shut down
+trap "kill $CRON_PID 2>/dev/null || true; exit 0" SIGTERM SIGINT
+
+# Give cron a moment to initialize and read the crontab
+sleep 2
+
+# Start Flask app as the main process
+# This will become PID 1, and signals will be properly forwarded
+python app.py
