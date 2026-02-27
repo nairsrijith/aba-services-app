@@ -62,13 +62,13 @@ def setup_cron_schedule():
         # Cron format: minute hour day month weekday
         # * * * * * means every minute, every hour, every day, every month, every weekday
         cron_schedule = f"{minute} {hour} * * *"
-        cron_entry = f"{cron_schedule} cd /myapp && {python_bin} /myapp/send_reminders.py >> /var/log/invoice_reminders.log 2>&1"
+        cron_entry = f"{cron_schedule} cd /myapp && {python_bin} /myapp/send_reminders.py >> /var/log/invoice_reminders.log 2>&1\n"
         
         print(f"Setting cron schedule to: {cron_schedule} (time: {reminder_time})")
-        print(f"Cron entry: {cron_entry}")
+        print(f"Cron entry: {cron_entry.strip()}")
         
         try:
-            # Add the cron entry
+            # Add the cron entry (crontab requires newline at EOF)
             process = subprocess.Popen(['crontab', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = process.communicate(input=cron_entry.encode())
             
