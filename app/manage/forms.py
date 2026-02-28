@@ -5,7 +5,7 @@ from app.models import Employee
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import BooleanField, IntegerField, PasswordField
 
-ALLOWED_IMAGE_EXT = {'png', 'jpg', 'jpeg', 'gif', 'svg'}
+ALLOWED_IMAGE_EXT = {'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'}
 
 
 class DesignationForm(FlaskForm):
