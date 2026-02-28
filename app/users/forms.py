@@ -19,5 +19,5 @@ class UpdatePasswordForm(FlaskForm):
     current_password = PasswordField('Current Password')
     new_password = PasswordField('New Password')
     confirm_password = PasswordField('Confirm New Password')
-    profile_pic = FileField('Profile Picture', validators=[FileAllowed(['jpg','jpeg','png','gif'], 'Images only')])
+    profile_pic = FileField('Profile Picture', validators=[FileAllowed(['jpg','jpeg','png','gif','webp'], 'Images only')])
     submit = SubmitField('Update')
