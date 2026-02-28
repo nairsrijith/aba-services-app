@@ -96,7 +96,7 @@
                 <td style="text-align: left;">
                     <strong>{{ i.intervention_type }}</strong><br>
                     Provider: {{ supervisor_name }}, R.B.A. Ont. ({{ supervisor_rba_number }}){% if i.employee and i.employee.position in ['Therapist', 'Senior Therapist'] %}, {{ i.employee.firstname }} {{ i.employee.lastname }} (Supervised Instructor {{ i.employee.position }}){% endif %}<br>
-                    <small style="font-size: 10px;">{{ i.date }}{% if i.start_time and i.end_time %} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }}){% endif %}</small>
+                    <small style="font-size: 12px;">{{ i.date }}{% if i.start_time and i.end_time %} ({{ i.start_time.strftime('%H:%M') }} - {{ i.end_time.strftime('%H:%M') }}){% endif %}</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(i.duration|float) }} hr(s)</td>
                 <td style="text-align: right;">${{ "%.2f"|format(i.rate|float) }}/hr</td>
@@ -110,7 +110,7 @@
                 <td style="text-align: left;">
                     <strong>Travel - Mileage</strong><br>
                     {{ m.description or 'Mileage' }}<br>
-                    <small style="font-size: 10px;">{{ m.date }}</small>
+                    <small style="font-size: 12px;">{{ m.date }}</small>
                 </td>
                 <td style="text-align: right;">{{ "%.2f"|format(m.distance|float) }} km</td>
                 <td style="text-align: right;">${{ "%.2f"|format((m.mileage_rate.rate if m.mileage_rate else m.rate)|float) }}/km</td>
