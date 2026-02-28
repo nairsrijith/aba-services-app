@@ -71,7 +71,7 @@ def add_intervention():
             selected_employee = Employee.query.get(request.form['employee_id'])
             if selected_employee:
                 if selected_employee.position == 'Behaviour Analyst':
-                    activities = Activity.query.filter_by(activity_category='Supervision').all()
+                    activities = Activity.query.filter(Activity.activity_category.in_(['Supervision', 'Therapy'])).all()
                 else:  # Therapist or Senior Therapist
                     activities = Activity.query.filter_by(activity_category='Therapy').all()
                 form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in activities]
@@ -193,8 +193,8 @@ def add_intervention():
                         # Validate that the activity category matches the employee's position
                         selected_employee = Employee.query.get(int(employee_id))
                         if selected_employee:
-                            if selected_employee.position == 'Behaviour Analyst' and activity.activity_category != 'Supervision':
-                                flash(f'Row {row_index + 1}: Behaviour Analysts can only perform "{activity.activity_category}" activities. Please select a Supervision activity.', 'warning')
+                            if selected_employee.position == 'Behaviour Analyst' and activity.activity_category not in ['Supervision', 'Therapy']:
+                                flash(f'Row {row_index + 1}: Behaviour Analysts can only perform Supervision or Therapy activities. Please select an appropriate activity.', 'warning')
                                 error_count += 1
                                 row_index += 1
                                 continue
@@ -277,7 +277,7 @@ def get_intervention_types():
     
     # Get activities based on employee position
     if employee.position == 'Behaviour Analyst':
-        activities = Activity.query.filter_by(activity_category='Supervision').all()
+        activities = Activity.query.filter(Activity.activity_category.in_(['Supervision', 'Therapy'])).all()
     else:  # Therapist or Senior Therapist
         activities = Activity.query.filter_by(activity_category='Therapy').all()
     
@@ -499,7 +499,7 @@ def update_intervention(intervention_id):
 
         if selected_employee:
             if selected_employee.position == 'Behaviour Analyst':
-                activities = Activity.query.filter_by(activity_category='Supervision').all()
+                activities = Activity.query.filter(Activity.activity_category.in_(['Supervision', 'Therapy'])).all()
             else:  # Therapist or Senior Therapist
                 activities = Activity.query.filter_by(activity_category='Therapy').all()
             form.intervention_type.choices = [(a.activity_name, a.activity_name) for a in activities]
@@ -788,7 +788,7 @@ def get_activities(employee_id):
     activities = []
     
     if employee.position == 'Behaviour Analyst':
-        activities = Activity.query.filter_by(activity_category='Supervision').all()
+        activities = Activity.query.filter(Activity.activity_category.in_(['Supervision', 'Therapy'])).all()
     else:  # Therapist or Senior Therapist
         activities = Activity.query.filter_by(activity_category='Therapy').all()
     
@@ -933,8 +933,8 @@ def bulk_upload():
                     raise ValueError(f"Intervention type '{intervention_type}' not found. Available types: {', '.join(all_activities)}")
                 
                 # Check if activity category matches employee position
-                if employee.position.lower() == 'behaviour analyst' and activity.activity_category.lower() != 'supervision':
-                    raise ValueError(f"Behaviour Analyst can only perform Supervision activities")
+                if employee.position.lower() == 'behaviour analyst' and activity.activity_category.lower() not in ['supervision', 'therapy']:
+                    raise ValueError(f"Behaviour Analyst can only perform Supervision or Therapy activities")
                 elif employee.position.lower() in ['therapist', 'senior therapist'] and activity.activity_category.lower() != 'therapy':
                     raise ValueError(f"{employee.position} can only perform Therapy activities")
                 
