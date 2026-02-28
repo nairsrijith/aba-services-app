@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, DateField, FloatField
-from wtforms.validators import DataRequired, Email, length
+from wtforms.validators import DataRequired, Email, length, Optional
 from app.utils.validators import validate_phone_number
 
 
@@ -9,10 +9,19 @@ class AddClientForm(FlaskForm):
     lastname = StringField('Last Name')
     dob = DateField('Date of Birth', validators=[DataRequired()])
     gender = SelectField('Gender', validators=[DataRequired()], default='Unspecified')
-    parentname = StringField('Parent Name', validators=[DataRequired()])
-    parentemail = StringField('Parent Email', validators=[DataRequired(), Email()])
-    parentemail2 = StringField('Parent Email (Secondary)', validators=[Email()])
-    parentcell = StringField('Parent Phone', validators=[DataRequired()])
+    
+    # Parent 1 fields
+    parent_firstname = StringField('Parent First Name', validators=[DataRequired()])
+    parent_lastname = StringField('Parent Last Name')
+    parent_email = StringField('Parent Email', validators=[DataRequired(), Email()])
+    parent_cell = StringField('Parent Phone', validators=[DataRequired()])
+    
+    # Parent 2 fields (optional)
+    parent2_firstname = StringField('Second Parent First Name', validators=[Optional()])
+    parent2_lastname = StringField('Second Parent Last Name', validators=[Optional()])
+    parent2_email = StringField('Second Parent Email', validators=[Optional(), Email()])
+    parent2_cell = StringField('Second Parent Phone', validators=[Optional()])
+    
     address1 = StringField('Address', validators=[DataRequired()])
     address2 = StringField('Address 2')
     city = StringField('City', validators=[DataRequired()])
@@ -30,10 +39,19 @@ class UpdateClientForm(FlaskForm):
     lastname = StringField('Last Name')
     dob = DateField('Date of Birth', validators=[DataRequired()])
     gender = SelectField('Gender', validators=[DataRequired()])
-    parentname = StringField('Parent Name', validators=[DataRequired()])
-    parentemail = StringField('Parent Email', validators=[DataRequired(), Email()])
-    parentemail2 = StringField('Parent Email (Secondary)', validators=[DataRequired(), Email()])
-    parentcell = StringField('Parent Phone', validators=[DataRequired()])
+    
+    # Parent 1 fields
+    parent_firstname = StringField('Parent First Name', validators=[DataRequired()])
+    parent_lastname = StringField('Parent Last Name')
+    parent_email = StringField('Parent Email', validators=[DataRequired(), Email()])
+    parent_cell = StringField('Parent Phone', validators=[DataRequired()])
+    
+    # Parent 2 fields (optional)
+    parent2_firstname = StringField('Second Parent First Name', validators=[Optional()])
+    parent2_lastname = StringField('Second Parent Last Name', validators=[Optional()])
+    parent2_email = StringField('Second Parent Email', validators=[Optional(), Email()])
+    parent2_cell = StringField('Second Parent Phone', validators=[Optional()])
+    
     address1 = StringField('Address', validators=[DataRequired()])
     address2 = StringField('Address 2')
     city = StringField('City', validators=[DataRequired()])

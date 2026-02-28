@@ -76,11 +76,11 @@ def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
             return False
 
         client = invoice.client
-        if not client or not client.parentemail:
+        # Require at least one parent email address; prefer primary but allow secondary
+        if not client or not (client.parentemail or client.parentemail2):
             logger.warning(f'Invoice {invoice.invoice_number}: No client email found')
             return False
         
-        # Prepare email data
         # Prepare email data - use UTC for timezone-independent calculations
         utc_today = datetime.utcnow().date()
         days_until_due = (invoice.payby_date - utc_today).days

@@ -30,25 +30,40 @@ def add_client():
         form.gender.choices = [("Male", "Male"), ("Female", "Female"), ("Unspecified", "Unspecified")]
         form.supervisor_id.choices = [(e.id, f"{e.firstname} {e.lastname}") for e in Employee.query.filter_by(position='Behaviour Analyst', is_active=True).all()]
         if form.validate_on_submit():
-            # Normalize parent phone number to digits-only before storing
-            normalized_parentcell = re.sub(r'\D', '', (form.parentcell.data or ''))
+            # Normalize phone numbers to digits-only before storing
+            normalized_parent_cell = re.sub(r'\D', '', (form.parent_cell.data or ''))
+            normalized_parent2_cell = re.sub(r'\D', '', (form.parent2_cell.data or '')) if form.parent2_cell.data else ''
 
-            new_client = Client(firstname=form.firstname.data.title(),
-                                lastname=form.lastname.data.title(),
-                                dob=form.dob.data,
-                                gender=form.gender.data.title(),
-                                parentname=form.parentname.data.title(),
-                                parentemail=form.parentemail.data,
-                                parentemail2=form.parentemail2.data,
-                                parentcell=normalized_parentcell,
-                                address1=form.address1.data.title(),
-                                address2=form.address2.data.title(),
-                                city=form.city.data.title(),
-                                state=form.state.data,
-                                zipcode=form.zipcode.data.upper(),
-                                supervisor_id=form.supervisor_id.data,
-                                cost_supervision=form.cost_supervision.data or 0.0,
-                                cost_therapy=form.cost_therapy.data or 0.0)
+            # Create legacy parentname for backward compatibility
+            legacy_parentname = f"{form.parent_firstname.data.title()} {form.parent_lastname.data.title()}".strip()
+
+            new_client = Client(
+                firstname=form.firstname.data.title(),
+                lastname=form.lastname.data.title(),
+                dob=form.dob.data,
+                gender=form.gender.data.title(),
+                parent_firstname=form.parent_firstname.data.title(),
+                parent_lastname=form.parent_lastname.data.title() if form.parent_lastname.data else '',
+                parent_email=form.parent_email.data,
+                parent_cell=normalized_parent_cell,
+                parent2_firstname=form.parent2_firstname.data.title() if form.parent2_firstname.data else None,
+                parent2_lastname=form.parent2_lastname.data.title() if form.parent2_lastname.data else None,
+                parent2_email=form.parent2_email.data if form.parent2_email.data else None,
+                parent2_cell=normalized_parent2_cell if normalized_parent2_cell else None,
+                address1=form.address1.data.title(),
+                address2=form.address2.data.title() if form.address2.data else '',
+                city=form.city.data.title(),
+                state=form.state.data,
+                zipcode=form.zipcode.data.upper(),
+                supervisor_id=form.supervisor_id.data,
+                cost_supervision=form.cost_supervision.data or 0.0,
+                cost_therapy=form.cost_therapy.data or 0.0,
+                # Legacy fields for backward compatibility
+                parentname=legacy_parentname,
+                parentemail=form.parent_email.data,
+                parentemail2=form.parent2_email.data if form.parent2_email.data else None,
+                parentcell=normalized_parent_cell
+            )
             db.session.add(new_client)
             db.session.commit()
             return redirect(url_for('clients.list_clients'))
@@ -207,24 +222,64 @@ def update_client(client_id):
                                  for e in Employee.query.filter_by(id=client.supervisor_id, is_active=False).all()])
         form.supervisor_id.choices = supervisor_choices
         
+        if request.method == 'GET':
+            # Populate form with existing data, handling both new and legacy fields
+            form.parent_firstname.data = client.parent_firstname or (
+                client.parentname.split(maxsplit=1)[0] if client.parentname else ''
+            )
+            form.parent_lastname.data = client.parent_lastname or (
+                client.parentname.split(maxsplit=1)[1] if client.parentname and ' ' in client.parentname else ''
+            )
+            form.parent_email.data = client.parent_email or client.parentemail or ''
+            form.parent_cell.data = client.parent_cell or client.parentcell or ''
+            form.parent2_firstname.data = client.parent2_firstname or ''
+            form.parent2_lastname.data = client.parent2_lastname or ''
+            form.parent2_email.data = client.parent2_email or ''
+            form.parent2_cell.data = client.parent2_cell or ''
+        
         if request.method == 'POST':
+            # Normalize phone numbers
+            normalized_parent_cell = re.sub(r'\D', '', (form.parent_cell.data or ''))
+            normalized_parent2_cell = re.sub(r'\D', '', (form.parent2_cell.data or '')) if form.parent2_cell.data else ''
+            
+            # Create legacy parentname for full backward compatibility
+            legacy_parentname = f"{form.parent_firstname.data.title()} {form.parent_lastname.data.title()}".strip()
+            
+            # Update client with new fields
             client.firstname = form.firstname.data.title()
             client.lastname = form.lastname.data.title()
             client.dob = form.dob.data
             client.gender = form.gender.data.title()
-            client.parentname = form.parentname.data.title()
-            client.parentemail = form.parentemail.data
-            client.parentemail2 = form.parentemail2.data
-            client.parentcell = re.sub(r'\D', '', (form.parentcell.data or ''))
+            
+            # Update parent 1 fields
+            client.parent_firstname = form.parent_firstname.data.title()
+            client.parent_lastname = form.parent_lastname.data.title() if form.parent_lastname.data else ''
+            client.parent_email = form.parent_email.data
+            client.parent_cell = normalized_parent_cell
+            
+            # Update parent 2 fields
+            client.parent2_firstname = form.parent2_firstname.data.title() if form.parent2_firstname.data else None
+            client.parent2_lastname = form.parent2_lastname.data.title() if form.parent2_lastname.data else None
+            client.parent2_email = form.parent2_email.data if form.parent2_email.data else None
+            client.parent2_cell = normalized_parent2_cell if normalized_parent2_cell else None
+            
+            # Update legacy fields for backward compatibility
+            client.parentname = legacy_parentname
+            client.parentemail = form.parent_email.data
+            client.parentemail2 = form.parent2_email.data if form.parent2_email.data else None
+            client.parentcell = normalized_parent_cell
+            
+            # Update address and other fields
             client.address1 = form.address1.data.title()
-            client.address2 = form.address2.data.title()
-            client.city = form.city.data
+            client.address2 = form.address2.data.title() if form.address2.data else ''
+            client.city = form.city.data.title()
             client.state = form.state.data
             client.zipcode = form.zipcode.data.upper()
             client.supervisor_id = form.supervisor_id.data
             client.cost_supervision = form.cost_supervision.data or 0
             client.cost_therapy = form.cost_therapy.data or 0
             db.session.commit()
+            flash('Client record updated successfully.', 'success')
             return redirect(url_for('clients.list_clients'))
         settings = get_org_settings()
         return render_template('update.html', form=form, client=client, org_name=settings['org_name'])

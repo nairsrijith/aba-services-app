@@ -197,10 +197,22 @@ class Client(db.Model):
     lastname = db.Column(db.String(51))
     dob = db.Column(db.Date, nullable=False)
     gender = db.Column(db.String(51), nullable=False)
-    parentname = db.Column(db.String(101), nullable=False)
-    parentemail = db.Column(db.String(120), nullable=False)
+    # Legacy parent fields (kept for backward compatibility)
+    parentname = db.Column(db.String(101), nullable=True)
+    parentemail = db.Column(db.String(120), nullable=True)
     parentemail2 = db.Column(db.String(120), nullable=True)
-    parentcell = db.Column(db.String(10), nullable=False)
+    parentcell = db.Column(db.String(10), nullable=True)
+    # New parent 1 fields
+    parent_firstname = db.Column(db.String(51), nullable=True)
+    parent_lastname = db.Column(db.String(51), nullable=True)
+    parent_email = db.Column(db.String(120), nullable=True)
+    parent_cell = db.Column(db.String(10), nullable=True)
+    # Parent 2 fields
+    parent2_firstname = db.Column(db.String(51), nullable=True)
+    parent2_lastname = db.Column(db.String(51), nullable=True)
+    parent2_email = db.Column(db.String(120), nullable=True)
+    parent2_cell = db.Column(db.String(10), nullable=True)
+    # Address and supervision fields
     address1 = db.Column(db.String(120), nullable=False)
     address2 = db.Column(db.String(120))
     city = db.Column(db.String(51), nullable=False)
@@ -213,15 +225,32 @@ class Client(db.Model):
 
     supervisor = db.relationship('Employee', backref='clients')
 
-    def __init__(self, firstname, lastname, dob, gender, parentname, parentemail, parentemail2, parentcell, address1, address2, city, state, zipcode, supervisor_id, cost_supervision=0.0, cost_therapy=0.0, is_active=True):
+    def __init__(self, firstname, lastname, dob, gender, address1, address2, city, state, zipcode, supervisor_id, 
+                 parent_firstname=None, parent_lastname=None, parent_email=None, parent_cell=None,
+                 parent2_firstname=None, parent2_lastname=None, parent2_email=None, parent2_cell=None,
+                 cost_supervision=0.0, cost_therapy=0.0, is_active=True,
+                 # Legacy parameters for backward compatibility
+                 parentname=None, parentemail=None, parentemail2=None, parentcell=None):
         self.firstname = firstname
         self.lastname = lastname
         self.dob = dob
         self.gender = gender
+        # Legacy fields
         self.parentname = parentname
         self.parentemail = parentemail
         self.parentemail2 = parentemail2
         self.parentcell = parentcell
+        # New parent 1 fields
+        self.parent_firstname = parent_firstname
+        self.parent_lastname = parent_lastname
+        self.parent_email = parent_email
+        self.parent_cell = parent_cell
+        # Parent 2 fields
+        self.parent2_firstname = parent2_firstname
+        self.parent2_lastname = parent2_lastname
+        self.parent2_email = parent2_email
+        self.parent2_cell = parent2_cell
+        # Other fields
         self.address1 = address1
         self.address2 = address2
         self.city = city
@@ -231,6 +260,24 @@ class Client(db.Model):
         self.cost_supervision = cost_supervision
         self.cost_therapy = cost_therapy
         self.is_active = is_active
+    
+    def get_parent1_name(self):
+        """Return first parent name, splitting legacy parentname if needed"""
+        if self.parent_firstname:
+            return f"{self.parent_firstname} {self.parent_lastname}" if self.parent_lastname else self.parent_firstname
+        elif self.parentname:
+            # Split legacy parentname
+            parts = self.parentname.split(maxsplit=1)
+            return self.parentname
+        return ""
+    
+    def get_parent1_email(self):
+        """Return first parent email"""
+        return self.parent_email or self.parentemail or ""
+    
+    def get_parent1_phone(self):
+        """Return first parent phone"""
+        return self.parent_cell or self.parentcell or ""
 
 
 class Intervention(db.Model):
