@@ -69,7 +69,7 @@ def setup_cron_schedule():
             # Touch the log file to ensure it exists and is writable
             log_file = os.path.join(log_dir, 'invoice_reminders.log')
             with open(log_file, 'a') as f:
-                f.write(f"\n--- Cron schedule updated at {datetime.now().isoformat()} ---\n")
+                f.write(f"\n--- Cron schedule updated to {reminder_time} on {datetime.now().isoformat()} ---\n")
             print(f"Log file ensured at {log_file}")
         except Exception as e:
             print(f"Warning: Could not create log file: {e}", file=sys.stderr)
