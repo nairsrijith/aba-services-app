@@ -9,7 +9,7 @@
                 <!-- First Row: Client Information, Parent Information, Address Information -->
                 <div class="row">
                     <!-- Client Information Section -->
-                    <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="col-lg-4 col-md-4 mb-4">
                         <div class="card h-100">
                             <div class="card-header bg-light">
                                 <h5 class="mb-0">Client Information</h5>
@@ -35,35 +35,35 @@
                         </div>
                     </div>
 
-                    <!-- Parent/Guardian Information Section -->
-                    <div class="col-lg-3 col-md-6 mb-4">
+                    <!-- Parent 1 Information Section (Used for Billing)-->
+                    <div class="col-lg-4 col-md-4 mb-4">
                         <div class="card h-100">
                             <div class="card-header bg-light">
-                                <h5 class="mb-0">Parent/Guardian Information</h5>
+                                <h5 class="mb-0">Parent 1 Information <span class="badge bg-primary">Billing</span></h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    {{ form.parentname.label(class="col-form-label") }}
-                                    {{ form.parentname(class="form-control", placeholder="Parent's Full Name") }}
-                                </div>
-                                <div class="mb-3">
-                                    {{ form.parentemail.label(class="col-form-label") }}
-                                    {{ form.parentemail(class="form-control", placeholder="parent@email.com") }}
-                                    {% for error in form.parentemail.errors %}
+                                    {{ form.parent_firstname.label(class="col-form-label") }}
+                                    {{ form.parent_firstname(class="form-control", placeholder="First Name") }}
+                                    {% for error in form.parent_firstname.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </div>
                                 <div class="mb-3">
-                                    {{ form.parentemail2.label(class="col-form-label") }}
-                                    {{ form.parentemail2(class="form-control", placeholder="parent@email.com") }}
-                                    {% for error in form.parentemail2.errors %}
+                                    {{ form.parent_lastname.label(class="col-form-label") }}
+                                    {{ form.parent_lastname(class="form-control", placeholder="Last Name") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.parent_email.label(class="col-form-label") }}
+                                    {{ form.parent_email(class="form-control", placeholder="parent@email.com") }}
+                                    {% for error in form.parent_email.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </div>
                                 <div class="mb-3">
-                                    {{ form.parentcell.label(class="col-form-label") }}
-                                    {{ form.parentcell(class="form-control", type="tel", value=form.parentcell.data|format_phone) }}
-                                    {% for error in form.parentcell.errors %}
+                                    {{ form.parent_cell.label(class="col-form-label") }}
+                                    {{ form.parent_cell(class="form-control", type="tel", value=form.parent_cell.data|format_phone) }}
+                                    {% for error in form.parent_cell.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </div>
@@ -71,8 +71,43 @@
                         </div>
                     </div>
 
-                    <!-- Address Information Section -->
-                    <div class="col-lg-6 col-md-6 mb-4">
+                    <!-- Parent 2 Information Section (Optional) -->
+                    <div class="col-lg-4 col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Parent 2 Information <span class="badge bg-secondary">Optional</span></h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.parent2_firstname.label(class="col-form-label") }}
+                                    {{ form.parent2_firstname(class="form-control", placeholder="First Name") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.parent2_lastname.label(class="col-form-label") }}
+                                    {{ form.parent2_lastname(class="form-control", placeholder="Last Name") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.parent2_email.label(class="col-form-label") }}
+                                    {{ form.parent2_email(class="form-control", placeholder="parent@email.com") }}
+                                    {% for error in form.parent2_email.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.parent2_cell.label(class="col-form-label") }}
+                                    {{ form.parent2_cell(class="form-control", type="tel", value=form.parent2_cell.data|format_phone) }}
+                                    {% for error in form.parent2_cell.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Second Row: Address Information and Supervisor & Costs -->
+                <div class="row">
+                    <div class="col-lg-8 col-md-8 mb-4">
                         <div class="card h-100">
                             <div class="card-header bg-light">
                                 <h5 class="mb-0">Address Information</h5>
@@ -103,29 +138,23 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Second Row: Supervisor & Costs -->
-                <div class="row">
-                    <div class="col-lg-6 col-md-6 mb-4">
+                    <div class="col-lg-4 col-md-4 mb-4">
                         <div class="card h-100">
                             <div class="card-header bg-light">
                                 <h5 class="mb-0">Supervisor & Costs</h5>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        {{ form.supervisor_id.label(class="col-form-label") }}
-                                        {{ form.supervisor_id(class="form-select") }}
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        {{ form.cost_supervision.label(class="col-form-label") }}
-                                        {{ form.cost_supervision(class="form-control", placeholder="0.0", value=0, type="number", step="0.01") }}
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        {{ form.cost_therapy.label(class="col-form-label") }}
-                                        {{ form.cost_therapy(class="form-control", placeholder="0.0", value=0, type="number", step="0.01") }}
-                                    </div>
+                                <div class="mb-3">
+                                    {{ form.supervisor_id.label(class="col-form-label") }}
+                                    {{ form.supervisor_id(class="form-select") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.cost_supervision.label(class="col-form-label") }}
+                                    {{ form.cost_supervision(class="form-control", placeholder="0.0", value=0, type="number", step="0.01") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.cost_therapy.label(class="col-form-label") }}
+                                    {{ form.cost_therapy(class="form-control", placeholder="0.0", value=0, type="number", step="0.01") }}
                                 </div>
                             </div>
                         </div>
