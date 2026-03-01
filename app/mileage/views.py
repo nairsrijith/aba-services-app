@@ -81,7 +81,7 @@ def edit_mileage_rate(rate_id):
             rate.rate = float(form.rate.data)
             rate.effective_date = form.effective_date.data
             db.session.commit()
-            flash(f'Mileage rate updated successfully to ${form.rate.data:.2f}/km', 'success')
+            flash(f'Mileage rate updated successfully to CAD {form.rate.data:.2f}/km', 'success')
             return redirect(url_for('mileage.list_mileage_rates'))
     
     elif request.method == 'GET':

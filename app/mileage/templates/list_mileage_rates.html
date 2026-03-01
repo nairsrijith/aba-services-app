@@ -25,7 +25,7 @@
                     <a href="{{ url_for('mileage.edit_mileage_rate', rate_id=rate.id) }}" class="btn btn-sm btn-primary">Edit</a>
                     <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" 
                             data-rate-id="{{ rate.id }}"
-                            data-rate-value="${{ "%.2f"|format(rate.rate|float) }}"
+                            data-rate-value="{{ "%.2f"|format(rate.rate|float) }}"
                             data-effective-date="{{ rate.effective_date.strftime('%Y-%m-%d') }}">
                         Delete
                     </button>
