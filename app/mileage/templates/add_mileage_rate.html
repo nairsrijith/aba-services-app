@@ -17,8 +17,8 @@
                     {% endfor %}
                 </div>
             {% else %}
-                {{ form.rate(class="form-control", placeholder="e.g., 0.3600", step="0.0001") }}
-                <small class="form-text text-muted">Enter the rate per kilometer (e.g., 0.3600 for $0.36 per km)</small>
+                {{ form.rate(class="form-control", placeholder="e.g., 0.36", step="0.01") }}
+                <small class="form-text text-muted">Enter the rate per kilometer (e.g., 0.36 for CAD 0.36 per km)</small>
             {% endif %}
         </div>
         

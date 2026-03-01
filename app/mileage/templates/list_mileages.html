@@ -67,9 +67,9 @@
             <tr>
                 <td>{{ mileage.employee.firstname }} {{ mileage.employee.lastname }}</td>
                 <td>{{ mileage.client.firstname }} {{ mileage.client.lastname }}</td>
-                <td>{{ mileage.date.strftime('%b %d, %Y') }}</td>
+                <td>{{ mileage.date.strftime('%Y-%m-%d') }}</td>
                 <td class="text-end">{{ "%.2f"|format(mileage.distance|float) }}</td>
-                <td class="text-end">${{ "%.4f"|format(mileage.mileage_rate.rate|float) }}</td>
+                <td class="text-end">${{ "%.2f"|format(mileage.mileage_rate.rate|float) }}</td>
                 <td class="text-end"><strong>${{ "%.2f"|format(mileage.cost|float) }}</strong></td>
                 <td class="text-center">
                     {% if mileage.invoiced %}
@@ -84,7 +84,7 @@
                     <a href="{{ url_for('mileage.edit_mileage', mileage_id=mileage.id) }}" class="btn btn-sm btn-primary">Edit</a>
                     <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" 
                             data-mileage-id="{{ mileage.id }}"
-                            data-description="{{ mileage.employee.firstname }} {{ mileage.employee.lastname }} - {{ mileage.date.strftime('%b %d, %Y') }} ({{ mileage.distance }} mi @ ${{ "%.4f"|format(mileage.mileage_rate.rate|float) }}/mi) = ${{ "%.2f"|format(mileage.cost|float) }}">
+                            data-description="{{ mileage.employee.firstname }} {{ mileage.employee.lastname }} - {{ mileage.date.strftime('%Y-%m-%d') }} ({{ mileage.distance }} km @ ${{ "%.2f"|format(mileage.mileage_rate.rate|float) }}/km) = ${{ "%.2f"|format(mileage.cost|float) }}">
                         Delete
                     </button>
                     {% else %}

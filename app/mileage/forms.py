@@ -6,7 +6,7 @@ from wtforms.validators import DataRequired, Optional, NumberRange
 
 class MileageRateForm(FlaskForm):
     """Form for creating/updating mileage rates"""
-    rate = DecimalField('Rate per Mile ($)', validators=[DataRequired(), NumberRange(min=0.01)], places=4)
+    rate = DecimalField('Rate per Kilometer (CAD)', validators=[DataRequired(), NumberRange(min=0.01)], places=4)
     effective_date = DateField('Effective Date', validators=[DataRequired()])
     submit = SubmitField('Save Mileage Rate')
 

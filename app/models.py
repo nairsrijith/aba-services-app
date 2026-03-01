@@ -474,7 +474,7 @@ class PayStubItem(db.Model):
 class MileageRate(db.Model):
     __tablename__ = 'mileage_rates'
     id = db.Column(db.Integer, primary_key=True)
-    rate = db.Column(db.Float, nullable=False)  # Rate per kilometer (e.g., 0.36 for $0.36 per km)
+    rate = db.Column(db.Float, nullable=False)  # Rate per kilometer (e.g., 0.36 for CAD 0.36 per km)
     effective_date = db.Column(db.Date, nullable=False)  # Date when this rate becomes effective
     created_date = db.Column(db.Date, default=date.today)  # When the rate was created
 

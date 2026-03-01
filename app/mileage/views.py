@@ -43,7 +43,7 @@ def add_mileage_rate():
         # Check if a rate already exists for this date
         existing_rate = MileageRate.query.filter_by(effective_date=form.effective_date.data).first()
         if existing_rate:
-            flash(f'A mileage rate already exists for {form.effective_date.data.strftime("%B %d, %Y")}. Please update it instead.', 'warning')
+            flash(f'A mileage rate already exists for {form.effective_date.data.strftime("%Y-%m-%d")}. Please update it instead.', 'warning')
         else:
             rate = MileageRate(
                 rate=float(form.rate.data),
@@ -51,7 +51,7 @@ def add_mileage_rate():
             )
             db.session.add(rate)
             db.session.commit()
-            flash(f'Mileage rate ${form.rate.data:.4f}/mile added successfully for {form.effective_date.data.strftime("%B %d, %Y")}', 'success')
+            flash(f'Mileage rate ${form.rate.data:.2f}/km added successfully for {form.effective_date.data.strftime("%Y-%m-%d")}', 'success')
             return redirect(url_for('mileage.list_mileage_rates'))
     
     return render_template('add_mileage_rate.html', form=form)
@@ -76,12 +76,12 @@ def edit_mileage_rate(rate_id):
         ).first()
         
         if existing_rate:
-            flash(f'A mileage rate already exists for {form.effective_date.data.strftime("%B %d, %Y")}', 'warning')
+            flash(f'A mileage rate already exists for {form.effective_date.data.strftime("%Y-%m-%d")}', 'warning')
         else:
             rate.rate = float(form.rate.data)
             rate.effective_date = form.effective_date.data
             db.session.commit()
-            flash(f'Mileage rate updated successfully to ${form.rate.data:.4f}/mile', 'success')
+            flash(f'Mileage rate updated successfully to ${form.rate.data:.2f}/km', 'success')
             return redirect(url_for('mileage.list_mileage_rates'))
     
     elif request.method == 'GET':

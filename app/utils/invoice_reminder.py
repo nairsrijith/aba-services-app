@@ -114,7 +114,7 @@ def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
                 client_name=client.parentname,
                 invoice_number=invoice.invoice_number,
                 invoice_total=invoice.total_cost,
-                due_date=invoice.payby_date.strftime('%B %d, %Y'),
+                due_date=invoice.payby_date.strftime('%Y-%m-%d'),
                 days_until_due=max(days_until_due, 0),
                 reminder_type=reminder_type,
                 is_repeat=is_repeat,
@@ -127,7 +127,7 @@ def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
                 client_name=client.parentname,
                 invoice_number=invoice.invoice_number,
                 invoice_total=invoice.total_cost,
-                due_date=invoice.payby_date.strftime('%B %d, %Y'),
+                due_date=invoice.payby_date.strftime('%Y-%m-%d'),
                 days_until_due=max(days_until_due, 0),
                 reminder_type=reminder_type,
                 is_repeat=is_repeat,
@@ -156,7 +156,7 @@ This is a {reminder_type.lower()} for Invoice {invoice.invoice_number}.
 Invoice Details:
 Invoice Number: {invoice.invoice_number}
 Total Amount: ${invoice.total_cost:.2f}
-Due Date: {invoice.payby_date.strftime('%B %d, %Y')}
+Due Date: {invoice.payby_date.strftime('%Y-%m-%d')}
 
 Please ensure payment is made by the due date.
 

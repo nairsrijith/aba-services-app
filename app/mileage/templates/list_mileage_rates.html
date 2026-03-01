@@ -9,7 +9,7 @@
     <table class="table table-hover">
         <thead>
             <tr>
-                <th class="text-end">Rate ($/mile)</th>
+                <th class="text-end">Rate (CAD/km)</th>
                 <th class="text-end">Effective Date</th>
                 <th class="text-end">Created Date</th>
                 <th>Actions</th>
@@ -18,15 +18,15 @@
         <tbody>
             {% for rate in rates %}
             <tr>
-                <td class="text-end">${{ "%.4f"|format(rate.rate|float) }}</td>
-                <td class="text-end">{{ rate.effective_date.strftime('%B %d, %Y') }}</td>
-                <td class="text-end">{{ rate.created_date.strftime('%B %d, %Y') if rate.created_date else '-' }}</td>
+                <td class="text-end">${{ "%.2f"|format(rate.rate|float) }}</td>
+                <td class="text-end">{{ rate.effective_date.strftime('%Y-%m-%d') }}</td>
+                <td class="text-end">{{ rate.created_date.strftime('%Y-%m-%d') if rate.created_date else '-' }}</td>
                 <td>
                     <a href="{{ url_for('mileage.edit_mileage_rate', rate_id=rate.id) }}" class="btn btn-sm btn-primary">Edit</a>
                     <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" 
                             data-rate-id="{{ rate.id }}"
-                            data-rate-value="${{ "%.4f"|format(rate.rate|float) }}"
-                            data-effective-date="{{ rate.effective_date.strftime('%B %d, %Y') }}">
+                            data-rate-value="${{ "%.2f"|format(rate.rate|float) }}"
+                            data-effective-date="{{ rate.effective_date.strftime('%Y-%m-%d') }}">
                         Delete
                     </button>
                 </td>
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const rateValue = button.getAttribute('data-rate-value');
         const effectiveDate = button.getAttribute('data-effective-date');
         
-        document.getElementById('modalRateValue').textContent = rateValue + '/mile';
+        document.getElementById('modalRateValue').textContent = rateValue + '/km';
         document.getElementById('modalEffectiveDate').textContent = effectiveDate;
         
         const confirmBtn = document.getElementById('confirmDeleteBtn');
