@@ -18,7 +18,7 @@
         <tbody>
             {% for rate in rates %}
             <tr>
-                <td class="text-end">${{ "%.2f"|format(rate.rate|float) }}</td>
+                <td class="text-end">{{ "%.2f"|format(rate.rate|float) }}</td>
                 <td class="text-end">{{ rate.effective_date.strftime('%Y-%m-%d') }}</td>
                 <td class="text-end">{{ rate.created_date.strftime('%Y-%m-%d') if rate.created_date else '-' }}</td>
                 <td>

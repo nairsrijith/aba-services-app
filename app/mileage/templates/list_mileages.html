@@ -84,7 +84,7 @@
                     <a href="{{ url_for('mileage.edit_mileage', mileage_id=mileage.id) }}" class="btn btn-sm btn-primary">Edit</a>
                     <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" 
                             data-mileage-id="{{ mileage.id }}"
-                            data-description="{{ mileage.employee.firstname }} {{ mileage.employee.lastname }} - {{ mileage.date.strftime('%Y-%m-%d') }} ({{ mileage.distance }} km @ ${{ "%.2f"|format(mileage.mileage_rate.rate|float) }}/km) = ${{ "%.2f"|format(mileage.cost|float) }}">
+                            data-description="{{ mileage.employee.firstname }} {{ mileage.employee.lastname }} - {{ mileage.date.strftime('%Y-%m-%d') }} ({{ mileage.distance }} km @ CAD {{ "%.2f"|format(mileage.mileage_rate.rate|float) }}/km) = CAD {{ "%.2f"|format(mileage.cost|float) }}">
                         Delete
                     </button>
                     {% else %}
