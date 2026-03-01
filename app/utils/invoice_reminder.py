@@ -41,9 +41,14 @@ def should_send_repeat_reminder(invoice: Invoice, settings: AppSettings) -> bool
     """Check if repeat reminder should be sent for an invoice.
     
     Sends when:
-    - Invoice is on or after the due date (due date today or overdue)
     - Repeat reminders are enabled
-    - Enough days have passed since last reminder (X days per settings)
+    - Invoice has already received at least one reminder
+    - **Either** the due date is today **or** enough days have passed since the
+      last reminder (X days per settings)
+    
+    This guarantees the second reminder always lands on the due date, and
+    later follow-ups follow the configured interval regardless of whether the
+    invoice is still upcoming or has become overdue.
     
     Uses UTC timezone for consistent behavior across different server locations.
     """
@@ -52,18 +57,19 @@ def should_send_repeat_reminder(invoice: Invoice, settings: AppSettings) -> bool
     
     if not invoice.last_reminder_sent_date:
         return False
-    
+
     # Use UTC date for timezone-independent comparison
     utc_today = datetime.utcnow().date()
     days_until_due = (invoice.payby_date - utc_today).days
-    
-    # Send repeat reminders on the due date and after (including today when due)
-    if days_until_due > 0:
-        return False
-    
-    days_since_last_reminder = (datetime.utcnow() - invoice.last_reminder_sent_date).days
-    
-    # Send if enough days have passed since last reminder
+
+    # Always send a repeat reminder on the due date if this isn't the first one
+    if days_until_due == 0:
+        return invoice.reminder_count > 0
+
+    # Otherwise, send when interval elapsed since last reminder.  Use only the
+    # date portions so that the time-of-day doesn't affect the day count.
+    last_date = invoice.last_reminder_sent_date.date()
+    days_since_last_reminder = (utc_today - last_date).days
     return days_since_last_reminder >= settings.invoice_reminder_repeat_days
 
 
@@ -208,11 +214,25 @@ def process_invoice_reminders():
         
         reminders_sent = 0
         for invoice in unpaid_invoices:
+            # Debug info to help trace why invoices are or are not eligible
+            # compute values for logging clarity
+            utc_today = datetime.utcnow().date()
+            days_until_due = (invoice.payby_date - utc_today).days
+            days_since_last = None
+            if invoice.last_reminder_sent_date:
+                days_since_last = (utc_today - invoice.last_reminder_sent_date.date()).days
+            logger.debug(
+                f"Evaluating invoice {invoice.invoice_number}: due={invoice.payby_date} "
+                f"(days_until={days_until_due}), status={invoice.status}, "
+                f"reminders={invoice.reminder_count}, last_sent={invoice.last_reminder_sent_date}, "
+                f"days_since_last={days_since_last}"
+            )
+
             # Check for first reminder
             if should_send_first_reminder(invoice, settings):
                 if send_invoice_reminder(invoice, settings):
                     reminders_sent += 1
-            
+
             # Check for repeat reminder
             elif should_send_repeat_reminder(invoice, settings):
                 if send_invoice_reminder(invoice, settings):
