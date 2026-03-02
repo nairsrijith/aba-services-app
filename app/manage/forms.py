@@ -26,6 +26,7 @@ class SettingsForm(FlaskForm):
     org_email = StringField('Organization Email', validators=[length(max=120)])
     payment_email = StringField('Payment Email', validators=[length(max=120)])
     logo_file = FileField('Organization Logo', validators=[FileAllowed(list(ALLOWED_IMAGE_EXT), 'Images only')])
+    clear_logo = BooleanField('Remove Current Logo')
 
     gmail_client_id = StringField('Gmail OAuth Client ID', validators=[length(max=200)])
     gmail_client_secret = PasswordField('Gmail OAuth Client Secret')

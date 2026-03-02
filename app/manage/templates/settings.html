@@ -18,6 +18,17 @@
     color: #212529;
   }
   
+  /* Fixed size preview for logo */
+  #logo-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    object-fit: contain;
+    background-color: #fff;
+    display: inline-block;
+  }
+  
   html.dark-mode .settings-card {
     border-color: #495057;
   }
@@ -90,18 +101,21 @@
           <div class="card-body">
             <div class="mb-3 text-center">
               {% if logo_b64 %}
-                <img id="logo-preview" src="{{ logo_b64 }}" alt="Current logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+                <img id="logo-preview" src="{{ logo_b64 }}" alt="Current logo" />
               {% elif logo_url %}
-                <img id="logo-preview" src="{{ logo_url }}" alt="Current logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+                <img id="logo-preview" src="{{ logo_url }}" alt="Current logo" />
               {% elif logo_web_path %}
-                <img id="logo-preview" src="{{ logo_web_path }}" alt="Current logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+                <img id="logo-preview" src="{{ logo_web_path }}" alt="Current logo" />
               {% else %}
-                <img id="logo-preview" src="{{ current_org_logo() }}" alt="No logo" style="max-width:120px;max-height:120px;border-radius:6px;border:1px solid #e0e0e0;" />
+                <img id="logo-preview" src="{{ current_org_logo() }}" alt="No logo" />
               {% endif %}
             </div>
             <div>
               {{ form.logo_file.label }}
               {{ form.logo_file(class_='form-control', id='logo_file') }}
+            </div>
+            <div class="form-check mt-2">
+              {{ form.clear_logo(class_='form-check-input', id='clear_logo') }} {{ form.clear_logo.label(class_='form-check-label') }}
             </div>
           </div>
         </div>
@@ -272,25 +286,41 @@
     
     // Logo file preview
     const logoInput = document.getElementById('logo_file');
+    const clearLogoCheckbox = document.getElementById('clear_logo');
+    const logoPreview = document.getElementById('logo-preview');
+    let objectUrl = null;
+
     if (logoInput) {
-      const logoPreview = document.getElementById('logo-preview');
-      let objectUrl = null;
-      
       logoInput.addEventListener('change', function(e) {
         const file = logoInput.files && logoInput.files[0];
         if (!file) return;
-        
+
+        // uncheck clear option when choosing a new file
+        if (clearLogoCheckbox) {
+          clearLogoCheckbox.checked = false;
+        }
+
         // Only images
         if (!file.type.startsWith('image/')) return;
-        
+
         if (objectUrl) {
           URL.revokeObjectURL(objectUrl);
           objectUrl = null;
         }
-        
+
         objectUrl = URL.createObjectURL(file);
         if (logoPreview) {
           logoPreview.src = objectUrl;
+          logoPreview.style.display = 'inline-block';
+        }
+      });
+    }
+
+    if (clearLogoCheckbox && logoPreview) {
+      clearLogoCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          logoPreview.style.display = 'none';
+        } else {
           logoPreview.style.display = 'inline-block';
         }
       });

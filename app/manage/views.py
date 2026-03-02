@@ -123,6 +123,8 @@ def settings():
         form.invoice_reminder_repeat_enabled.data = bool(settings.invoice_reminder_repeat_enabled)
         form.invoice_reminder_repeat_days.data = settings.invoice_reminder_repeat_days or 2
         form.invoice_reminder_time.data = settings.invoice_reminder_time or '06:00'
+        # ensure clear checkbox starts unchecked
+        form.clear_logo.data = False
 
     if form.validate_on_submit():
         try:
@@ -148,7 +150,17 @@ def settings():
             settings.invoice_reminder_repeat_days = form.invoice_reminder_repeat_days.data or 2
             settings.invoice_reminder_time = form.invoice_reminder_time.data or '06:00'
 
-            # handle logo upload
+            # handle logo removal first
+            if form.clear_logo.data and settings and settings.logo_path:
+                try:
+                    existing = os.path.join(current_app.root_path, settings.logo_path)
+                    if os.path.exists(existing):
+                        os.remove(existing)
+                except Exception:
+                    pass
+                settings.logo_path = None
+
+            # handle logo upload (overrides removal if a file is picked)
             if form.logo_file.data:
                 f = form.logo_file.data
                 filename = secure_filename(f.filename)
