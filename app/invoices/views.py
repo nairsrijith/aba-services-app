@@ -26,6 +26,34 @@ def parse_date(val):
     return val
 
 
+def _extract_mileages(invoice):
+    """Return a list of lightweight objects representing mileage entries
+
+    The invoice_items JSON snapshot may include items of type "mileage".  The
+    PDF template expects each entry to have attributes like :date, :description,
+    :distance, :rate and :cost.  We create a minimal ``MileageSnapshot`` class in
+    memory so that the same template logic can operate transparently whether the
+    mileage rows originated from real ``Mileage`` models or the invoice snapshot.
+    """
+    mileages = []
+    if invoice.invoice_items:
+        try:
+            items = json.loads(invoice.invoice_items)
+            mileage_items = [item for item in items if item.get('type') == 'mileage']
+            for m_item in mileage_items:
+                class MileageSnapshot:
+                    def __init__(self, data):
+                        self.date = data.get('date')
+                        self.description = data.get('description')
+                        self.distance = data.get('distance')
+                        self.rate = data.get('rate')
+                        self.cost = data.get('cost')
+                mileages.append(MileageSnapshot(m_item))
+        except Exception:
+            pass
+    return mileages
+
+
 @invoices_bp.route('/list', methods=['GET'])
 @login_required
 def list_invoices():
@@ -321,23 +349,8 @@ def download_invoice_pdf_by_number(invoice_number):
 
         status = "Pending" if invoice.status != "Paid" else invoice.status
 
-        # Extract mileage items from invoice_items JSON for PDF
-        mileages = []
-        if invoice.invoice_items:
-            try:
-                items = json.loads(invoice.invoice_items)
-                mileage_items = [item for item in items if item.get('type') == 'mileage']
-                for m_item in mileage_items:
-                    class MileageSnapshot:
-                        def __init__(self, data):
-                            self.date = data.get('date')
-                            self.description = data.get('description')
-                            self.distance = data.get('distance')
-                            self.rate = data.get('rate')
-                            self.cost = data.get('cost')
-                    mileages.append(MileageSnapshot(m_item))
-            except Exception:
-                pass
+        # include any mileage line items from the invoice snapshot
+        mileages = _extract_mileages(invoice)
 
         # Resolve org settings and logo context
         settings = get_org_settings()
@@ -608,23 +621,8 @@ def mark_sent(invoice_number):
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
         supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
 
-        # Extract mileage items from invoice_items JSON for email/PDF
-        mileages = []
-        if invoice.invoice_items:
-            try:
-                items = _json.loads(invoice.invoice_items)
-                mileage_items = [item for item in items if item.get('type') == 'mileage']
-                for m_item in mileage_items:
-                    class MileageSnapshot:
-                        def __init__(self, data):
-                            self.date = data.get('date')
-                            self.description = data.get('description')
-                            self.distance = data.get('distance')
-                            self.rate = data.get('rate')
-                            self.cost = data.get('cost')
-                    mileages.append(MileageSnapshot(m_item))
-            except Exception:
-                pass
+        # include any mileage line items from the invoice snapshot
+        mileages = _extract_mileages(invoice)
 
         # Generate PDF and send email
         try:
@@ -751,6 +749,9 @@ def email_invoice(invoice_number):
         supervisor_name = f"{supervisor.firstname} {supervisor.lastname}" if supervisor else "N/A"
         supervisor_rba_number = supervisor.rba_number if supervisor else "N/A"
 
+        # include any mileage line items from the invoice snapshot
+        mileages = _extract_mileages(invoice)
+
         # Generate PDF and send email
         try:
             # Resolve org settings and logo context
@@ -777,6 +778,8 @@ def email_invoice(invoice_number):
                 paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
                 payment_comments=invoice.payment_comments,
                 interventions=interventions,
+                # include mileage records extracted from invoice_items snapshot (if any)
+                mileages=mileages,
                 org_name=settings['org_name'],
                 org_address=settings['org_address'],
                 org_email=settings['org_email'],
@@ -896,6 +899,9 @@ def mark_paid(invoice_number):
                             except Exception:
                                 i.cost = 0
                 
+                # include any mileage line items from the invoice snapshot
+                mileages = _extract_mileages(invoice)
+                
                 parent_name = getattr(client, 'parent_name', '')
                 address = f"{client.address1}{', ' + client.address2 if client.address2 else ''}<br>{client.city}, {client.state} {client.zipcode}"
                 supervisor = Employee.query.get(client.supervisor_id) if client and client.supervisor_id else None
@@ -923,6 +929,8 @@ def mark_paid(invoice_number):
                     paid_date=paid_date.strftime('%Y-%m-%d'),
                     payment_comments=payment_comments,
                     interventions=interventions,
+                    # mileages list may be empty if no mileage entries exist
+                    mileages=mileages,
                     org_name=settings['org_name'],
                     org_address=settings['org_address'],
                     org_email=settings['org_email'],
