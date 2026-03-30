@@ -96,7 +96,7 @@
                             <td>
                                 <span class="badge bg-success">Active</span>
                             </td>
-                            <td>{{ client.firstname }} {{ client.lastname }}</td>
+                            <td><a href="{{ url_for('clients.client_info', client_id=client.id) }}">{{ client.firstname }} {{ client.lastname }}</a></td>
                             <td>{{ client.parentname }}</td>
                             <td>{{ client.city }}</td>
                             <td>{{ client.state }}</td>
@@ -140,7 +140,7 @@
                         {% for client in inactive_clients %}
                             <tr class="text-muted">
                                 <td><span class="badge bg-secondary">Inactive</span></td>
-                                <td>{{ client.firstname }} {{ client.lastname }}</td>
+                                <td><a href="{{ url_for('clients.client_info', client_id=client.id) }}">{{ client.firstname }} {{ client.lastname }}</a></td>
                                 <td>{{ client.parentname }}</td>
                                 <td>{{ client.city }}</td>
                                 <td>{{ client.state }}</td>

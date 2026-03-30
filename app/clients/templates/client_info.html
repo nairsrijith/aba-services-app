@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Client Profile</h2>
+        <a href="{{ url_for('clients.list_clients') }}" class="btn btn-secondary">Back to Clients</a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100 mb-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mb-0">{{ client.firstname }} {{ client.lastname }}</h3>
+                        <div>
+                            <a href="{{ url_for('clients.update_client', client_id=client.id) }}" class="btn btn-primary btn-sm me-2">Edit</a>
+                            {% if client.is_active %}
+                                <form method="post" action="{{ url_for('clients.deactivate_client', client_id=client.id) }}" class="d-inline">
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    <button type="submit" class="btn btn-warning btn-sm">Deactivate</button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{{ url_for('clients.reactivate_client', client_id=client.id) }}" class="d-inline">
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    <button type="submit" class="btn btn-success btn-sm">Reactivate</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="mb-1"><strong>Date of Birth:</strong> {{ client.dob.strftime('%Y-%m-%d') if client.dob else 'N/A' }}</p>
+                    <p class="mb-1"><strong>Gender:</strong> {{ client.gender or 'N/A' }}</p>
+                    <p class="mb-1"><strong>Address:</strong> {{ client.address1 }} {{ client.address2 or '' }}, {{ client.city }}, {{ client.state }} {{ client.zipcode }}</p>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Primary Parent / Guardian</h6>
+                            <p class="mb-0"><strong>Name:</strong> {{ client.get_parent1_name() or 'N/A' }}</p>
+                            <p class="mb-0"><strong>Email:</strong> {{ client.get_parent1_email() or 'N/A' }}</p>
+                            <p class="mb-0"><strong>Phone:</strong> {{ client.get_parent1_phone() or 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Secondary Parent / Guardian</h6>
+                            <p class="mb-0"><strong>Name:</strong> {{ (client.parent2_firstname ~ ' ' ~ client.parent2_lastname).strip() if client.parent2_firstname or client.parent2_lastname else 'N/A' }}</p>
+                            <p class="mb-0"><strong>Email:</strong> {{ client.parent2_email or 'N/A' }}</p>
+                            <p class="mb-0"><strong>Phone:</strong> {{ client.parent2_cell or 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card h-100 mb-0">
+                <div class="card-header">Upcoming Events</div>
+                <div class="card-body">
+                    {% if upcoming_events %}
+                        <ul class="list-group list-group-flush">
+                            {% for event in upcoming_events %}
+                                <li class="list-group-item">
+                                    <strong>{{ event.type }}:</strong> {{ event.date.strftime('%Y-%m-%d') }} {{ event.description }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="mb-0">No upcoming events found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card h-100 mb-0">
+                <div class="card-header">Pending Invoices</div>
+                <div class="card-body p-0">
+                    {% set pending_invoices = invoices | selectattr('status', '!=', 'Paid') | list %}
+                    {% if pending_invoices %}
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Invoice Number</th>
+                                <th>Due Date</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in pending_invoices[:10] %}
+                            <tr>
+                                <td><a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=inv.invoice_number) }}">{{ inv.invoice_number }}</a></td>
+                                <td>{{ inv.payby_date.strftime('%Y-%m-%d') }}</td>
+                                <td>${{ '%.2f'|format(inv.total_cost or 0.0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        <p class="p-3 mb-0">No pending invoices.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mb-3">
+        <div class="btn-group" role="group" aria-label="Time range selector">
+            <button type="button" class="btn btn-outline-primary billing-range-btn" data-range="overall">Overall</button>
+            <button type="button" class="btn btn-outline-primary billing-range-btn" data-range="year">This Year</button>
+            <button type="button" class="btn btn-outline-primary billing-range-btn active" data-range="month">This Month</button>
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <!-- Empty card for future use -->
+                    <p class="text-muted mb-0">Future Feature</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-center">Sessions</h5>
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                        <p class="card-text display-1 fw-bold mb-0" id="statSessions">{{ session_stats.month.sessions }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-center">Duration</h5>
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                        <p class="card-text display-1 fw-bold mb-0" id="statHours">{{ session_stats.month.hours }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Billing</h5>
+                    <div class="d-flex justify-content-center mb-3">
+                        <div style="max-width: 200px; width:100%;">
+                            <canvas id="billingChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="billingStats" class="text-center small">
+                        <strong>Invoiced:</strong> $<span id="statInvoiced">{{ '%.2f'|format(invoice_stats.month.invoiced) }}</span>
+                        &nbsp;·&nbsp;
+                        <strong>Paid:</strong> $<span id="statPaid">{{ '%.2f'|format(invoice_stats.month.paid) }}</span>
+                        &nbsp;·&nbsp;
+                        <strong>Pending:</strong> $<span id="statPending">{{ '%.2f'|format(invoice_stats.month.pending) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const invoiceStats = {
+            overall: {
+                invoiced: {{ invoice_stats.overall.invoiced }},
+                paid: {{ invoice_stats.overall.paid }},
+                pending: {{ invoice_stats.overall.pending }}
+            },
+            year: {
+                invoiced: {{ invoice_stats.year.invoiced }},
+                paid: {{ invoice_stats.year.paid }},
+                pending: {{ invoice_stats.year.pending }}
+            },
+            month: {
+                invoiced: {{ invoice_stats.month.invoiced }},
+                paid: {{ invoice_stats.month.paid }},
+                pending: {{ invoice_stats.month.pending }}
+            }
+        };
+
+        const sessionStatsByRange = {
+            overall: {
+                sessions: {{ session_stats.overall.sessions }},
+                hours: {{ session_stats.overall.hours }}
+            },
+            year: {
+                sessions: {{ session_stats.year.sessions }},
+                hours: {{ session_stats.year.hours }}
+            },
+            month: {
+                sessions: {{ session_stats.month.sessions }},
+                hours: {{ session_stats.month.hours }}
+            }
+        };
+
+        const ctx = document.getElementById('billingChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Paid', 'Pending'],
+                datasets: [{
+                    label: 'Payment status',
+                    data: [invoiceStats.month.paid, invoiceStats.month.pending],
+                    backgroundColor: ['#28a745', '#ffc107'],
+                    borderColor: ['#ffffff', '#ffffff'],
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var value = context.raw || 0;
+                                var label = context.label || '';
+                                return label + ': $' + value.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateBillingChart(range) {
+            const stats = invoiceStats[range];
+            chart.data.datasets[0].data = [stats.paid, stats.pending];
+            chart.update();
+            document.getElementById('statInvoiced').textContent = stats.invoiced.toFixed(2);
+            document.getElementById('statPaid').textContent = stats.paid.toFixed(2);
+            document.getElementById('statPending').textContent = stats.pending.toFixed(2);
+
+            const sessionStats = sessionStatsByRange[range];
+            document.getElementById('statSessions').textContent = sessionStats.sessions;
+            document.getElementById('statHours').textContent = sessionStats.hours.toFixed(2);
+
+            const buttons = document.querySelectorAll('.billing-range-btn');
+            buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.range === range));
+        }
+
+        document.querySelectorAll('.billing-range-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                updateBillingChart(this.dataset.range);
+            });
+        });
+
+        // initial load
+        updateBillingChart('month');
+    });
+</script>
+{% endblock %}
