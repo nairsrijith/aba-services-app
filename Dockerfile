@@ -8,8 +8,7 @@ WORKDIR /myapp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential gcc libpq-dev pkg-config postgresql-client \
     libglib2.0-0 libcairo2 libcairo2-dev gir1.2-gtk-3.0 \
-    cron \
-    tzdata \
+    cron tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Make python3 the default python
