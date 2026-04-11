@@ -121,6 +121,9 @@ def list_clients():
         q = request.args.get('q', '').strip()
         # Respect the `show_inactive` toggle: when not set, only show active clients.
         show_inactive = request.args.get('show_inactive', '0')
+        # Get selected client ID if provided
+        selected_client_id = request.args.get('client_id', None, type=int)
+        
         # Build base query depending on show_inactive
         if show_inactive == '1':
             # include both active and inactive, active first
@@ -147,11 +150,118 @@ def list_clients():
         query = query.order_by(Client.is_active.desc(), Client.firstname, Client.lastname)
         clients_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         settings = get_org_settings()
+        
+        # Fetch selected client info if available
+        selected_client_data = None
+        if selected_client_id:
+            client = Client.query.get(selected_client_id)
+            if client:
+                from datetime import date
+                
+                all_sessions = Intervention.query.filter_by(client_id=client.id).order_by(Intervention.date.desc()).all()
+                total_sessions = len(all_sessions)
+                total_session_hours = round(sum([s.duration or 0 for s in all_sessions]), 2)
+
+                today = date.today()
+                year_start = date(today.year, 1, 1)
+                month_start = date(today.year, today.month, 1)
+
+                sessions_year = [s for s in all_sessions if s.date and s.date >= year_start]
+                sessions_month = [s for s in all_sessions if s.date and s.date >= month_start]
+
+                def session_stats(session_list):
+                    count = len(session_list)
+                    hours = round(sum([s.duration or 0 for s in session_list]), 2)
+                    return count, hours
+
+                sessions_overall_count, sessions_overall_hours = session_stats(all_sessions)
+                sessions_year_count, sessions_year_hours = session_stats(sessions_year)
+                sessions_month_count, sessions_month_hours = session_stats(sessions_month)
+
+                upcoming_sessions = Intervention.query.filter(
+                    Intervention.client_id == client.id,
+                    Intervention.date >= date.today()
+                ).order_by(Intervention.date.asc(), Intervention.start_time.asc()).limit(5).all()
+
+                next_session = upcoming_sessions[0] if upcoming_sessions else None
+
+                # Upcoming birthday event
+                birth_date = client.dob
+                if birth_date:
+                    this_year_birthday = None
+                    try:
+                        this_year_birthday = date(date.today().year, birth_date.month, birth_date.day)
+                    except ValueError:
+                        # Handle Feb 29 birthdays non-leap-year by assigning Feb 28
+                        this_year_birthday = date(date.today().year, 2, 28)
+
+                    if birth_date.month == date.today().month and this_year_birthday >= date.today():
+                        next_birthday = this_year_birthday
+                    else:
+                        next_birthday = None
+                else:
+                    next_birthday = None
+
+                upcoming_events = []
+                if next_birthday:
+                    upcoming_events.append({
+                        'type': 'Birthday',
+                        'date': next_birthday,
+                        'description': ""
+                    })
+                if next_session:
+                    upcoming_events.append({
+                        'type': 'Next Session',
+                        'date': next_session.date,
+                        'description': f"{next_session.intervention_type} with {next_session.employee.firstname} {next_session.employee.lastname}"
+                    })
+
+                invoices = Invoice.query.filter_by(client_id=client.id).all()
+
+                def compute_stats(invoice_list):
+                    invoiced = round(sum([inv.total_cost or 0.0 for inv in invoice_list]), 2)
+                    paid = round(sum([inv.total_cost or 0.0 for inv in invoice_list if inv.status and inv.status.lower() == 'paid']), 2)
+                    pending = round(max(invoiced - paid, 0.0), 2)
+                    return invoiced, paid, pending
+
+                today = date.today()
+                year_start = date(today.year, 1, 1)
+                month_start = date(today.year, today.month, 1)
+
+                invoices_month = [inv for inv in invoices if inv.invoiced_date and inv.invoiced_date >= month_start]
+                invoices_year = [inv for inv in invoices if inv.invoiced_date and inv.invoiced_date >= year_start]
+
+                invoiced_overall, paid_overall, pending_overall = compute_stats(invoices)
+                invoiced_year, paid_year, pending_year = compute_stats(invoices_year)
+                invoiced_month, paid_month, pending_month = compute_stats(invoices_month)
+
+                selected_client_data = {
+                    'client': client,
+                    'total_sessions': total_sessions,
+                    'total_session_hours': total_session_hours,
+                    'all_sessions': all_sessions,
+                    'upcoming_sessions': upcoming_sessions,
+                    'upcoming_events': upcoming_events,
+                    'invoices': invoices,
+                    'invoice_stats': {
+                        'overall': {'invoiced': invoiced_overall, 'paid': paid_overall, 'pending': pending_overall},
+                        'year': {'invoiced': invoiced_year, 'paid': paid_year, 'pending': pending_year},
+                        'month': {'invoiced': invoiced_month, 'paid': paid_month, 'pending': pending_month}
+                    },
+                    'session_stats': {
+                        'overall': {'sessions': sessions_overall_count, 'hours': sessions_overall_hours},
+                        'year': {'sessions': sessions_year_count, 'hours': sessions_year_hours},
+                        'month': {'sessions': sessions_month_count, 'hours': sessions_month_hours}
+                    }
+                }
+        
         return render_template(
-            'list.html',
+            'client_list_info.html',
             clients=clients_pagination.items,
             pagination=clients_pagination,
             per_page=per_page,
+            selected_client_id=selected_client_id,
+            selected_client_data=selected_client_data,
             org_name=settings['org_name']
         )
     else:

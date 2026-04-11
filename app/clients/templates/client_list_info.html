@@ -1,0 +1,888 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  /* Full-width list view (no client selected) */
+  .clients-list-view {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .clients-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .clients-table-wrapper table {
+    margin-bottom: 0;
+  }
+
+  /* Split view (client selected) */
+  .clients-split-view {
+    display: flex;
+    gap: 0;
+  }
+
+  .client-list-sidebar {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 0;
+    max-height: 80vh;
+    overflow: hidden;
+    border-right: 1px solid var(--line-clr);
+    padding-right: 0 !important;
+    flex: 0 0 25%;
+    min-width: 220px;
+  }
+
+  .client-list-sidebar .sidebar-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .client-list-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--line-clr);
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .client-list-item:hover {
+    background-color: rgba(var(--accent-clr-rgb), 0.1);
+  }
+
+  .client-list-item.active {
+    background-color: rgba(var(--accent-clr-rgb), 0.2);
+    border-left: 3px solid var(--accent-clr);
+    padding-left: calc(1rem - 3px);
+  }
+
+  .client-list-item .text-muted {
+    font-size: 0.75rem;
+  }
+
+  .client-info-panel {
+    padding-left: 2rem;
+    flex: 0 0 75%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .close-info-btn {
+    min-width: 38px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--accent-clr-rgb), 0.08);
+    border: 1px solid rgba(var(--accent-clr-rgb), 0.22);
+    border-radius: 0.375rem;
+    font-size: 0.92rem;
+    cursor: pointer;
+    color: var(--text-clr);
+    opacity: 0.95;
+    transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    padding: 0 0.75rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+
+  .close-info-btn:hover,
+  .close-info-btn:focus {
+    transform: scale(1.03);
+    background: rgba(var(--accent-clr-rgb), 0.18);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    opacity: 1;
+  }
+
+  .actions-dropdown {
+    position: relative;
+  }
+
+  .actions-dropdown .dropdown-menu {
+    max-width: 200px;
+    z-index: 9999 !important;
+    position: fixed !important;
+  }
+
+  .actions-dropdown .dropdown-menu .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .actions-dropdown form {
+    display: contents;
+  }
+
+  @media (max-width: 1024px) {
+    .client-list-sidebar {
+      flex: 0 0 40%;
+    }
+    .client-info-panel {
+      flex: 0 0 60%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .clients-split-view {
+      flex-direction: column;
+    }
+    .client-list-sidebar {
+      flex: 0 0 auto;
+      max-height: 40vh;
+      border-right: none;
+      border-bottom: 1px solid var(--line-clr);
+    }
+    .client-info-panel {
+      flex: 0 0 auto;
+      max-height: calc(60vh - 2rem);
+      border-left: none;
+    }
+  }
+</style>
+
+<div class="container-fluid py-4">
+  {% if selected_client_id %}
+    <!-- SPLIT VIEW: Client is selected -->
+    <div class="clients-split-view row h-100 mx-0">
+      <!-- Left sidebar - Compact client list -->
+      <div class="client-list-sidebar">
+        <div class="d-flex justify-content-between align-items-center px-3 pt-2 pb-3">
+          <h5 class="mb-0">Client</h5>
+          <a href="{{ url_for('clients.add_client') }}" class="btn btn-sm btn-primary">Add</a>
+        </div>
+
+        <div class="sidebar-scroll px-3 pb-3">
+          <!-- Search and filter -->
+          <form method="get" class="d-flex flex-column gap-2">
+            <input type="text" class="form-control form-control-sm" name="q" placeholder="Search..." value="{{ request.args.get('q','') }}">
+            <button class="btn btn-sm btn-primary" type="submit">Search</button>
+            <div class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" id="show_inactive" name="show_inactive" value="1"
+                {% if request.args.get('show_inactive') == '1' %}checked{% endif %}
+                onchange="this.form.submit()">
+              <label class="form-check-label form-check-label-sm" for="show_inactive">Inactive</label>
+            </div>
+            <input type="hidden" name="per_page" value="{{ per_page }}">
+            {% if selected_client_id %}
+              <input type="hidden" name="client_id" value="{{ selected_client_id }}">
+            {% endif %}
+          </form>
+
+          <!-- Client list -->
+          <div class="client-list mt-3">
+          {% if not clients %}
+            <div class="px-3 py-2 text-muted text-center">No clients found</div>
+          {% else %}
+            {% for client in clients %}
+              <div class="client-list-item {% if client.id == selected_client_id %}active{% endif %}" 
+                data-client-id="{{ client.id }}" data-page="{{ pagination.page }}" data-per-page="{{ per_page }}" 
+                data-q="{{ request.args.get('q','') }}" data-show-inactive="{{ request.args.get('show_inactive','0') }}" 
+                style="cursor:pointer;" onclick="selectClient(this)">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="fw-bold">{{ client.firstname }} {{ client.lastname }}</div>
+                    <div class="text-muted">{{ client.parentname }}</div>
+                  </div>
+                  {% if not client.is_active %}
+                    <span class="badge bg-secondary">Inactive</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+        </div>
+
+        <!-- Pagination for sidebar -->
+        {% if pagination.pages > 1 %}
+        <nav class="px-3 py-2 border-top mt-auto">
+          <ul class="pagination pagination-sm justify-content-center mb-0">
+            {% set prev_args = request.args.to_dict() %}
+            {% set _ = prev_args.update({'page': pagination.prev_num, 'per_page': per_page}) %}
+            {% if selected_client_id %}
+              {% set _ = prev_args.update({'selected_client_id': selected_client_id}) %}
+            {% endif %}
+            {% if pagination.has_prev %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('clients.list_clients', **prev_args) }}">«</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">«</span></li>
+            {% endif %}
+            
+            <li class="page-item disabled"><span class="page-link">{{ pagination.page }} / {{ pagination.pages }}</span></li>
+            
+            {% set next_args = request.args.to_dict() %}
+            {% set _ = next_args.update({'page': pagination.next_num, 'per_page': per_page}) %}
+            {% if selected_client_id %}
+              {% set _ = next_args.update({'selected_client_id': selected_client_id}) %}
+            {% endif %}
+            {% if pagination.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('clients.list_clients', **next_args) }}">»</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">»</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
+
+      <!-- Right content - Client info panel -->
+      <div class="client-info-panel">
+        {% if selected_client_data %}
+          {% set client = selected_client_data.client %}
+          {% set invoice_stats = selected_client_data.invoice_stats %}
+          {% set session_stats = selected_client_data.session_stats %}
+          {% set invoices = selected_client_data.invoices %}
+          {% set upcoming_events = selected_client_data.upcoming_events %}
+
+          <div class="client-info-header row gx-3 align-items-center mb-4">
+            <div class="col-12 col-md-7">
+              <h3 class="mb-1">{{ client.firstname }} {{ client.lastname }}</h3>
+              {% if not client.is_active %}
+                <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </div>
+            <div class="col-12 col-md-5 d-flex justify-content-md-end align-items-center gap-2">
+              <div class="actions-dropdown">
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Actions
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('clients.update_client', client_id=client.id) }}">Edit</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    {% if client.is_active %}
+                      <li>
+                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#deactivateClientModal"
+                          data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                          Deactivate
+                        </button>
+                      </li>
+                    {% else %}
+                      <li>
+                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#reactivateClientModal"
+                          data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                          Reactivate
+                        </button>
+                      </li>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal"
+                        data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                        Delete
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-secondary btn-sm close-info-btn" title="Close details" onclick="closeClientDetails()">
+                Close
+              </button>
+            </div>
+          </div>
+
+          <div class="client-info-body">
+            <div class="row g-3 mb-4">
+              <div class="col-lg-6">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <p class="mb-1"><strong>Date of Birth:</strong> {{ client.dob.strftime('%Y-%m-%d') if client.dob else 'N/A' }}</p>
+                    <p class="mb-1"><strong>Gender:</strong> {{ client.gender or 'N/A' }}</p>
+                    <p class="mb-1"><strong>Address:</strong> {{ client.address1 }} {{ client.address2 or '' }}, {{ client.city }}, {{ client.state }} {{ client.zipcode }}</p>
+                    <hr>
+                    <div class="row">
+                      <div class="col-md-6">
+                        <h6>Primary Parent / Guardian</h6>
+                        <p class="mb-0"><strong>Name:</strong> {{ client.get_parent1_name() or 'N/A' }}</p>
+                        <p class="mb-0"><strong>Email:</strong> {{ client.get_parent1_email() or 'N/A' }}</p>
+                        <p class="mb-0"><strong>Phone:</strong> {{ client.get_parent1_phone() or 'N/A' }}</p>
+                      </div>
+                      <div class="col-md-6">
+                        <h6>Secondary Parent / Guardian</h6>
+                        <p class="mb-0"><strong>Name:</strong> {{ (client.parent2_firstname ~ ' ' ~ client.parent2_lastname).strip() if client.parent2_firstname or client.parent2_lastname else 'N/A' }}</p>
+                        <p class="mb-0"><strong>Email:</strong> {{ client.parent2_email or 'N/A' }}</p>
+                        <p class="mb-0"><strong>Phone:</strong> {{ client.parent2_cell or 'N/A' }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-3">
+                <div class="card h-100">
+                  <div class="card-header">Upcoming Events</div>
+                  <div class="card-body">
+                    {% if upcoming_events %}
+                      <ul class="list-group list-group-flush">
+                        {% for event in upcoming_events %}
+                          <li class="list-group-item">
+                            <strong>{{ event.type }}:</strong> {{ event.date.strftime('%Y-%m-%d') }} {{ event.description }}
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    {% else %}
+                      <p class="mb-0">No upcoming events found.</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-3">
+                <div class="card h-100">
+                  <div class="card-header">Pending Invoices</div>
+                  <div class="card-body p-0">
+                    {% set pending_invoices = invoices | selectattr('status', '!=', 'Paid') | list %}
+                    {% if pending_invoices %}
+                      <table class="table table-sm mb-0">
+                        <thead>
+                          <tr>
+                            <th>Invoice #</th>
+                            <th>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for inv in pending_invoices[:5] %}
+                            <tr>
+                              <td><a href="{{ url_for('invoices.preview_invoice_by_number', invoice_number=inv.invoice_number) }}">{{ inv.invoice_number }}</a></td>
+                              <td>${{ '%.2f'|format(inv.total_cost or 0.0) }}</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    {% else %}
+                      <p class="p-3 mb-0">No pending invoices.</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-12 d-flex justify-content-end">
+                <div class="btn-group" role="group" aria-label="Time range selector">
+                  <button type="button" class="btn btn-outline-primary billing-range-btn" data-range="overall">Overall</button>
+                  <button type="button" class="btn btn-outline-primary billing-range-btn" data-range="year">This Year</button>
+                  <button type="button" class="btn btn-outline-primary billing-range-btn active" data-range="month">This Month</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-lg-4">
+                <div class="card text-white bg-primary h-100">
+                  <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-center">Sessions</h5>
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                      <p class="card-text display-1 fw-bold mb-0" id="statSessions">{{ session_stats.month.sessions }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card text-white bg-success h-100">
+                  <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-center">Duration</h5>
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                      <p class="card-text display-1 fw-bold mb-0" id="statHours">{{ session_stats.month.hours }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <h5 class="card-title text-center">Billing</h5>
+                    <div class="d-flex justify-content-center mb-3">
+                      <div style="max-width: 200px; width:100%;">
+                        <canvas id="billingChart"></canvas>
+                      </div>
+                    </div>
+                    <div id="billingStats" class="text-center small">
+                      <strong>Invoiced:</strong> $<span id="statInvoiced">{{ '%.2f'|format(invoice_stats.month.invoiced) }}</span>
+                      &nbsp;·&nbsp;
+                      <strong>Paid:</strong> $<span id="statPaid">{{ '%.2f'|format(invoice_stats.month.paid) }}</span>
+                      &nbsp;·&nbsp;
+                      <strong>Pending:</strong> $<span id="statPending">{{ '%.2f'|format(invoice_stats.month.pending) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  {% else %}
+    <!-- FULL WIDTH LIST VIEW: No client selected -->
+    <div class="clients-list-view">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Clients</h2>
+        <a href="{{ url_for('clients.add_client') }}" class="btn btn-primary">Add</a>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <form method="get" class="d-flex align-items-center">
+          <label for="per_page" class="me-2">Rows per page:</label>
+          <select name="per_page" id="per_page" class="form-select w-auto me-2" onchange="this.form.submit()">
+            <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+            <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+          </select>
+          <input type="hidden" name="page" value="{{ pagination.page }}">
+          <input type="hidden" name="show_inactive" value="{{ request.args.get('show_inactive', '0') }}">
+          <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
+        </form>
+        <form method="get" class="d-flex align-items-center flex-grow-1 ms-3">
+          <div class="input-group me-2 flex-grow-1">
+            <input type="text" class="form-control" name="q" placeholder="Search clients (name, parent, city)" value="{{ request.args.get('q','') }}">
+            <button class="btn btn-secondary" type="submit">Search</button>
+          </div>
+          <div class="form-check form-switch custom-toggle flex-shrink-0 ms-2">
+            <input type="checkbox" class="form-check-input" id="show_inactive" name="show_inactive" value="1"
+              {% if request.args.get('show_inactive') == '1' %}checked{% endif %}
+              onchange="this.form.submit()">
+            <label class="form-check-label">
+              <span class="toggle-track" aria-hidden="true">
+                <span class="toggle-knob" aria-hidden="true" tabindex="0"></span>
+              </span>
+              Show Inactive
+            </label>
+          </div>
+          <input type="hidden" name="page" value="1">
+          <input type="hidden" name="per_page" value="{{ per_page }}">
+          <input type="hidden" name="q" value="{{ request.args.get('q','') }}">
+        </form>
+      </div>
+
+      <div class="clients-table-wrapper">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Client's Name</th>
+              <th>Parent's Name</th>
+              <th>City</th>
+              <th>State</th>
+              <th>Supervisor</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if not clients %}
+              <tr>
+                <td colspan="7" class="text-center">No clients found.</td>
+              </tr>
+            {% else %}
+              {% set active_clients = clients | selectattr('is_active') | list %}
+              {% set inactive_clients = clients | rejectattr('is_active') | list %}
+
+              {% for client in active_clients %}
+                <tr style="cursor:pointer;" onclick="selectClientFromTable('{{ client.id }}')">
+                  <td>
+                    <span class="badge bg-success">Active</span>
+                  </td>
+                  <td><strong>{{ client.firstname }} {{ client.lastname }}</strong></td>
+                  <td>{{ client.parentname }}</td>
+                  <td>{{ client.city }}</td>
+                  <td>{{ client.state }}</td>
+                  <td>
+                    {% if client.supervisor %}
+                      {{ client.supervisor.firstname }} {{ client.supervisor.lastname }}
+                    {% else %}
+                      N/A
+                    {% endif %}
+                  </td>
+                  <td onclick="event.stopPropagation();">
+                    <div class="actions-dropdown">
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          Actions
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li><a class="dropdown-item" href="{{ url_for('clients.update_client', client_id=client.id) }}" title="Edit Client">Edit</a></li>
+                          <li>
+                            <button type="button" class="dropdown-item" title="Deactivate Client"
+                              data-bs-toggle="modal" data-bs-target="#deactivateClientModal"
+                              data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                              Deactivate
+                            </button>
+                          </li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li>
+                            <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
+                              Delete
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+
+              {% if inactive_clients %}
+                {% for client in inactive_clients %}
+                  <tr class="text-muted" style="cursor:pointer;" onclick="selectClientFromTable('{{ client.id }}')">
+                    <td><span class="badge bg-secondary">Inactive</span></td>
+                    <td><strong>{{ client.firstname }} {{ client.lastname }}</strong></td>
+                    <td>{{ client.parentname }}</td>
+                    <td>{{ client.city }}</td>
+                    <td>{{ client.state }}</td>
+                    <td>
+                      {% if client.supervisor %}
+                        {{ client.supervisor.firstname }} {{ client.supervisor.lastname }}
+                      {% else %}
+                        N/A
+                      {% endif %}
+                    </td>
+                    <td onclick="event.stopPropagation();">
+                      <div class="actions-dropdown">
+                        <div class="dropdown">
+                          <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Actions
+                          </button>
+                          <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('clients.update_client', client_id=client.id) }}" title="Edit Client">Edit</a></li>
+                            <li>
+                              <button type="button" class="dropdown-item" title="Reactivate Client"
+                                data-bs-toggle="modal" data-bs-target="#reactivateClientModal"
+                                data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}">
+                                Reactivate
+                              </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                              <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal" data-client-id="{{ client.id }}" data-client-name="{{ client.firstname }} {{ client.lastname }}" title="Delete Client">
+                                Delete
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% endif %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <nav>
+        <ul class="pagination justify-content-end">
+          {% set prev_args = request.args.to_dict() %}
+          {% set _ = prev_args.update({'page': pagination.prev_num, 'per_page': per_page}) %}
+          {% if pagination.has_prev %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('clients.list_clients', **prev_args) }}">Previous</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+          {% endif %}
+
+          {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+              {% set page_args = request.args.to_dict() %}
+              {% set _ = page_args.update({'page': p, 'per_page': per_page}) %}
+              {% if p == pagination.page %}
+                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+              {% else %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('clients.list_clients', **page_args) }}">{{ p }}</a></li>
+              {% endif %}
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endfor %}
+
+          {% set next_args = request.args.to_dict() %}
+          {% set _ = next_args.update({'page': pagination.next_num, 'per_page': per_page}) %}
+          {% if pagination.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="{{ url_for('clients.list_clients', **next_args) }}">Next</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="deactivateClientModal" tabindex="-1" aria-labelledby="deactivateClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deactivateClientForm" method="POST">
+                {%- if csrf_token is defined -%}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {%- endif -%}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deactivateClientModalLabel">Confirm Deactivation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to deactivate record for <strong><span class="client-name"></span></strong>? 
+                    <p>This will hide it from lists and forms but preserve its records.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Deactivate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reactivateClientModal" tabindex="-1" aria-labelledby="reactivateClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="reactivateClientForm" method="POST">
+                {%- if csrf_token is defined -%}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {%- endif -%}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reactivateClientModalLabel">Confirm Reactivation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to reactivate record for <strong><span class="client-name"></span></strong>?
+                    <p>This will make it available in lists and forms again.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Reactivate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="deleteClientForm" method="POST">
+        {%- if csrf_token is defined -%}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {%- endif -%}
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteClientModalLabel">Confirm Delete</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          You should only delete a client record if it was added by mistake, otherwise it's better to deactivate it.
+          <p>Are you sure you want to delete the record of <strong><span id="clientName"></span></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function selectClient(element) {
+    const clientId = element.getAttribute('data-client-id');
+    const page = element.getAttribute('data-page');
+    const perPage = element.getAttribute('data-per-page');
+    const q = element.getAttribute('data-q');
+    const showInactive = element.getAttribute('data-show-inactive');
+    
+    const params = new URLSearchParams();
+    params.append('client_id', clientId);
+    params.append('page', page);
+    params.append('per_page', perPage);
+    if(q) params.append('q', q);
+    if(showInactive === '1') params.append('show_inactive', '1');
+    
+    window.location.href = '{{ url_for('clients.list_clients') }}?' + params.toString();
+}
+
+function selectClientFromTable(clientId) {
+    const params = new URLSearchParams();
+    params.append('client_id', clientId);
+    params.append('per_page', '{{ per_page }}');
+    const q = '{{ request.args.get('q','') }}';
+    const showInactive = '{{ request.args.get('show_inactive','0') }}';
+    const page = '{{ request.args.get('page', 1) }}';
+    if (q) params.append('q', q);
+    if (showInactive === '1') params.append('show_inactive', '1');
+    if (page && page !== '1') params.append('page', page);
+    window.location.href = '{{ url_for('clients.list_clients') }}?' + params.toString();
+}
+
+function closeClientDetails() {
+    const q = '{{ request.args.get('q','') }}';
+    const showInactive = '{{ request.args.get('show_inactive','0') }}';
+    const page = parseInt('{{ request.args.get('page', '1') }}');
+    
+    const params = new URLSearchParams();
+    if(q) params.append('q', q);
+    if(showInactive === '1') params.append('show_inactive', '1');
+    if(page > 1) params.append('page', page);
+    params.append('per_page', '{{ per_page }}');
+    
+    const queryString = params.toString();
+    window.location.href = '{{ url_for('clients.list_clients') }}' + (queryString ? '?' + queryString : '');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Delete modal handler
+    var deleteModal = document.getElementById('deleteClientModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var clientId = button.getAttribute('data-client-id');
+            var clientName = button.getAttribute('data-client-name');
+            var form = document.getElementById('deleteClientForm');
+            form.action = '/clients/delete/' + clientId;
+            document.getElementById('clientName').textContent = clientName;
+        });
+    }
+
+    // Deactivate modal handler
+    var deactivateModal = document.getElementById('deactivateClientModal');
+    if (deactivateModal) {
+        deactivateModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var clientId = button.getAttribute('data-client-id');
+            var clientName = button.getAttribute('data-client-name');
+            var form = document.getElementById('deactivateClientForm');
+            form.action = '/clients/deactivate/' + clientId;
+            deactivateModal.querySelector('.client-name').textContent = clientName;
+        });
+    }
+
+    // Reactivate modal handler
+    var reactivateModal = document.getElementById('reactivateClientModal');
+    if (reactivateModal) {
+        reactivateModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var clientId = button.getAttribute('data-client-id');
+            var clientName = button.getAttribute('data-client-name');
+            var form = document.getElementById('reactivateClientForm');
+            form.action = '/clients/reactivate/' + clientId;
+            reactivateModal.querySelector('.client-name').textContent = clientName;
+        });
+    }
+
+    {% if selected_client_id %}
+    const invoiceStats = {
+        overall: {
+            invoiced: {{ selected_client_data.invoice_stats.overall.invoiced }},
+            paid: {{ selected_client_data.invoice_stats.overall.paid }},
+            pending: {{ selected_client_data.invoice_stats.overall.pending }}
+        },
+        year: {
+            invoiced: {{ selected_client_data.invoice_stats.year.invoiced }},
+            paid: {{ selected_client_data.invoice_stats.year.paid }},
+            pending: {{ selected_client_data.invoice_stats.year.pending }}
+        },
+        month: {
+            invoiced: {{ selected_client_data.invoice_stats.month.invoiced }},
+            paid: {{ selected_client_data.invoice_stats.month.paid }},
+            pending: {{ selected_client_data.invoice_stats.month.pending }}
+        }
+    };
+
+    const sessionStatsByRange = {
+        overall: {
+            sessions: {{ selected_client_data.session_stats.overall.sessions }},
+            hours: {{ selected_client_data.session_stats.overall.hours }}
+        },
+        year: {
+            sessions: {{ selected_client_data.session_stats.year.sessions }},
+            hours: {{ selected_client_data.session_stats.year.hours }}
+        },
+        month: {
+            sessions: {{ selected_client_data.session_stats.month.sessions }},
+            hours: {{ selected_client_data.session_stats.month.hours }}
+        }
+    };
+
+    const ctx = document.getElementById('billingChart');
+    if (ctx) {
+        const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Paid', 'Pending'],
+                datasets: [{
+                    label: 'Payment status',
+                    data: [invoiceStats.month.paid, invoiceStats.month.pending],
+                    backgroundColor: ['#28a745', '#ffc107'],
+                    borderColor: ['#ffffff', '#ffffff'],
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var value = context.raw || 0;
+                                var label = context.label || '';
+                                return label + ': $' + value.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateBillingChart(range) {
+            const stats = invoiceStats[range];
+            chart.data.datasets[0].data = [stats.paid, stats.pending];
+            chart.update();
+            document.getElementById('statInvoiced').textContent = stats.invoiced.toFixed(2);
+            document.getElementById('statPaid').textContent = stats.paid.toFixed(2);
+            document.getElementById('statPending').textContent = stats.pending.toFixed(2);
+
+            const sessionStats = sessionStatsByRange[range];
+            document.getElementById('statSessions').textContent = sessionStats.sessions;
+            document.getElementById('statHours').textContent = sessionStats.hours.toFixed(2);
+
+            const buttons = document.querySelectorAll('.billing-range-btn');
+            buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.range === range));
+        }
+
+        document.querySelectorAll('.billing-range-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                updateBillingChart(this.dataset.range);
+            });
+        });
+
+        updateBillingChart('month');
+    }
+    {% endif %}
+
+    // Custom toggle knob handler
+    document.querySelectorAll('.custom-toggle').forEach(function(container){
+        var knob = container.querySelector('.toggle-knob');
+        var checkbox = container.querySelector('.form-check-input');
+        if(!knob || !checkbox) return;
+        knob.addEventListener('click', function(e){
+            e.stopPropagation();
+            checkbox.click();
+        });
+        knob.addEventListener('keydown', function(e){
+            if(e.key === ' ' || e.key === 'Enter'){
+                e.preventDefault();
+                checkbox.click();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
