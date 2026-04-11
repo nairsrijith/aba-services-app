@@ -3,7 +3,7 @@ from app.models import Employee, Client, Intervention, Invoice, PayStub, PayStub
 from sqlalchemy import func, case, and_
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from app.forms import LoginForm, RegistrationForm
+from app.forms import LoginForm, RegistrationForm, PasswordResetRequestForm, PasswordResetForm
 from datetime import date, timedelta, datetime, time
 from sqlalchemy import and_, extract
 import os
@@ -11,6 +11,7 @@ import os
 from gevent.pywsgi import WSGIServer
 
 from app.utils.settings_utils import get_org_settings
+from app.utils.email_utils import queue_email
 
 
 # Register blueprints
@@ -301,6 +302,9 @@ def login():
         
         if employee.user_type == "super":
             if employee.check_password(form.password.data):
+                if employee.password_reset_key:
+                    employee.clear_password_reset_key()
+                    db.session.commit()
                 login_user(employee)
                 next_page = request.args.get('next')
                 flash('Login successful!', 'success')
@@ -333,6 +337,8 @@ def login():
 
                 employee.failed_attempt = 3
                 employee.locked_until = None
+                if employee.password_reset_key:
+                    employee.clear_password_reset_key()
                 db.session.commit()
                 login_user(employee)
                 next_page = request.args.get('next')
@@ -399,6 +405,89 @@ def register():
             return render_template('register.html', form=form, org_name=settings['org_name'])
     settings = get_org_settings()
     return render_template('register.html', form=form, org_name=settings['org_name'])
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Handle password reset request"""
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    form = PasswordResetRequestForm()
+    settings = get_org_settings()
+    
+    if form.validate_on_submit():
+        employee = Employee.query.filter_by(email=form.email.data.lower()).first()
+        
+        if employee and employee.password_hash:
+            # Generate password reset key
+            reset_key = employee.generate_password_reset_key()
+            db.session.commit()
+            
+            # Build reset link
+            reset_url = url_for('reset_password', token=reset_key, _external=True)
+            
+            # Send email with reset link
+            try:
+                body_text = render_template('email/password_reset_email.txt', firstname=employee.firstname, reset_url=reset_url, org_name=settings['org_name'])
+                body_html = render_template('email/password_reset_email.html', firstname=employee.firstname, reset_url=reset_url, org_name=settings['org_name'])
+                queue_email(
+                    subject='Password Reset Request',
+                    recipients=[employee.email],
+                    body_text=body_text,
+                    body_html=body_html
+                )
+            except Exception as e:
+                flash(f'Error sending email: {str(e)}', 'danger')
+                return render_template('forgot_password.html', form=form, org_name=settings['org_name'])
+            
+            flash('A password reset link has been sent to your email. Please check your email.', 'success')
+            return redirect(url_for('login'))
+        else:
+            # Don't reveal whether email exists for security reasons
+            flash('If an account exists with that email address, you will receive a password reset link.', 'info')
+            return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html', form=form, org_name=settings['org_name'])
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Handle password reset completion"""
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    # Find employee with this reset token
+    employee = Employee.query.filter_by(password_reset_key=token).first()
+    
+    if not employee:
+        flash('Invalid or expired password reset link.', 'danger')
+        return redirect(url_for('login'))
+    
+    # Check if reset key has expired (24 hours)
+    if employee.is_password_reset_expired(expiry_hours=24):
+        flash('This password reset link has expired. Please request a new one.', 'danger')
+        employee.clear_password_reset_key()
+        db.session.commit()
+        return redirect(url_for('forgot_password'))
+    
+    form = PasswordResetForm()
+    settings = get_org_settings()
+    
+    if form.validate_on_submit():
+        # Set new password
+        employee.set_password(form.new_password.data)
+        # Clear the reset key after successful reset
+        employee.clear_password_reset_key()
+        # Ensure login is enabled
+        if not employee.login_enabled:
+            employee.login_enabled = True
+        db.session.commit()
+        
+        flash('Your password has been reset successfully. Please log in with your new password.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', form=form, org_name=settings['org_name'], email=employee.email)
 
 
 if __name__ == '__main__':

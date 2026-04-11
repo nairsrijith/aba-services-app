@@ -2,8 +2,7 @@ from app import db, login_manager
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from datetime import date
-from datetime import datetime
+from datetime import date, datetime, timedelta
 import json, string, secrets
 
 @login_manager.user_loader
@@ -67,6 +66,8 @@ class Employee(db.Model, UserMixin):
     locked_until = db.Column(db.DateTime, default=None)
     failed_attempt = db.Column(db.Integer, default=-2, nullable=False)
     activation_key = db.Column(db.String(16), nullable=True, default=None)
+    password_reset_key = db.Column(db.String(32), nullable=True, default=None)  # For password reset requests
+    password_reset_requested_at = db.Column(db.DateTime, nullable=True, default=None)  # Timestamp when reset was requested
     # Profile picture path stored as a relative path under the project (e.g. 'data/profile_pic/filename.png')
     profile_pic = db.Column(db.String(255), nullable=True)
 
@@ -144,6 +145,49 @@ class Employee(db.Model, UserMixin):
         key = ''.join(character_list)
         self.activation_key = key
         return key
+        
+    def generate_password_reset_key(self, length: int = 32):
+        """
+        Generates a cryptographically secure password reset key.
+        
+        Args:
+            length (int): The total length of the key. Default is 32.
+        
+        Returns:
+            str: A randomly generated password reset key.
+        
+        The method sets `self.password_reset_key` and `self.password_reset_requested_at` 
+        and returns the generated key. It does not commit the session — callers should 
+        commit when ready.
+        """
+        import secrets
+        key = secrets.token_urlsafe(length)
+        self.password_reset_key = key
+        self.password_reset_requested_at = datetime.utcnow()
+        return key
+    
+    def is_password_reset_expired(self, expiry_hours: int = 24):
+        """
+        Check if the password reset key has expired.
+        
+        Args:
+            expiry_hours (int): Number of hours before reset link expires. Default is 24.
+        
+        Returns:
+            bool: True if reset key is expired or not set, False otherwise.
+        """
+        if not self.password_reset_key or not self.password_reset_requested_at:
+            return True
+        
+        expiry_time = self.password_reset_requested_at + timedelta(hours=expiry_hours)
+        return datetime.utcnow() > expiry_time
+    
+    def clear_password_reset_key(self):
+        """
+        Clear the password reset key after successful reset.
+        """
+        self.password_reset_key = None
+        self.password_reset_requested_at = None
         
     @staticmethod
     def create_super_admin(email, password):
