@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container auth-container">
+    <h2>Welcome!</h2>
+    <p>Login to your account or Activate your account.</p>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="authTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab" aria-controls="login" aria-selected="true">Sign In</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab" aria-controls="register" aria-selected="false">Activate Account</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="forgot-tab" data-bs-toggle="tab" data-bs-target="#forgot" type="button" role="tab" aria-controls="forgot" aria-selected="false">Forgot Password</button>
+        </li>
+    </ul>
+
+    <!-- Tab content -->
+    <div class="tab-content" id="authTabsContent">
+        <!-- Login Tab -->
+        <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+            <form method="POST" action="{{ url_for('login') }}">
+                {{ login_form.hidden_tag() }}
+                <div class="card auth-card mt-3">
+                    <div class="card-body">
+                        {{ login_form.email.label(class="form-label") }}{{ login_form.email(class="form-control") }}
+                        {% for error in login_form.email.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        {{ login_form.password.label(class="form-label") }}{{ login_form.password(class="form-control") }}
+                        <div class="py-2">{{ login_form.submit(class="btn btn-primary") }}</div>
+                        <p><a href="#" onclick="switchToForgotTab()" class="action-link">Forgot your password?</a></p>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Register Tab -->
+        <div class="tab-pane fade" id="register" role="tabpanel" aria-labelledby="register-tab">
+            <form method="POST" action="{{ url_for('register') }}">
+                {{ register_form.hidden_tag() }}
+                <div class="card auth-card mt-3">
+                    <div class="card-body">
+                        {{ register_form.email.label(class="form-label") }}{{ register_form.email(class="form-control") }}
+                        {% for error in register_form.email.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        {{ register_form.activation_key.label(class="form-label") }}{{ register_form.activation_key(class="form-control") }}
+                        {% for error in register_form.activation_key.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        {{ register_form.password.label(class="form-label") }}{{ register_form.password(class="form-control") }}
+                        {% for error in register_form.password.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        {{ register_form.confirm_password.label(class="form-label") }}{{ register_form.confirm_password(class="form-control") }}
+                        {% for error in register_form.confirm_password.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        <div class="py-2">{{ register_form.submit(class="btn btn-primary") }}</div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Forgot Password Tab -->
+        <div class="tab-pane fade" id="forgot" role="tabpanel" aria-labelledby="forgot-tab">
+            <form method="POST" action="{{ url_for('forgot_password') }}">
+                {{ forgot_form.hidden_tag() }}
+                <div class="card auth-card mt-3">
+                    <div class="card-body">
+                        <p class="form-text text-muted mb-3">Enter your registered email address and we'll send you a link to reset your password.</p>
+                        {{ forgot_form.email.label(class="form-label") }}{{ forgot_form.email(class="form-control") }}
+                        {% for error in forgot_form.email.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        <div class="py-2">{{ forgot_form.submit(class="btn btn-primary") }}</div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle tab switching based on URL hash or errors
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab === 'register') {
+        const registerTab = new bootstrap.Tab(document.getElementById('register-tab'));
+        registerTab.show();
+    } else if (tab === 'forgot') {
+        const forgotTab = new bootstrap.Tab(document.getElementById('forgot-tab'));
+        forgotTab.show();
+    }
+    // Check if register form has errors
+    const registerErrors = document.querySelectorAll('#register .text-danger');
+    if (registerErrors.length > 0) {
+        const registerTab = new bootstrap.Tab(document.getElementById('register-tab'));
+        registerTab.show();
+    }
+    // Check if forgot form has errors
+    const forgotErrors = document.querySelectorAll('#forgot .text-danger');
+    if (forgotErrors.length > 0) {
+        const forgotTab = new bootstrap.Tab(document.getElementById('forgot-tab'));
+        forgotTab.show();
+    }
+});
+
+function switchToForgotTab() {
+    const forgotTab = new bootstrap.Tab(document.getElementById('forgot-tab'));
+    forgotTab.show();
+    return false;
+}
+</script>
+{% endblock %}
