@@ -588,13 +588,51 @@ a[title^="Add New"]:hover svg {
 
 /* Auth pages styling */
 .auth-container {
-    max-width: 500px !important;
+    max-width: 600px !important;
     margin-top: 1.5rem !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.auth-container h2,
+.auth-container p {
+    width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.nav-tabs {
+    width: 450px !important;
+    margin: 1rem auto !important;
+    border-bottom: 1px solid var(--line-clr) !important;
+}
+
+.nav-tabs .nav-link {
+    flex: 1;
+    text-align: center;
+    color: var(--text-clr) !important;
+    border: 1px solid transparent !important;
+    border-bottom: 2px solid transparent !important;
+    padding: 0.75rem !important;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: var(--accent-clr) !important;
+    background-color: transparent !important;
+}
+
+.tab-content {
+    display: flex;
+    justify-content: center;
+    width: 100%;
 }
 
 .auth-card {
-    width: 300px !important;
-    margin-bottom: 1rem !important;
+    width: 450px !important;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 !important;
     background: rgba(var(--accent-clr-rgb), 0.02) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
