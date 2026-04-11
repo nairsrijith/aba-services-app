@@ -9,6 +9,9 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
 
+    class Meta:
+        csrf = False  # Disable CSRF for login form (for testing/API use)
+
     def validate_email(self, email):
         employee = Employee.query.filter_by(email=email.data.lower()).first()
         if employee is None:
@@ -29,5 +32,26 @@ class RegistrationForm(FlaskForm):
         if employee.password_hash:
             raise ValidationError('Account already registered. Please use the login page.')
         
-        
 
+class PasswordResetRequestForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Password Reset')
+
+    class Meta:
+        csrf = False  # Disable CSRF for password reset request
+
+    def validate_email(self, email):
+        employee = Employee.query.filter_by(email=email.data.lower()).first()
+        if not employee:
+            raise ValidationError('No account found with that email.')
+        if not employee.password_hash:
+            raise ValidationError('This account has not been registered yet. Please use the registration page.')
+
+
+class PasswordResetForm(FlaskForm):
+    new_password = PasswordField('New Password', validators=[DataRequired(), length(min=6, message='Password must be at least 6 characters long')])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
+    submit = SubmitField('Reset Password')
+
+    class Meta:
+        csrf = False  # Disable CSRF for password reset completion
