@@ -13,16 +13,21 @@ echo "Postgres is available."
 # ensure FLASK_APP points to factory
 export FLASK_APP=${FLASK_APP:-app:create_app}
 
-echo "Starting database initialization..."
-# First run DB initializer to ensure base tables exist and default rows are present
-# This makes sure `db.create_all()` runs before Alembic migrations that alter tables.
-python init_db.py
-echo "Database initialization completed."
-
-echo "Running database migrations..."
-# run migrations (safe to run every start)
-flask db upgrade
-echo "Database migrations completed."
+echo "Attempting to run database migrations first..."
+# Try to run migrations first (for production where tables exist)
+if flask db upgrade; then
+    echo "Database migrations completed successfully."
+    echo "Starting database initialization..."
+    python init_db.py
+    echo "Database initialization completed."
+else
+    echo "Migrations failed, likely because tables don't exist. Creating tables and data..."
+    # If migrations fail, create tables and data, then run migrations again
+    python init_db.py
+    echo "Running database migrations after table creation..."
+    flask db upgrade
+    echo "Database migrations completed."
+fi
 
 # Set up cron job for invoice reminders based on settings
 echo "Setting up cron job for invoice reminders..."
