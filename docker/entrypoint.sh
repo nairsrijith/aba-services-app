@@ -13,12 +13,16 @@ echo "Postgres is available."
 # ensure FLASK_APP points to factory
 export FLASK_APP=${FLASK_APP:-app:create_app}
 
+echo "Starting database initialization..."
 # First run DB initializer to ensure base tables exist and default rows are present
 # This makes sure `db.create_all()` runs before Alembic migrations that alter tables.
 python init_db.py
+echo "Database initialization completed."
 
+echo "Running database migrations..."
 # run migrations (safe to run every start)
 flask db upgrade
+echo "Database migrations completed."
 
 # Set up cron job for invoice reminders based on settings
 echo "Setting up cron job for invoice reminders..."
@@ -49,6 +53,7 @@ trap "kill $CRON_PID 2>/dev/null || true; exit 0" SIGTERM SIGINT
 # Give cron a moment to initialize and read the crontab
 sleep 2
 
+echo "Starting Flask app..."
 # Start Flask app as the main process
 # This will become PID 1, and signals will be properly forwarded
 python app.py
