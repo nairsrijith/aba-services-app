@@ -301,17 +301,18 @@ def login():
     
     form = LoginForm()
     register_form = RegistrationForm()  # For the auth template
+    forgot_form = PasswordResetRequestForm()  # For the auth template
     if form.validate_on_submit():
         employee = Employee.query.filter_by(email=form.email.data.lower()).first()
         if not employee:
             flash('Your account is not registered. Contact Administrator.', 'danger')
             settings = get_org_settings()
-            return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+            return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
         
         if not employee.login_enabled:
             flash('Your account has not been activated. Contact Administrator.', 'danger')
             settings = get_org_settings()
-            return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+            return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
         
         if employee.user_type == "super":
             if employee.check_password(form.password.data):
@@ -327,17 +328,17 @@ def login():
             else:
                 flash('Incorrect password! Try again.', 'danger')
                 settings = get_org_settings()
-                return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+                return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
         else:
             if not employee.password_hash:
                 flash('Your account password has not been set. Contact Administrator.', 'danger')
                 settings = get_org_settings()
-                return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+                return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
 
             if employee.failed_attempt == -2:
                     flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
                     settings = get_org_settings()
-                    return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+                    return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
             
             if employee.check_password(form.password.data):
                 if employee.locked_until and datetime.now() < employee.locked_until:
@@ -346,7 +347,7 @@ def login():
                     rem_sec = int(remaining_time.total_seconds() % 60)
                     flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
                     settings = get_org_settings()
-                    return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+                    return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
 
                 employee.failed_attempt = 3
                 employee.locked_until = None
@@ -374,10 +375,10 @@ def login():
                     flash(f"Incorrect password! {employee.failed_attempt} remaining attempt(s).", 'danger')
                 db.session.commit()
                 settings = get_org_settings()
-                return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+                return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
 
     settings = get_org_settings()
-    return render_template('auth.html', login_form=form, register_form=register_form, org_name=settings['org_name'])
+    return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -387,6 +388,7 @@ def register():
     
     login_form = LoginForm()  # For the auth template
     form = RegistrationForm()
+    forgot_form = PasswordResetRequestForm()  # For the auth template
 
     if request.method == 'POST':
         employee = Employee.query.filter_by(email=form.email.data).first()
@@ -396,7 +398,7 @@ def register():
                 if not employee.activation_key or employee.activation_key != form.activation_key.data:
                     flash('Invalid activation key. Please check the key provided by your administrator.', 'danger')
                     settings = get_org_settings()
-                    return render_template('auth.html', login_form=login_form, register_form=form, org_name=settings['org_name'])
+                    return render_template('auth.html', login_form=login_form, register_form=form, forgot_form=forgot_form, org_name=settings['org_name'])
                 
                 # First time setting up password
                 employee.email = form.email.data
@@ -412,13 +414,13 @@ def register():
             else:
                 flash('This account is already registered. Use the login page instead.', 'danger')
                 settings = get_org_settings()
-                return render_template('auth.html', login_form=login_form, register_form=form, org_name=settings['org_name'])
+                return render_template('auth.html', login_form=login_form, register_form=form, forgot_form=forgot_form, org_name=settings['org_name'])
         else:
             flash('This email is not recognized. You must be an employee to register.', 'danger')
             settings = get_org_settings()
-            return render_template('auth.html', login_form=login_form, register_form=form, org_name=settings['org_name'])
+            return render_template('auth.html', login_form=login_form, register_form=form, forgot_form=forgot_form, org_name=settings['org_name'])
     settings = get_org_settings()
-    return render_template('auth.html', login_form=login_form, register_form=form, org_name=settings['org_name'])
+    return render_template('auth.html', login_form=login_form, register_form=form, forgot_form=forgot_form, org_name=settings['org_name'])
 
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
