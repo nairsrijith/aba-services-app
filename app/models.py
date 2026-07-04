@@ -456,12 +456,23 @@ class Invoice(db.Model):
     def generate_invoice_number():
         today = date.today()
         date_str = today.strftime('%Y%m')
-        # Count existing invoices for today to get the next sequence
-        count = Invoice.query.filter(
-            Invoice.invoice_number.like(f'INV{date_str}%')
-        ).count() + 1
-        seq = str(count).zfill(4)
-        return f'INV{date_str}{seq}'
+        prefix = f'INV{date_str}'
+
+        # Use the highest existing invoice number for the month so deleted invoices
+        # do not cause the next invoice to reuse a previously used number.
+        last_invoice = Invoice.query.filter(
+            Invoice.invoice_number.like(f'{prefix}%')
+        ).order_by(Invoice.invoice_number.desc()).first()
+
+        last_sequence = 0
+        if last_invoice and len(last_invoice.invoice_number) > len(prefix):
+            try:
+                last_sequence = int(last_invoice.invoice_number[len(prefix):])
+            except ValueError:
+                last_sequence = 0
+
+        next_sequence = last_sequence + 1
+        return f'{prefix}{str(next_sequence).zfill(4)}'
 
 
 class PayRate(db.Model):
