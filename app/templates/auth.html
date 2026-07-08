@@ -21,15 +21,19 @@
     <div class="tab-content" id="authTabsContent">
         <!-- Login Tab -->
         <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
-            <form method="POST" action="{{ url_for('login') }}">
+            <!-- Email/Password Login Form -->
+            <form method="POST" action="{{ url_for('login') }}" id="loginForm">
                 {{ login_form.hidden_tag() }}
                 <div class="card auth-card mt-3">
                     <div class="card-body">
-                        {{ login_form.email.label(class="form-label") }}{{ login_form.email(class="form-control") }}
+                        {{ login_form.email.label(class="form-label") }}{{ login_form.email(class="form-control", autofocus="autofocus") }}
                         {% for error in login_form.email.errors %}
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                         {{ login_form.password.label(class="form-label") }}{{ login_form.password(class="form-control") }}
+                        {% for error in login_form.password.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
                         <div class="py-2">{{ login_form.submit(class="btn btn-primary") }}</div>
                         <p><a href="#" onclick="switchToForgotTab()" class="action-link">Forgot your password?</a></p>
                     </div>
@@ -84,6 +88,69 @@
     </div>
 </div>
 
+<!-- 2FA Verification Modal (for users with 2FA already enabled) -->
+<div class="modal fade" id="verify2faModal" tabindex="-1" aria-labelledby="verify2faLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="verify2faLabel">🔐 Two-Factor Authentication</h5>
+            </div>
+            <form id="verify2faForm" method="POST">
+                <div class="modal-body">
+                    <p>Enter the 6-digit code from your authenticator app:</p>
+                    <input type="text" class="form-control form-control-lg text-center" id="verify2faCode" name="two_factor_code" maxlength="6" placeholder="000000" autocomplete="one-time-code" inputmode="numeric">
+                    <div id="verify2faError" class="text-danger mt-2" style="display:none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('cancel_2fa') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Verify Code</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 2FA Setup Modal (for users without 2FA - mandatory setup) -->
+<div class="modal fade" id="setup2faModal" tabindex="-1" aria-labelledby="setup2faLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="setup2faLabel">⚠️ Two-Factor Authentication Required</h5>
+            </div>
+            <form id="setup2faForm" method="POST">
+                <div class="modal-body">
+                    <p class="text-muted mb-4">For security, you must set up two-factor authentication to continue.</p>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-3">Step 1: Scan the QR Code</h6>
+                        <p class="small text-muted mb-3">Use Google Authenticator, Authy, Microsoft Authenticator, or any other TOTP app to scan this QR code:</p>
+                        <div class="text-center mb-3">
+                            {% if two_factor_qr_image %}
+                            <img src="{{ two_factor_qr_image }}" alt="2FA QR code" class="img-thumbnail" style="max-width:200px; width:200px; height:200px;">
+                            {% else %}
+                            <div class="alert alert-warning">QR code could not be generated</div>
+                            {% endif %}
+                        </div>
+                        <p class="small text-muted text-center mb-2">Can't scan? Enter this code manually:</p>
+                        <p class="text-center font-monospace bg-light p-2 rounded" style="word-break:break-all;">{{ two_factor_secret }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="mb-3">Step 2: Enter the 6-digit Code</h6>
+                        <p class="small text-muted mb-2">After scanning, enter the 6-digit code from your authenticator app:</p>
+                        <input type="text" class="form-control form-control-lg text-center" id="setup2faCode" name="two_factor_code" maxlength="6" placeholder="000000" autocomplete="one-time-code" inputmode="numeric" autofocus>
+                        <div id="setup2faError" class="text-danger mt-2" style="display:none;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('cancel_2fa') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Complete 2FA Setup & Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 // Handle tab switching based on URL hash or errors
 document.addEventListener('DOMContentLoaded', function() {
@@ -108,6 +175,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const forgotTab = new bootstrap.Tab(document.getElementById('forgot-tab'));
         forgotTab.show();
     }
+
+    // Show 2FA modals if needed
+    {% if require_two_factor %}
+    const verify2faModal = new bootstrap.Modal(document.getElementById('verify2faModal'));
+    verify2faModal.show();
+    document.getElementById('verify2faCode').focus();
+    {% endif %}
+    
+    {% if require_2fa_setup %}
+    const setup2faModal = new bootstrap.Modal(document.getElementById('setup2faModal'));
+    setup2faModal.show();
+    {% endif %}
 });
 
 function switchToForgotTab() {
@@ -115,5 +194,59 @@ function switchToForgotTab() {
     forgotTab.show();
     return false;
 }
+
+// Handle 2FA Verification Form Submit
+document.getElementById('verify2faForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const code = document.getElementById('verify2faCode').value;
+    const errorDiv = document.getElementById('verify2faError');
+    
+    fetch('{{ url_for("api_verify_2fa") }}', {
+        method: 'POST',
+        body: new FormData(this)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.href = data.redirect;
+        } else {
+            errorDiv.textContent = data.message || 'Invalid code';
+            errorDiv.style.display = 'block';
+            document.getElementById('verify2faCode').value = '';
+            document.getElementById('verify2faCode').focus();
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Error verifying code';
+        errorDiv.style.display = 'block';
+    });
+});
+
+// Handle 2FA Setup Form Submit
+document.getElementById('setup2faForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const code = document.getElementById('setup2faCode').value;
+    const errorDiv = document.getElementById('setup2faError');
+    
+    fetch('{{ url_for("api_setup_2fa") }}', {
+        method: 'POST',
+        body: new FormData(this)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.href = data.redirect;
+        } else {
+            errorDiv.textContent = data.message || 'Invalid code';
+            errorDiv.style.display = 'block';
+            document.getElementById('setup2faCode').value = '';
+            document.getElementById('setup2faCode').focus();
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Error setting up 2FA';
+        errorDiv.style.display = 'block';
+    });
+});
 </script>
 {% endblock %}

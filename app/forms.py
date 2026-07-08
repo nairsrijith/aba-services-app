@@ -1,12 +1,13 @@
 from flask_wtf import FlaskForm
 from wtforms import SubmitField, StringField, PasswordField, ValidationError
-from wtforms.validators import DataRequired, Email, EqualTo, length
+from wtforms.validators import DataRequired, Email, EqualTo, length, Optional
 from app.models import Employee
 
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
+    two_factor_code = StringField('Authenticator Code', validators=[Optional(), length(min=6, max=6, message='Authenticator code must be 6 digits')])
     submit = SubmitField('Login')
 
     class Meta:

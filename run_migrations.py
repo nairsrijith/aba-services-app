@@ -48,17 +48,20 @@ def run_migrations():
                 
                 # Run the upgrade function
                 if hasattr(module, 'upgrade'):
-                    # Create an Alembic-like context for the migration
-                    from sqlalchemy.schema import SchemaItem
-                    from alembic.operations import Operations
-                    from alembic.migration import MigrationContext
-                    
-                    ctx = MigrationContext.configure(db.engine)
-                    op = Operations(ctx)
-                    
-                    # Execute the upgrade
-                    module.upgrade()
-                    
+                    try:
+                        module.upgrade()
+                    except TypeError as exc:
+                        if 'unexpected keyword argument' in str(exc) and 'op' in str(exc):
+                            from alembic.operations import Operations
+                            from alembic.migration import MigrationContext
+
+                            with db.engine.begin() as connection:
+                                ctx = MigrationContext.configure(connection)
+                                op = Operations(ctx)
+                                module.upgrade(op=op)
+                        else:
+                            raise
+
                     logger.info(f"✓ Successfully applied: {migration_file.name}")
                 else:
                     logger.warning(f"Migration {migration_file.name} has no upgrade() function")

@@ -106,6 +106,14 @@
                                                 </button>
                                             </li>
                                         {% endif %}
+                                        {% if user.two_factor_enabled %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#reset2faModal" data-user-id="{{ user.id }}" data-user-email="{{ user.email }}" title="Reset Two-Factor Authentication">
+                                                    Reset 2FA
+                                                </button>
+                                            </li>
+                                        {% endif %}
                                     </ul>
                                 </div>
                             </div>
@@ -199,6 +207,27 @@
     </div>
 </div>
 
+<div class="modal fade" id="reset2faModal" tabindex="-1" aria-labelledby="reset2faModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="reset2faForm" method="POST">
+                <div class="modal-header">
+                <h5 class="modal-title" id="reset2faModalLabel">Reset Two-Factor Authentication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to reset two-factor authentication for <strong><span id="userEmailReset2fa"></span></strong>?</p>
+                    <p class="text-warning"><small>⚠️ This user will be able to set up 2FA again on their next login.</small></p>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-warning">Reset 2FA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -219,6 +248,15 @@ document.addEventListener('DOMContentLoaded', function() {
         var form = document.getElementById('unlockForm');
         form.action = '/users/unlock/' + userId;
         document.getElementById('userEmailUnlock').textContent = userEmail;
+    });
+    var reset2faModal = document.getElementById('reset2faModal');
+    reset2faModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userId = button.getAttribute('data-user-id');
+        var userEmail = button.getAttribute('data-user-email');
+        var form = document.getElementById('reset2faForm');
+        form.action = '/users/reset_2fa/' + userId;
+        document.getElementById('userEmailReset2fa').textContent = userEmail;
     });
 });
 

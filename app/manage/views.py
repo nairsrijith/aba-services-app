@@ -203,3 +203,12 @@ def settings():
     return render_template('settings.html', form=form)
 
 
+@manage_bp.route('/api_docs', methods=['GET'])
+@login_required
+def api_docs():
+    if not (current_user.is_authenticated and current_user.user_type in ['admin', 'super']):
+        abort(403)
+    settings = get_org_settings()
+    return render_template('api_docs.html', org_name=settings['org_name'])
+
+

@@ -1,9 +1,10 @@
 from app import app, db
 from app.models import Employee, Client, Intervention, Invoice, PayStub, PayStubItem
 from sqlalchemy import func, case, and_
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm, PasswordResetRequestForm, PasswordResetForm
+from app.utils.two_factor import verify_totp_code, build_otpauth_uri, generate_qr_code_base64
 from datetime import date, timedelta, datetime, time
 from sqlalchemy import and_, extract
 import os
@@ -36,6 +37,9 @@ from app.reports.views import reports_bp
 app.register_blueprint(reports_bp, url_prefix='/reports')
 from app.error_pages.handlers import error_pages
 app.register_blueprint(error_pages)
+# API blueprint (mirrors web URLs under /api/...)
+from app.api import api_bp
+app.register_blueprint(api_bp, url_prefix='/api')
 
 
 def get_date_ranges():
@@ -298,7 +302,7 @@ def auth():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-    
+
     form = LoginForm()
     register_form = RegistrationForm()  # For the auth template
     forgot_form = PasswordResetRequestForm()  # For the auth template
@@ -308,64 +312,30 @@ def login():
             flash('Your account is not registered. Contact Administrator.', 'danger')
             settings = get_org_settings()
             return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
-        
+
         if not employee.login_enabled:
             flash('Your account has not been activated. Contact Administrator.', 'danger')
             settings = get_org_settings()
             return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
-        
-        if employee.user_type == "super":
-            if employee.check_password(form.password.data):
-                if employee.password_reset_key:
-                    employee.clear_password_reset_key()
-                    db.session.commit()
-                login_user(employee)
-                next_page = request.args.get('next')
-                flash('Login successful!', 'success')
-                if next_page == None or not next_page.startswith('/'):
-                    next_page = url_for('home')
-                return redirect(next_page)
-            else:
-                flash('Incorrect password! Try again.', 'danger')
-                settings = get_org_settings()
-                return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
-        else:
-            if not employee.password_hash:
-                flash('Your account password has not been set. Contact Administrator.', 'danger')
-                settings = get_org_settings()
-                return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
 
-            if employee.failed_attempt == -2:
-                    flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
-                    settings = get_org_settings()
-                    return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
-            
-            if employee.check_password(form.password.data):
-                if employee.locked_until and datetime.now() < employee.locked_until:
-                    remaining_time = employee.locked_until - datetime.now()
-                    rem_min = int(remaining_time.total_seconds() / 60)
-                    rem_sec = int(remaining_time.total_seconds() % 60)
-                    flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
-                    settings = get_org_settings()
-                    return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
+        if not employee.password_hash:
+            flash('Your account password has not been set. Contact Administrator.', 'danger')
+            settings = get_org_settings()
+            return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
 
-                employee.failed_attempt = 3
-                employee.locked_until = None
-                if employee.password_reset_key:
-                    employee.clear_password_reset_key()
-                db.session.commit()
-                login_user(employee)
-                next_page = request.args.get('next')
-                flash('Login successful!', 'success')
-                if next_page == None or not next_page.startswith('/'):
-                    next_page = url_for('home')
-                return redirect(next_page)
-            else:
-                employee.failed_attempt = employee.failed_attempt-1
+        if employee.failed_attempt == -2 and employee.user_type != 'super':
+            flash("Your account has been locked out. Contact Administrator to unlock your account.", "danger")
+            settings = get_org_settings()
+            return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
+
+        if not employee.check_password(form.password.data):
+            # Only apply lockout logic for non-super users
+            if employee.user_type != 'super':
+                employee.failed_attempt = employee.failed_attempt - 1
                 if employee.failed_attempt <= 0:
                     if not employee.locked_until:
                         employee.locked_until = datetime.now()
-                    time_to_remain_locked = -(employee.failed_attempt - 1)*15
+                    time_to_remain_locked = -(employee.failed_attempt - 1) * 15
                     employee.locked_until += timedelta(minutes=time_to_remain_locked)
                     remaining_time = employee.locked_until - datetime.now()
                     rem_min = int(remaining_time.total_seconds() / 60)
@@ -373,12 +343,139 @@ def login():
                     flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
                 else:
                     flash(f"Incorrect password! {employee.failed_attempt} remaining attempt(s).", 'danger')
-                db.session.commit()
-                settings = get_org_settings()
-                return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
+            else:
+                # Super admins get immediate feedback but no lockout
+                flash(f"Incorrect password. Please try again.", 'danger')
+            db.session.commit()
+            settings = get_org_settings()
+            return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
+
+        if employee.locked_until and datetime.now() < employee.locked_until and employee.user_type != 'super':
+            remaining_time = employee.locked_until - datetime.now()
+            rem_min = int(remaining_time.total_seconds() / 60)
+            rem_sec = int(remaining_time.total_seconds() % 60)
+            flash(f"Wait for {rem_min} min and {rem_sec} sec for your account to unlock automatically or contact Administrator to unlock it immediately.", 'danger')
+            settings = get_org_settings()
+            return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
+
+        employee.failed_attempt = 3
+        employee.locked_until = None
+        if employee.password_reset_key:
+            employee.clear_password_reset_key()
+        db.session.commit()
+
+        # Store user ID and next page in session for 2FA flow
+        session['temp_user_id'] = employee.id
+        session['temp_user_next'] = request.args.get('next') or url_for('home')
+        
+        if employee.two_factor_enabled:
+            # User has 2FA already enabled - they need to verify
+            return redirect(url_for('login') + '?require_2fa=1')
+        else:
+            # User needs to set up 2FA - redirect to login with setup flag
+            return redirect(url_for('login') + '?require_2fa_setup=1')
+
+        if next_page is None or not next_page.startswith('/'):
+            next_page = url_for('home')
+        return redirect(next_page)
 
     settings = get_org_settings()
-    return render_template('auth.html', login_form=form, register_form=register_form, forgot_form=forgot_form, org_name=settings['org_name'])
+    
+    # Check for 2FA flow flags in URL
+    require_2fa = request.args.get('require_2fa')
+    require_2fa_setup = request.args.get('require_2fa_setup')
+    two_factor_qr_image = None
+    two_factor_secret = None
+    
+    if require_2fa_setup and session.get('temp_user_id'):
+        # Generate QR code for 2FA setup
+        temp_employee = Employee.query.get(session.get('temp_user_id'))
+        if temp_employee:
+            secret = temp_employee.ensure_two_factor_secret()
+            db.session.commit()  # Persist the secret
+            qr_uri = build_otpauth_uri(temp_employee.email, secret, 'ABA Services')
+            two_factor_qr_image = generate_qr_code_base64(qr_uri)
+            two_factor_secret = secret
+    
+    return render_template('auth.html', 
+        login_form=form, 
+        register_form=register_form, 
+        forgot_form=forgot_form, 
+        org_name=settings['org_name'],
+        require_two_factor=require_2fa,
+        require_2fa_setup=require_2fa_setup,
+        two_factor_qr_image=two_factor_qr_image,
+        two_factor_secret=two_factor_secret)
+
+
+@app.route('/api/verify-2fa', methods=['POST'])
+def api_verify_2fa():
+    """API endpoint for 2FA code verification during login."""
+    if current_user.is_authenticated:
+        return jsonify({'status': 'error', 'message': 'Already logged in'}), 400
+
+    user_id = session.get('temp_user_id')
+    next_page = session.get('temp_user_next') or url_for('home')
+    
+    if not user_id:
+        return jsonify({'status': 'error', 'message': 'Session expired'}), 400
+
+    employee = Employee.query.get(user_id)
+    if not employee or not employee.two_factor_enabled:
+        return jsonify({'status': 'error', 'message': 'Invalid 2FA state'}), 400
+
+    code = request.form.get('two_factor_code', '').strip()
+    if not code or not verify_totp_code(employee.two_factor_secret, code):
+        return jsonify({'status': 'error', 'message': 'Invalid code'}), 400
+
+    # Code is valid - complete login
+    session.pop('temp_user_id', None)
+    session.pop('temp_user_next', None)
+    login_user(employee)
+    return jsonify({'status': 'success', 'message': 'Login successful', 'redirect': next_page})
+
+
+@app.route('/api/setup-2fa', methods=['POST'])
+def api_setup_2fa():
+    """API endpoint for 2FA setup during mandatory setup flow."""
+    if current_user.is_authenticated:
+        return jsonify({'status': 'error', 'message': 'Already logged in'}), 400
+
+    user_id = session.get('temp_user_id')
+    next_page = session.get('temp_user_next') or url_for('home')
+    
+    if not user_id:
+        return jsonify({'status': 'error', 'message': 'Session expired'}), 400
+
+    employee = Employee.query.get(user_id)
+    if not employee:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 400
+
+    code = request.form.get('two_factor_code', '').strip()
+    if not code or not verify_totp_code(employee.two_factor_secret, code):
+        return jsonify({'status': 'error', 'message': 'Invalid code'}), 400
+
+    # Code is valid - enable 2FA and complete login
+    employee.enable_two_factor()
+    db.session.commit()
+    session.pop('temp_user_id', None)
+    session.pop('temp_user_next', None)
+    login_user(employee)
+    return jsonify({'status': 'success', 'message': '2FA enabled', 'redirect': next_page})
+
+
+@app.route('/verify-2fa', methods=['POST'])
+def verify_2fa():
+    """Legacy redirect for backwards compatibility."""
+    return redirect(url_for('login'))
+
+
+@app.route('/cancel-2fa', methods=['GET'])
+def cancel_2fa():
+    """Cancel 2FA setup/verification and return to login."""
+    session.pop('temp_user_id', None)
+    session.pop('temp_user_next', None)
+    return redirect(url_for('login'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -513,5 +610,5 @@ if __name__ == '__main__':
     # app.run(debug=True, host='0.0.0.0', port=int("8080"))
     
     # Production: Use a production WSGI server
-    http_server = WSGIServer(('', 8080), app)
+    http_server = WSGIServer(('0.0.0.0', 8080), app)
     http_server.serve_forever()

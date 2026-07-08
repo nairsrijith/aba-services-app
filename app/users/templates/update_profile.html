@@ -90,6 +90,42 @@
         </div>
       </div>
     </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card profile-card">
+          <div class="card-header">Two-Factor Authentication</div>
+          <div class="card-body">
+            {% if two_factor_enabled %}
+              <p class="mb-3">Two-factor authentication is currently enabled.</p>
+              <form method="POST" class="d-inline-block">
+                <input type="hidden" name="action" value="disable_2fa">
+                <button type="submit" class="btn btn-outline-danger">Disable 2FA</button>
+              </form>
+            {% else %}
+              <p class="mb-3">Set up an authenticator app and enter the 6-digit code below.</p>
+              {% if two_factor_qr_image %}
+                <div class="mb-3">
+                  <img src="{{ two_factor_qr_image }}" alt="2FA QR code" class="img-thumbnail" style="max-width:300px;">
+                  <p class="small text-muted mt-2">Scan this QR code with Google Authenticator or Authy.</p>
+                </div>
+                <p class="small text-muted">Secret: {{ two_factor_secret }}</p>
+              {% endif %}
+              <form method="POST" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                  <label class="form-label" for="two_factor_code">Authenticator code</label>
+                  <input type="text" class="form-control" id="two_factor_code" name="two_factor_code" maxlength="6" autocomplete="one-time-code">
+                </div>
+                <div class="col-md-6">
+                  <input type="hidden" name="action" value="enable_2fa">
+                  <button type="submit" class="btn btn-primary">Enable 2FA</button>
+                </div>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
   </form>
 </div>
 {% endblock %}

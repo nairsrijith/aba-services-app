@@ -14,5 +14,8 @@ with app.app_context():
         user.set_password(NEW_PASSWORD)
         # optionally ensure login is enabled
         user.login_enabled = True
+        # Reset 2FA in case admin lost their device
+        user.two_factor_enabled = False
+        user.two_factor_secret = None
         db.session.commit()
-        print(f"Password reset for {user.email}")
+        print(f"Password and 2FA has been reset for {user.email}. They can set it up again on next login.")
