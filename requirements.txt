@@ -47,3 +47,4 @@ wtforms==3.2.1
 python-dateutil
 python-dotenv
 gevent
+qrcode[pil]>=7.4

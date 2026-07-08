@@ -10,7 +10,7 @@
   }
   
   .settings-card .card-header {
-    background-color: #f8f9fa;
+    background-color: #2b3d29;
     border-bottom: 1px solid #e0e0e0;
     padding: 0.875rem 1rem;
     font-weight: 600;
@@ -223,6 +223,29 @@
       </div>
     </div>
     
+    <!-- API Management -->
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card settings-card">
+          <div class="card-header">API Management</div>
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+              <div class="mb-2">
+                <button type="button" class="btn btn-primary me-2 mb-2" data-bs-toggle="modal" data-bs-target="#tokenModal">Generate API Token</button>
+                <button type="button" class="btn btn-secondary me-2 mb-2" data-bs-toggle="modal" data-bs-target="#serviceAccountModal">Create Service Account</button>
+                <button type="button" class="btn btn-secondary mb-2" data-bs-toggle="modal" data-bs-target="#automationTokenModal">Generate Automation Token</button>
+              </div>
+              <div class="mb-2">
+                <button type="button" class="btn btn-outline-secondary" id="sa-management-refresh">Refresh</button>
+              </div>
+            </div>
+            <div id="sa-management-error" class="alert alert-danger" style="display:none;"></div>
+            <div id="service-account-management">Loading service accounts...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Submit Button -->
     <div class="mb-3">
       {{ form.submit(class_='btn btn-primary') }}
@@ -230,6 +253,102 @@
   </form>
 </div>
 
+<div class="modal fade" id="tokenModal" tabindex="-1" aria-labelledby="tokenModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tokenModalLabel">Generate API Token</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning" role="alert">This token is visible only once. Do not close this window until you have copied it.</div>
+        <form id="token-form" class="mb-3">
+          <div class="mb-3">
+            <label for="token-email" class="form-label">Email</label>
+            <input type="email" readonly class="form-control" id="token-email" value="{{ current_user.email }}">
+          </div>
+          <div class="mb-3">
+            <label for="token-password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="token-password" placeholder="Enter your password" required>
+          </div>
+          <div class="mb-3">
+            <label for="token-expiry" class="form-label">Token expiry (seconds)</label>
+            <input type="number" class="form-control" id="token-expiry" value="86400" min="60" max="15552000">
+            <div class="form-text">Set how long this token is valid before it expires.</div>
+          </div>
+          <button type="submit" class="btn btn-primary">Generate Token</button>
+          <button type="button" class="btn btn-outline-secondary ms-2" id="copy-token-btn" disabled>Copy Token</button>
+        </form>
+        <div id="token-result" class="alert alert-light border" style="white-space: pre-wrap; word-break: break-word; display: none;"></div>
+        <div id="token-error" class="alert alert-danger" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="serviceAccountModal" tabindex="-1" aria-labelledby="serviceAccountModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="serviceAccountModalLabel">Create Service Account</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="service-account-form">
+          <div class="mb-3">
+            <label for="sa-name" class="form-label">Service Account Name</label>
+            <input type="text" class="form-control" id="sa-name" placeholder="billing-bot" required>
+          </div>
+          <div class="mb-3">
+            <label for="sa-description" class="form-label">Description</label>
+            <input type="text" class="form-control" id="sa-description" placeholder="Invoice automation">
+          </div>
+          <div class="mb-3">
+            <label for="sa-password" class="form-label">Admin Password</label>
+            <input type="password" class="form-control" id="sa-password" placeholder="Enter your password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Create Service Account</button>
+        </form>
+        <div id="sa-success" class="alert alert-success mt-3" style="display:none;"></div>
+        <div id="sa-error" class="alert alert-danger mt-3" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="automationTokenModal" tabindex="-1" aria-labelledby="automationTokenModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="automationTokenModalLabel">Generate Automation Token</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="automation-token-form">
+          <div class="mb-3">
+            <label for="automation-service-account" class="form-label">Service Account</label>
+            <select class="form-select" id="automation-service-account">
+              <option value="">Loading service accounts...</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="automation-expiry" class="form-label">Token expiry (seconds)</label>
+            <input type="number" class="form-control" id="automation-expiry" value="15552000" min="60" max="15552000">
+            <div class="form-text">Set how long this automation token should remain valid.</div>
+          </div>
+          <div class="mb-3">
+            <label for="automation-password" class="form-label">Admin Password</label>
+            <input type="password" class="form-control" id="automation-password" placeholder="Enter your password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Generate Automation Token</button>
+        </form>
+        <div id="automation-success" class="alert alert-success mt-3" style="display:none;"></div>
+        <div id="automation-error" class="alert alert-danger mt-3" style="display:none;"></div>
+        <div id="automation-result" class="alert alert-light border mt-3" style="white-space: pre-wrap; word-break: break-word; display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
   // Invoice Reminder Fields Dependency Logic
   function updateReminderFieldStates() {
@@ -325,6 +444,393 @@
         }
       });
     }
+    
+      // Admin API token and service account management UI
+      const tokenForm = document.getElementById('token-form');
+      const tokenPassword = document.getElementById('token-password');
+      const tokenEmail = document.getElementById('token-email');
+      const tokenResult = document.getElementById('token-result');
+      const tokenError = document.getElementById('token-error');
+      const copyBtn = document.getElementById('copy-token-btn');
+      const tokenExpiry = document.getElementById('token-expiry');
+
+      const saForm = document.getElementById('service-account-form');
+      const saName = document.getElementById('sa-name');
+      const saDescription = document.getElementById('sa-description');
+      const saPassword = document.getElementById('sa-password');
+      const saSuccess = document.getElementById('sa-success');
+      const saError = document.getElementById('sa-error');
+
+      const automationForm = document.getElementById('automation-token-form');
+      const automationServiceAccount = document.getElementById('automation-service-account');
+      const automationExpiry = document.getElementById('automation-expiry');
+      const automationPassword = document.getElementById('automation-password');
+      const automationResult = document.getElementById('automation-result');
+      const automationError = document.getElementById('automation-error');
+      const automationSuccess = document.getElementById('automation-success');
+
+      const saManagementContainer = document.getElementById('service-account-management');
+      const saManagementRefresh = document.getElementById('sa-management-refresh');
+      const saManagementError = document.getElementById('sa-management-error');
+
+      function setTokenDisplay(token) {
+        tokenResult.style.display = 'block';
+        tokenResult.textContent = 'Bearer ' + token;
+        tokenError.style.display = 'none';
+        copyBtn.disabled = false;
+      }
+
+      function setError(message) {
+        tokenError.style.display = 'block';
+        tokenError.textContent = message;
+        tokenResult.style.display = 'none';
+        copyBtn.disabled = true;
+      }
+
+      function resetServiceAccountMessages() {
+        saError.style.display = 'none';
+        saSuccess.style.display = 'none';
+        saSuccess.textContent = '';
+      }
+
+      function resetAutomationMessages() {
+        automationError.style.display = 'none';
+        automationResult.style.display = 'none';
+        automationSuccess.style.display = 'none';
+        automationSuccess.textContent = '';
+      }
+
+      function setSAError(message) {
+        saError.style.display = 'block';
+        saError.textContent = message;
+      }
+
+      function setAutomationError(message) {
+        automationError.style.display = 'block';
+        automationError.textContent = message;
+      }
+
+      function createManagementButton(text, className, onClick) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `btn btn-sm ${className} me-2`;
+        button.textContent = text;
+        button.addEventListener('click', onClick);
+        return button;
+      }
+
+      function renderServiceAccountManagement(accounts) {
+        saManagementContainer.innerHTML = '';
+        if (!accounts || accounts.length === 0) {
+          saManagementContainer.innerHTML = '<div class="alert alert-secondary">No service accounts available.</div>';
+          return;
+        }
+
+        accounts.forEach(account => {
+          const accountCard = document.createElement('div');
+          accountCard.className = 'card mb-3';
+          accountCard.innerHTML = `
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h5 class="card-title mb-1">${account.name}</h5>
+                  <p class="card-text mb-1 text-muted">${account.description || 'No description'}</p>
+                  <p class="card-text"><small class="text-muted">Created: ${new Date(account.created_at).toLocaleString()}</small></p>
+                </div>
+              </div>
+              <div class="mb-2"><strong>Automation tokens</strong></div>
+            </div>
+          `;
+
+          const tokenList = document.createElement('div');
+          tokenList.className = 'list-group list-group-flush';
+          const activeTokens = (account.tokens || []).filter(token => !token.revoked);
+          if (activeTokens.length === 0) {
+            const emptyTokenRow = document.createElement('div');
+            emptyTokenRow.className = 'list-group-item';
+            emptyTokenRow.textContent = 'No active automation tokens for this service account.';
+            tokenList.appendChild(emptyTokenRow);
+          } else {
+            activeTokens.forEach(token => {
+              const tokenRow = document.createElement('div');
+              tokenRow.className = 'list-group-item';
+              tokenRow.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div><strong>Token #${token.id}</strong></div>
+                    <div class="small text-muted">Created: ${new Date(token.created_at).toLocaleString()}</div>
+                    <div class="small text-muted">Expires: ${new Date(token.expires_at).toLocaleString()}</div>
+                    <div class="small text-muted">Last used: ${token.last_used ? new Date(token.last_used).toLocaleString() : 'Never'}</div>
+                  </div>
+                </div>
+              `;
+              const revokeButton = createManagementButton('Revoke', 'btn-outline-danger', function() {
+                if (!confirm('Revoke this automation token?')) return;
+                revokeToken(token.id);
+              });
+              tokenRow.querySelector('.d-flex').appendChild(revokeButton);
+              tokenList.appendChild(tokenRow);
+            });
+          }
+
+          accountCard.querySelector('.card-body').appendChild(tokenList);
+          const footer = document.createElement('div');
+          footer.className = 'card-body pt-2';
+          const deleteButton = createManagementButton('Delete service account', 'btn-outline-danger', function() {
+            if (!confirm(`Delete service account ${account.name}? This will remove all associated automation tokens.`)) return;
+            deleteServiceAccount(account.id);
+          });
+          footer.appendChild(deleteButton);
+          accountCard.appendChild(footer);
+          saManagementContainer.appendChild(accountCard);
+        });
+      }
+
+      function postJson(url, payload) {
+        return fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(async response => {
+          const text = await response.text();
+          let data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (_) {
+            throw new Error(`Server returned invalid JSON: ${text}`);
+          }
+          if (!response.ok) {
+            throw new Error(data.error || 'Request failed');
+          }
+          return data;
+        });
+      }
+
+      function refreshServiceAccountManagement() {
+        clearManagementError();
+        postJson('{{ url_for('api.service_account_details', _external=True) }}', {})
+          .then(data => renderServiceAccountManagement(data))
+          .catch(err => setManagementError(err.message));
+      }
+
+      function revokeToken(tokenId) {
+        clearManagementError();
+        postJson('{{ url_for('api.revoke_automation_token', _external=True) }}', { token_id: tokenId })
+          .then(() => {
+            refreshServiceAccountManagement();
+            loadServiceAccounts();
+          })
+          .catch(err => setManagementError(err.message));
+      }
+
+      function deleteServiceAccount(accountId) {
+        clearManagementError();
+        postJson('{{ url_for('api.delete_service_account', _external=True) }}', { service_account_id: accountId })
+          .then(() => {
+            refreshServiceAccountManagement();
+            loadServiceAccounts();
+          })
+          .catch(err => setManagementError(err.message));
+      }
+
+      function loadServiceAccounts() {
+        fetch('{{ url_for('api.list_service_accounts', _external=True) }}', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        })
+        .then(async response => {
+          if (!response.ok) return [];
+          return await response.json();
+        })
+        .then(accounts => {
+          automationServiceAccount.innerHTML = '<option value="">Select a service account</option>';
+          if (accounts.length === 0) {
+            automationServiceAccount.innerHTML = '<option value="">No service accounts available</option>';
+          }
+          accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.id;
+            option.textContent = `${account.name} (${account.description || 'no description'})`;
+            automationServiceAccount.appendChild(option);
+          });
+        })
+        .catch(() => {
+          automationServiceAccount.innerHTML = '<option value="">Unable to load service accounts</option>';
+        });
+      }
+
+      function setManagementError(message) {
+        saManagementError.style.display = 'block';
+        saManagementError.textContent = message;
+      }
+
+      function clearManagementError() {
+        saManagementError.style.display = 'none';
+        saManagementError.textContent = '';
+      }
+
+      copyBtn.addEventListener('click', function() {
+        const tokenText = tokenResult.textContent;
+        if (!tokenText) return;
+        navigator.clipboard.writeText(tokenText).then(function() {
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => copyBtn.textContent = 'Copy Token', 1500);
+        }).catch(() => {
+          setError('Unable to copy token to clipboard.');
+        });
+      });
+
+      tokenForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const password = tokenPassword.value.trim();
+        const expiresIn = parseInt(tokenExpiry.value, 10);
+        if (!password) {
+          setError('Password is required to generate a token.');
+          return;
+        }
+        if (Number.isNaN(expiresIn) || expiresIn < 60 || expiresIn > 15552000) {
+          setError('Expiry must be between 60 and 15552000 seconds.');
+          return;
+        }
+        copyBtn.disabled = true;
+        tokenResult.style.display = 'none';
+        tokenError.style.display = 'none';
+        fetch('{{ url_for('api.auth_token', _external=True) }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: tokenEmail.value,
+            password: password,
+            expires_in: expiresIn
+          })
+        })
+        .then(async response => {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Unable to generate token.');
+          return data;
+        })
+        .then(data => {
+          setTokenDisplay(data.token);
+          tokenPassword.value = '';
+        })
+        .catch(err => setError(err.message));
+      });
+
+      saForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        resetServiceAccountMessages();
+        if (!saName.value.trim()) {
+          setSAError('Service account name is required.');
+          return;
+        }
+        if (!saPassword.value.trim()) {
+          setSAError('Admin password is required.');
+          return;
+        }
+        fetch('{{ url_for('api.create_service_account', _external=True) }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: tokenEmail.value,
+            password: saPassword.value,
+            name: saName.value.trim(),
+            description: saDescription.value.trim()
+          })
+        })
+        .then(async response => {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Unable to create service account.');
+          return data;
+        })
+        .then(account => {
+          saSuccess.textContent = `Created service account ${account.name}.`;
+          saSuccess.style.display = 'block';
+          saForm.reset();
+          loadServiceAccounts();
+          refreshServiceAccountManagement();
+        })
+        .catch(err => setSAError(err.message));
+      });
+
+      automationForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        resetAutomationMessages();
+        if (!automationServiceAccount.value) {
+          setAutomationError('Please select a service account.');
+          return;
+        }
+        if (!automationPassword.value.trim()) {
+          setAutomationError('Admin password is required.');
+          return;
+        }
+        fetch('{{ url_for('api.create_automation_token', _external=True) }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: tokenEmail.value,
+            password: automationPassword.value,
+            service_account_id: automationServiceAccount.value,
+            expires_in: parseInt(automationExpiry.value, 10)
+          })
+        })
+        .then(async response => {
+          const text = await response.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            throw new Error(`Server returned invalid JSON: ${text}`);
+          }
+          if (!response.ok) throw new Error(data.error || 'Unable to generate automation token.');
+          return data;
+        })
+        .then(data => {
+          automationResult.style.display = 'block';
+          automationResult.textContent = 'Bearer ' + data.token;
+          automationSuccess.textContent = `Token created for ${data.service_account_name}.`;
+          automationSuccess.style.display = 'block';
+          automationForm.reset();
+          refreshServiceAccountManagement();
+          loadServiceAccounts();
+        })
+        .catch(err => setAutomationError(err.message));
+      });
+
+      saManagementRefresh.addEventListener('click', function () {
+        refreshServiceAccountManagement();
+      });
+
+      const automationModal = document.getElementById('automationTokenModal');
+      const serviceAccountModal = document.getElementById('serviceAccountModal');
+
+      automationModal.addEventListener('show.bs.modal', function () {
+        resetAutomationMessages();
+        automationForm.reset();
+        automationServiceAccount.innerHTML = '<option value="">Loading service accounts...</option>';
+        loadServiceAccounts();
+      });
+
+      serviceAccountModal.addEventListener('show.bs.modal', function () {
+        resetServiceAccountMessages();
+        saForm.reset();
+      });
+
+      loadServiceAccounts();
+      refreshServiceAccountManagement();
   });
 </script>
 {% endblock %}

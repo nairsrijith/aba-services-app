@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from app.models import Employee
 from app.users.forms import UpdatePasswordForm
 from datetime import datetime
+from app.utils.two_factor import build_otpauth_uri, verify_totp_code, generate_qr_code_base64
 from dateutil.relativedelta import relativedelta
 import os, string, secrets
 from app.utils.email_utils import queue_email
@@ -150,6 +151,20 @@ def send_activation_email(id):
         abort(403)
 
 
+@users_bp.route('/reset_2fa/<int:id>', methods=['POST'])
+@login_required
+def reset_2fa(id):
+    if current_user.is_authenticated and current_user.user_type in ['admin', 'super']:
+        employee = Employee.query.get_or_404(id)
+        employee.two_factor_enabled = False
+        employee.two_factor_secret = None
+        db.session.commit()
+        flash(f"Two-factor authentication has been reset for {employee.firstname} {employee.lastname}. They can set it up again on their next login.", "success")
+        return redirect(url_for('users.list_users'))
+    else:
+        abort(403)
+
+
 @users_bp.route('/update_profile', methods=['GET', 'POST'])
 @login_required
 def update_profile():
@@ -191,6 +206,26 @@ def update_profile():
                         flash('Could not save profile picture; please try again.', 'warning')
                 else:
                     flash('No file selected to upload.', 'warning')
+
+            elif action == 'enable_2fa':
+                code = request.form.get('two_factor_code', '').strip()
+                if not code:
+                    flash('Please enter the 6-digit code from your authenticator app.', 'danger')
+                else:
+                    secret = current_user.ensure_two_factor_secret()
+                    if verify_totp_code(secret, code):
+                        current_user.enable_two_factor()
+                        db.session.commit()
+                        flash('Two-factor authentication enabled successfully.', 'success')
+                    else:
+                        flash('The authentication code was invalid. Please try again.', 'danger')
+                return redirect(url_for('users.update_profile'))
+
+            elif action == 'disable_2fa':
+                current_user.disable_two_factor()
+                db.session.commit()
+                flash('Two-factor authentication disabled.', 'success')
+                return redirect(url_for('users.update_profile'))
 
             # Update password only
             elif action == 'update_password':
@@ -244,7 +279,19 @@ def update_profile():
                 else:
                     flash('Current password is incorrect.', 'danger')
         settings = get_org_settings()
-        # render new centered template with profile-pic upload
-        return render_template('update_profile.html', form=form, org_name=settings['org_name'])
+        qr_image_base64 = None
+        if current_user.is_authenticated and not current_user.two_factor_enabled:
+            secret = current_user.ensure_two_factor_secret()
+            db.session.commit()  # Persist the secret immediately
+            qr_uri = build_otpauth_uri(current_user.email, secret, 'ABA Services')
+            qr_image_base64 = generate_qr_code_base64(qr_uri)
+        return render_template(
+            'update_profile.html',
+            form=form,
+            org_name=settings['org_name'],
+            two_factor_secret=current_user.two_factor_secret,
+            two_factor_enabled=current_user.two_factor_enabled,
+            two_factor_qr_image=qr_image_base64,
+        )
     else:
         abort(403)

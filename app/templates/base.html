@@ -291,6 +291,7 @@
             <li class="{% if request.endpoint and request.endpoint.startswith('manage.activities') %}active{% endif %}"><a href="{{ url_for('manage.activities') }}">Activities</a></li>
             <li class="{% if request.endpoint and (request.endpoint.startswith('payroll.list_payrates') or request.endpoint.startswith('payroll.add_payrate') or request.endpoint.startswith('payroll.edit_payrate')) %}active{% endif %}"><a href="{{ url_for('payroll.list_payrates') }}">Pay Rates</a></li>
             <li class="{% if request.endpoint and (request.endpoint.startswith('mileage.list_mileage_rates') or request.endpoint.startswith('mileage.add_mileage_rate') or request.endpoint.startswith('mileage.edit_mileage_rate')) %}active{% endif %}"><a href="{{ url_for('mileage.list_mileage_rates') }}">Mileage Rates</a></li>
+            <li class="{% if request.endpoint and request.endpoint == 'manage.api_docs' %}active{% endif %}"><a href="{{ url_for('manage.api_docs') }}">API Docs</a></li>
             <li class="{% if request.endpoint and request.endpoint.startswith('manage.settings') %}active{% endif %}"><a href="{{ url_for('manage.settings') }}">Organization</a></li>
           </div>
         </ul>

@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import date, datetime, timedelta
 import json, string, secrets
+from app.utils.two_factor import generate_totp_secret
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -68,6 +69,8 @@ class Employee(db.Model, UserMixin):
     activation_key = db.Column(db.String(16), nullable=True, default=None)
     password_reset_key = db.Column(db.String(64), nullable=True, default=None)  # For password reset requests
     password_reset_requested_at = db.Column(db.DateTime, nullable=True, default=None)  # Timestamp when reset was requested
+    two_factor_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    two_factor_secret = db.Column(db.String(64), nullable=True, default=None)
     # Profile picture path stored as a relative path under the project (e.g. 'data/profile_pic/filename.png')
     profile_pic = db.Column(db.String(255), nullable=True)
 
@@ -188,6 +191,19 @@ class Employee(db.Model, UserMixin):
         """
         self.password_reset_key = None
         self.password_reset_requested_at = None
+
+    def ensure_two_factor_secret(self):
+        if not self.two_factor_secret:
+            self.two_factor_secret = generate_totp_secret()
+        return self.two_factor_secret
+
+    def enable_two_factor(self):
+        self.ensure_two_factor_secret()
+        self.two_factor_enabled = True
+
+    def disable_two_factor(self):
+        self.two_factor_enabled = False
+        self.two_factor_secret = None
         
     @staticmethod
     def create_super_admin(email, password):
@@ -232,6 +248,41 @@ class Employee(db.Model, UserMixin):
         db.session.commit()
         
         return super_admin
+
+
+class ServiceAccount(db.Model):
+    __tablename__ = 'service_accounts'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<ServiceAccount {self.name}>"
+
+
+class AutomationToken(db.Model):
+    __tablename__ = 'automation_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    service_account_id = db.Column(db.Integer, db.ForeignKey('service_accounts.id'), nullable=False)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    token_hash = db.Column(db.String(64), nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    revoked = db.Column(db.Boolean, nullable=False, default=False)
+    last_used = db.Column(db.DateTime, nullable=True)
+
+    service_account = db.relationship('ServiceAccount', backref='tokens')
+    created_by = db.relationship('Employee')
+
+    def mark_used(self):
+        self.last_used = datetime.utcnow()
+
+    def revoke(self):
+        self.revoked = True
+
+    def __repr__(self):
+        return f"<AutomationToken service_account={self.service_account.name} expires_at={self.expires_at}>"
 
 
 class Client(db.Model):
