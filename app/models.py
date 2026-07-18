@@ -469,6 +469,26 @@ class Intervention(db.Model):
         self.invoice_number = invoice_number
 
 
+class InvoicePayment(db.Model):
+    __tablename__ = 'invoice_payments'
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False, default=0.0)
+    payment_date = db.Column(db.Date, nullable=False)
+    transaction_number = db.Column(db.String(100), nullable=True)
+    payment_comments = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    invoice = db.relationship('Invoice', backref='payments')
+
+    def __init__(self, invoice_id, amount, payment_date, transaction_number=None, payment_comments=None):
+        self.invoice_id = invoice_id
+        self.amount = amount
+        self.payment_date = payment_date
+        self.transaction_number = transaction_number
+        self.payment_comments = payment_comments
+
+
 class Invoice(db.Model):
     __tablename__ = 'invoices'
     id = db.Column(db.Integer, primary_key=True)
@@ -502,6 +522,61 @@ class Invoice(db.Model):
         self.invoice_items = invoice_items
         self.last_reminder_sent_date = None
         self.reminder_count = 0
+
+    @property
+    def paid_amount(self):
+        return round(sum(payment.amount for payment in self.payments), 2) if self.payments else 0.0
+
+    @property
+    def pending_amount(self):
+        return round(max(self.total_cost - self.paid_amount, 0.0), 2)
+
+    @property
+    def payment_status(self):
+        if self.pending_amount <= 0:
+            return 'Paid'
+        if self.paid_amount > 0:
+            return 'Partially Paid'
+        return 'Pending'
+
+    def reset_to_draft(self):
+        self.status = 'Draft'
+        self.paid_date = None
+        self.payment_comments = ''
+        InvoicePayment.query.filter_by(invoice_id=self.id).delete(synchronize_session=False)
+        return self
+
+    def add_payment(self, amount, payment_date=None, transaction_number=None, payment_comments=None):
+        if payment_date is None:
+            payment_date = date.today()
+
+        amount = float(amount)
+        if amount <= 0:
+            raise ValueError('Payment amount must be greater than zero')
+
+        remaining_balance = self.pending_amount
+        if amount > remaining_balance + 1e-9:
+            raise ValueError('Payment amount exceeds the remaining invoice balance')
+
+        payment = InvoicePayment(
+            invoice_id=self.id,
+            amount=amount,
+            payment_date=payment_date,
+            transaction_number=transaction_number,
+            payment_comments=payment_comments,
+        )
+        db.session.add(payment)
+        db.session.flush()
+
+        if self.pending_amount <= 0:
+            self.status = 'Paid'
+            self.paid_date = payment_date
+        elif self.status == 'Paid':
+            self.status = 'Sent'
+
+        if payment_comments:
+            self.payment_comments = payment_comments
+        return payment
 
     @staticmethod
     def generate_invoice_number():

@@ -196,9 +196,10 @@
         <div class="pdf-col-6 pdf-info-section right">
             <h4><strong>Invoice Details:</strong></h4>
             <p><strong>{{ invoice_number }}</strong></p>
-            <p>Status: <span class="{% if status == 'Paid' %}pdf-status-paid{% else %}pdf-status-unpaid{% endif %}">{{ status }}</span></p>
+            <p>Status: <span class="{% if invoice.payment_status == 'Paid' %}pdf-status-paid{% else %}pdf-status-unpaid{% endif %}">{{ invoice.payment_status }}</span></p>
             <p>Invoice Date: {{ invoice_date }}</p>
             <p>Pay By: {{ payby_date }}</p>
+            <p>Pending: <strong>{{ "%.2f"|format(invoice.pending_amount|float) }}</strong></p>
         </div>
     </div>
     
@@ -249,7 +250,35 @@
         </tbody>
     </table>
 
-    {% if status != "Paid" %}
+    {% if invoice.payments %}
+        <div class="pdf-payment-info paid">
+            <strong>Payment history</strong>
+            <table class="pdf-table" style="margin-top: 8px;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Transaction</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in invoice.payments|sort(attribute='payment_date') %}
+                    <tr>
+                        <td>{{ payment.payment_date }}</td>
+                        <td>{{ payment.transaction_number or '—' }}</td>
+                        <td class="text-end">{{ "%.2f"|format(payment.amount|float) }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="2" class="text-end">Balance Remaining:</td>
+                        <td class="text-end">{{ "%.2f"|format(invoice.pending_amount|float) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    {% if invoice.payment_status != 'Paid' %}
         <div class="pdf-payment-info unpaid">
             <strong>Payment is accepted via:</strong>
             Interac e-Transfer to <strong><em>{{ payment_email }}</em></strong>
@@ -259,7 +288,7 @@
     {% else %}
         <div class="pdf-payment-info paid">
             <strong>Payment received. Thank you!</strong>
-            <p>Payment was received on {{ paid_date }}{% if payment_comments %}, via etransfer: {{ payment_comments }}.{% endif %}
+            <p>Final settlement was made on {{ last_payment_date }}.</p>
         </div>
     {% endif %}
 

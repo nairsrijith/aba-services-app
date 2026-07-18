@@ -87,15 +87,15 @@
                         {{ invoice.payby_date.strftime('%Y-%m-%d') }}
                     </td>
                     <td>
-                        {%- set st = invoice.status -%}
-                        {%- if st == 'Draft' -%}
-                            <span class="badge bg-info" title="{{ st }}">{{ st }}</span>
-                        {%- elif st == 'Sent' -%}
-                            <span class="badge bg-warning text-dark" title="{{ st }}">{{ st }}</span>
-                        {%- elif st == 'Paid' -%}
+                        {%- set st = invoice.payment_status -%}
+                        {%- if st == 'Paid' -%}
                             <span class="badge bg-success" title="{{ st }}">{{ st }}</span>
-                        {%- else -%}
+                        {%- elif st == 'Partially Paid' -%}
+                            <span class="badge bg-warning text-dark" title="{{ st }}">{{ st }}</span>
+                        {%- elif st == 'Pending' -%}
                             <span class="badge bg-secondary" title="{{ st }}">{{ st }}</span>
+                        {%- else -%}
+                            <span class="badge bg-info" title="{{ st }}">{{ st }}</span>
                         {%- endif -%}
                     </td>
                     <td>{{ invoice.client.firstname }} {{ invoice.client.lastname }}</td>
@@ -178,10 +178,10 @@
                                                 {%- endif -%}
                                                 <button type="submit" class="dropdown-item" title="Mark as Sent">Mark as Sent</button>
                                             </form>
-                                        {% elif invoice.status == 'Sent' %}
-                                            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#markPaidModal" data-invoice="{{ invoice.invoice_number }}" title="Mark as Paid">Mark as Paid</button>
+                                        {% elif invoice.payment_status != 'Paid' and invoice.status != 'Draft' %}
+                                            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#markPaidModal" data-invoice="{{ invoice.invoice_number }}" data-pending-amount="{{ '%.2f'|format(invoice.pending_amount|float) }}" title="Record a payment">Record Payment</button>
                                         {% else %}
-                                            <span class="dropdown-item disabled">Mark as Paid</span>
+                                            <span class="dropdown-item disabled">Record Payment</span>
                                         {% endif %}
                                     </li>
                                 </ul>
@@ -289,8 +289,16 @@
           {%- endif -%}
           <input type="hidden" name="invoice_number" id="modalInvoiceNumber">
           <div class="mb-3">
-            <label for="paidDate" class="form-label">Paid Date</label>
+            <label for="paymentAmount" class="form-label">Amount Paid</label>
+            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="paymentAmount" required>
+          </div>
+          <div class="mb-3">
+            <label for="paidDate" class="form-label">Payment Date</label>
             <input type="date" class="form-control" name="paid_date" id="paidDate" required data-allow-future>
+          </div>
+          <div class="mb-3">
+            <label for="transactionNumber" class="form-label">Transaction Number</label>
+            <input type="text" class="form-control" name="transaction_number" id="transactionNumber" placeholder="e.g. ET-12345">
           </div>
           <div class="mb-3">
             <label for="paymentComments" class="form-label">Payment Comments</label>
@@ -366,7 +374,12 @@ document.addEventListener('DOMContentLoaded', function() {
     markPaidModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
         var invoiceNumber = button.getAttribute('data-invoice');
+        var pendingAmount = button.getAttribute('data-pending-amount') || '0';
         document.getElementById('modalInvoiceNumber').value = invoiceNumber;
+        document.getElementById('paymentAmount').value = pendingAmount;
+        document.getElementById('paymentAmount').setAttribute('max', pendingAmount);
+        document.getElementById('transactionNumber').value = '';
+        document.getElementById('paymentComments').value = '';
         document.getElementById('markPaidForm').action = '/invoices/mark_paid/' + invoiceNumber;
     });
 

@@ -1,10 +1,13 @@
 Dear {{ client.parentname }},
 
-This is to confirm that invoice {{ invoice.invoice_number }} has been marked as paid.
+This is to confirm that a payment of ${{ '%.2f'|format(payment_amount) }} was received for invoice {{ invoice.invoice_number }}.
 
 Invoice Number: {{ invoice.invoice_number }}
-Amount: ${{ '%.2f'|format(invoice.total_cost) }}
+Payment Amount: ${{ '%.2f'|format(payment_amount) }}
+Remaining Balance: ${{ '%.2f'|format(pending_amount) }}
 Paid Date: {{ paid_date }}
+
+{% if payment_status == 'Paid' %}The invoice is now fully paid.{% else %}The invoice is still partially outstanding.{% endif %}
 
 If you have any questions regarding this payment, please contact us.
 

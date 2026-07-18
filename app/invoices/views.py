@@ -54,6 +54,15 @@ def _extract_mileages(invoice):
     return mileages
 
 
+def _last_payment_date(invoice):
+    payments = sorted(invoice.payments, key=lambda p: p.payment_date or date.min)
+    if payments:
+        return payments[-1].payment_date.strftime('%Y-%m-%d') if payments[-1].payment_date else ''
+    if invoice.paid_date:
+        return invoice.paid_date.strftime('%Y-%m-%d')
+    return ''
+
+
 @invoices_bp.route('/list', methods=['GET'])
 @login_required
 def list_invoices():
@@ -365,6 +374,7 @@ def download_invoice_pdf_by_number(invoice_number):
             parent_name=parent_name,
             billing_address=address,
             client=client,
+            invoice=invoice,
             invoice_number=invoice.invoice_number,
             invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
             payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
@@ -373,8 +383,7 @@ def download_invoice_pdf_by_number(invoice_number):
             supervisor_name=supervisor_name,
             supervisor_rba_number=supervisor_rba_number,
             status=status,
-            paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
-            payment_comments=invoice.payment_comments,
+            last_payment_date=_last_payment_date(invoice),
             interventions=interventions,
             mileages=mileages,
             org_name=settings['org_name'],
@@ -483,12 +492,14 @@ def preview_invoice_by_number(invoice_number):
             parent_name=parent_name,
             billing_address=address,
             client=client,
+            invoice=invoice,
             invoice_number=invoice.invoice_number,
             invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
             payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
             date_from=invoice.date_from.strftime('%Y-%m-%d'),
             date_to=invoice.date_to.strftime('%Y-%m-%d'),
             status=status,
+            last_payment_date=_last_payment_date(invoice),
             supervisor_name=supervisor_name,
             supervisor_rba_number=supervisor_rba_number,
             interventions=interventions,
@@ -639,6 +650,7 @@ def mark_sent(invoice_number):
                 parent_name=parent_name,
                 billing_address=address,
                 client=client,
+                invoice=invoice,
                 invoice_number=invoice.invoice_number,
                 invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
                 payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
@@ -647,8 +659,7 @@ def mark_sent(invoice_number):
                 supervisor_name=supervisor_name,
                 supervisor_rba_number=supervisor_rba_number,
                 status=invoice.status or 'Pending',
-                paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
-                payment_comments=invoice.payment_comments,
+                last_payment_date=_last_payment_date(invoice),
                 interventions=interventions,
                 mileages=mileages,
                 org_name=settings['org_name'],
@@ -767,6 +778,7 @@ def email_invoice(invoice_number):
                 parent_name=parent_name,
                 billing_address=address,
                 client=client,
+                invoice=invoice,
                 invoice_number=invoice.invoice_number,
                 invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
                 payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
@@ -775,8 +787,7 @@ def email_invoice(invoice_number):
                 supervisor_name=supervisor_name,
                 supervisor_rba_number=supervisor_rba_number,
                 status=invoice.status or 'Pending',
-                paid_date=invoice.paid_date.strftime('%Y-%m-%d') if invoice.paid_date else '',
-                payment_comments=invoice.payment_comments,
+                last_payment_date=_last_payment_date(invoice),
                 interventions=interventions,
                 # include mileage records extracted from invoice_items snapshot (if any)
                 mileages=mileages,
@@ -840,9 +851,7 @@ def email_invoice(invoice_number):
 def mark_draft(invoice_number):
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
-        invoice.status = 'Draft'
-        invoice.paid_date = None
-        invoice.payment_comments = ""
+        invoice.reset_to_draft()
         db.session.commit()
         flash('Invoice sent back to Draft.', 'success')
         return redirect(url_for('invoices.list_invoices'))
@@ -855,14 +864,35 @@ def mark_draft(invoice_number):
 def mark_paid(invoice_number):
     if current_user.is_authenticated and current_user.user_type in ["admin", "super"]:
         invoice = Invoice.query.filter_by(invoice_number=invoice_number).first_or_404()
-        paid_date = datetime.strptime(request.form.get('paid_date'), '%Y-%m-%d').date()
-        payment_comments = request.form.get('payment_comments')
-        invoice.status = 'Paid'
-        invoice.paid_date = paid_date
-        invoice.payment_comments = payment_comments
-        db.session.commit()
+        try:
+            paid_date = datetime.strptime(request.form.get('paid_date'), '%Y-%m-%d').date()
+        except Exception:
+            flash('A valid payment date is required.', 'warning')
+            return redirect(url_for('invoices.list_invoices'))
+
+        payment_amount_raw = (request.form.get('amount') or '').strip()
+        try:
+            payment_amount = float(payment_amount_raw) if payment_amount_raw else invoice.pending_amount
+        except ValueError:
+            flash('Payment amount must be a valid number.', 'warning')
+            return redirect(url_for('invoices.list_invoices'))
+
+        transaction_number = (request.form.get('transaction_number') or '').strip() or None
+        payment_comments = request.form.get('payment_comments', '').strip()
+
+        try:
+            payment = invoice.add_payment(
+                amount=payment_amount,
+                payment_date=paid_date,
+                transaction_number=transaction_number,
+                payment_comments=payment_comments,
+            )
+            db.session.commit()
+        except ValueError as exc:
+            flash(str(exc), 'warning')
+            return redirect(url_for('invoices.list_invoices'))
         
-        # Send notification email to client parent about payment with invoice PDF attached
+        # Send notification email to client parent about each new payment with invoice PDF attached
         try:
             client = Client.query.get(invoice.client_id)
             settings = get_org_settings()
@@ -918,6 +948,7 @@ def mark_paid(invoice_number):
                     parent_name=parent_name,
                     billing_address=address,
                     client=client,
+                    invoice=invoice,
                     invoice_number=invoice.invoice_number,
                     invoice_date=invoice.invoiced_date.strftime('%Y-%m-%d'),
                     payby_date=invoice.payby_date.strftime('%Y-%m-%d'),
@@ -925,9 +956,8 @@ def mark_paid(invoice_number):
                     date_to=invoice.date_to.strftime('%Y-%m-%d'),
                     supervisor_name=supervisor_name,
                     supervisor_rba_number=supervisor_rba_number,
-                    status='Paid',
-                    paid_date=paid_date.strftime('%Y-%m-%d'),
-                    payment_comments=payment_comments,
+                    status=invoice.payment_status,
+                    last_payment_date=_last_payment_date(invoice),
                     interventions=interventions,
                     # mileages list may be empty if no mileage entries exist
                     mileages=mileages,
@@ -953,19 +983,26 @@ def mark_paid(invoice_number):
                 pdf_filename = f"{invoice.invoice_number}_{date_range_str}_{client_name_code}_{download_time_str}.pdf"
                 
                 # Prepare email content
-                subject = f"{settings['org_name']} - Invoice {invoice.invoice_number} Payment Received"
+                payment_status_label = 'Paid' if invoice.payment_status == 'Paid' else 'Partially Paid'
+                subject = f"{settings['org_name']} - Invoice {invoice.invoice_number} {payment_status_label}"
                 body_text = render_template(
                     'email/paid_invoice_email.txt',
                     invoice=invoice,
                     client=client,
                     paid_date=paid_date.strftime('%Y-%m-%d'),
-                    org_name=settings['org_name']
+                    org_name=settings['org_name'],
+                    payment_status=payment_status_label,
+                    payment_amount=payment.amount,
+                    pending_amount=invoice.pending_amount
                 )
                 body_html = render_template(
                     'email/paid_invoice_email.html',
                     invoice=invoice,
                     client=client,
-                    paid_date=paid_date.strftime('%Y-%m-%d')
+                    paid_date=paid_date.strftime('%Y-%m-%d'),
+                    payment_status=payment_status_label,
+                    payment_amount=payment.amount,
+                    pending_amount=invoice.pending_amount
                 )
                 
                 # Send email with PDF attachment
@@ -981,7 +1018,7 @@ def mark_paid(invoice_number):
             # Log but don't fail the payment marking if email fails
             current_app.logger.exception(f'Failed to send paid invoice email for {invoice_number}: {e}')
         
-        flash('Invoice is marked as Paid and updated invoice mailed to the client.', 'success')
+        flash(f'Payment of {payment.amount:.2f} recorded for invoice {invoice_number}.', 'success')
         return redirect(url_for('invoices.list_invoices'))
     else:
         abort(403)

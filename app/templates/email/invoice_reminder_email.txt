@@ -6,7 +6,7 @@ This is a {{ reminder_type.lower() }} for Invoice {{ invoice_number }}.
 
 Invoice Details:
 Invoice Number: {{ invoice_number }}
-Total Amount: ${{ "%.2f"|format(invoice_total) }}
+Outstanding Amount: ${{ "%.2f"|format(invoice_total) }}
 Due Date: {{ due_date }}
 
 {% if status == 'overdue' %}

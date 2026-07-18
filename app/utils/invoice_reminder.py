@@ -109,11 +109,12 @@ def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
         
         # Render email template
         try:
+            # Use the invoice's pending/outstanding amount for reminders
             body_html = render_template(
                 'email/invoice_reminder_email.html',
                 client_name=client.parentname,
                 invoice_number=invoice.invoice_number,
-                invoice_total=invoice.total_cost,
+                invoice_total=invoice.pending_amount,
                 due_date=invoice.payby_date.strftime('%Y-%m-%d'),
                 days_until_due=max(days_until_due, 0),
                 reminder_type=reminder_type,
@@ -126,7 +127,7 @@ def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
                 'email/invoice_reminder_email.txt',
                 client_name=client.parentname,
                 invoice_number=invoice.invoice_number,
-                invoice_total=invoice.total_cost,
+                invoice_total=invoice.pending_amount,
                 due_date=invoice.payby_date.strftime('%Y-%m-%d'),
                 days_until_due=max(days_until_due, 0),
                 reminder_type=reminder_type,
@@ -155,7 +156,7 @@ This is a {reminder_type.lower()} for Invoice {invoice.invoice_number}.
 
 Invoice Details:
 Invoice Number: {invoice.invoice_number}
-Total Amount: ${invoice.total_cost:.2f}
+Outstanding Amount: ${invoice.pending_amount:.2f}
 Due Date: {invoice.payby_date.strftime('%Y-%m-%d')}
 
 Please ensure payment is made by the due date.
