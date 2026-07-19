@@ -281,8 +281,14 @@ def get_intervention_types():
     else:  # Therapist or Senior Therapist
         activities = Activity.query.filter_by(activity_category='Therapy').all()
     
-    types = [a.activity_name for a in activities]
-    
+    types = [
+        {
+            'name': a.activity_name,
+            'label': f"{a.activity_category} > {a.activity_name}"
+        }
+        for a in activities
+    ]
+
     return app.response_class(
         response=json.dumps({'types': types}),
         status=200,
@@ -793,10 +799,18 @@ def get_activities(employee_id):
         activities = Activity.query.filter_by(activity_category='Therapy').all()
     
     return app.response_class(
-        response=json.dumps([{'name': a.activity_name, 'id': a.activity_name} for a in activities]),
+        response=json.dumps([
+            {
+                'name': a.activity_name,
+                'label': f"{a.activity_category} > {a.activity_name}",
+                'id': a.activity_name
+            }
+            for a in activities
+        ]),
         status=200,
         mimetype='application/json'
     )
+
 
 @interventions_bp.route('/download/<int:client_id>/<filename>')
 @login_required

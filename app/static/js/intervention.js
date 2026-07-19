@@ -39,7 +39,7 @@ function updateActivityTypes(preserveSelected) {
             activities.forEach(activity => {
                 const option = document.createElement('option');
                 option.value = activity.name;
-                option.textContent = activity.name;
+                option.textContent = activity.label || activity.name;
                 activitySelect.appendChild(option);
                 
                 // If this is the previously selected value, select it again
