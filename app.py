@@ -1,5 +1,5 @@
 from app import app, db
-from app.models import Employee, Client, Intervention, Invoice, PayStub, PayStubItem
+from app.models import Employee, Client, Intervention, Invoice, InvoicePayment, PayStub, PayStubItem
 from sqlalchemy import func, case, and_
 from flask import render_template, redirect, url_for, flash, request, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
@@ -143,6 +143,12 @@ def get_monthly_totals():
      .group_by(Intervention.invoice_number)\
      .subquery()
 
+    # Get paid amounts per invoice so partial payments are included in received totals.
+    paid_amount_per_invoice = db.session.query(
+        InvoicePayment.invoice_id.label('invoice_id'),
+        func.coalesce(func.sum(InvoicePayment.amount), 0).label('paid_amount')
+    ).group_by(InvoicePayment.invoice_id).subquery()
+
     # Get monthly data for the past 12 months based on intervention dates with prorated invoice amounts
     monthly_data = db.session.query(
         func.date_trunc('month', Intervention.date).label('month'),
@@ -154,11 +160,12 @@ def get_monthly_totals():
         ).label('total_invoiced'),
         func.sum(
             case(
-                (and_(Intervention.invoiced == True, Invoice.status == 'Paid'),
-                 (Intervention._duration / total_duration_per_invoice.c.total_duration) * Invoice.total_cost)
+                (Intervention.invoiced == True,
+                 (Intervention._duration / total_duration_per_invoice.c.total_duration) * func.coalesce(paid_amount_per_invoice.c.paid_amount, 0))
             , else_=0)
         ).label('total_received')
     ).join(Invoice, Intervention.invoice_number == Invoice.invoice_number)\
+     .outerjoin(paid_amount_per_invoice, Invoice.id == paid_amount_per_invoice.c.invoice_id)\
      .join(total_duration_per_invoice, Intervention.invoice_number == total_duration_per_invoice.c.invoice_number)\
      .filter(Intervention.date >= start_date)\
      .group_by('month')\
