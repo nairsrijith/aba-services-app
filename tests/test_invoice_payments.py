@@ -1,11 +1,13 @@
 import os
 import unittest
 from datetime import date
+from types import SimpleNamespace
 
 os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
 
 from app import create_app, db
 from app.models import Client, Invoice, InvoicePayment
+from app.utils.invoice_reminder import should_send_first_reminder
 
 
 class InvoicePaymentTests(unittest.TestCase):
@@ -75,9 +77,106 @@ class InvoicePaymentTests(unittest.TestCase):
         db.session.commit()
 
         self.assertEqual(invoice.payment_status, 'Paid')
+        self.assertEqual(invoice.status, 'Paid')
         self.assertEqual(invoice.paid_amount, 100.0)
         self.assertEqual(invoice.pending_amount, 0.0)
         self.assertEqual(InvoicePayment.query.count(), 2)
+
+    def test_sends_first_reminder_when_remaining_balance_is_above_the_new_threshold(self):
+        client = Client(
+            firstname='Jane',
+            lastname='Doe',
+            dob=date(1990, 1, 1),
+            gender='Female',
+            address1='123 Main St',
+            address2='',
+            city='Toronto',
+            state='ON',
+            zipcode='M1M1M1',
+            supervisor_id=None,
+            parent_firstname='John',
+            parent_lastname='Doe',
+            parent_email='parent@example.com',
+            parent_cell='5555555555',
+            cost_supervision=0.0,
+            cost_therapy=0.0,
+            is_active=True,
+        )
+        db.session.add(client)
+        db.session.flush()
+
+        invoice = Invoice(
+            invoice_number='INVTEST0002',
+            invoiced_date=date(2026, 7, 1),
+            payby_date=date(2026, 7, 29),
+            client_id=client.id,
+            date_from=date(2026, 6, 1),
+            date_to=date(2026, 6, 30),
+            total_cost=100.0,
+            status='Sent',
+            paid_date=None,
+            payment_comments='',
+            invoice_items='[]',
+        )
+        db.session.add(invoice)
+        db.session.flush()
+
+        invoice.add_payment(amount=81.0, payment_date=date(2026, 7, 2), transaction_number='TXN-001')
+        db.session.commit()
+
+        self.assertEqual(invoice.status, 'Sent')
+        self.assertEqual(invoice.pending_amount, 19.0)
+
+        settings = SimpleNamespace(invoice_reminder_days=5, invoice_reminder_repeat_enabled=False)
+        self.assertTrue(should_send_first_reminder(invoice, settings))
+
+    def test_skips_first_reminder_when_remaining_balance_is_below_the_new_threshold(self):
+        client = Client(
+            firstname='Jane',
+            lastname='Doe',
+            dob=date(1990, 1, 1),
+            gender='Female',
+            address1='123 Main St',
+            address2='',
+            city='Toronto',
+            state='ON',
+            zipcode='M1M1M1',
+            supervisor_id=None,
+            parent_firstname='John',
+            parent_lastname='Doe',
+            parent_email='parent@example.com',
+            parent_cell='5555555555',
+            cost_supervision=0.0,
+            cost_therapy=0.0,
+            is_active=True,
+        )
+        db.session.add(client)
+        db.session.flush()
+
+        invoice = Invoice(
+            invoice_number='INVTEST0003',
+            invoiced_date=date(2026, 7, 1),
+            payby_date=date(2026, 7, 29),
+            client_id=client.id,
+            date_from=date(2026, 6, 1),
+            date_to=date(2026, 6, 30),
+            total_cost=100.0,
+            status='Sent',
+            paid_date=None,
+            payment_comments='',
+            invoice_items='[]',
+        )
+        db.session.add(invoice)
+        db.session.flush()
+
+        invoice.add_payment(amount=95.0, payment_date=date(2026, 7, 2), transaction_number='TXN-001')
+        db.session.commit()
+
+        self.assertEqual(invoice.status, 'Sent')
+        self.assertEqual(invoice.pending_amount, 5.0)
+
+        settings = SimpleNamespace(invoice_reminder_days=5, invoice_reminder_repeat_enabled=False)
+        self.assertFalse(should_send_first_reminder(invoice, settings))
 
     def test_reset_to_draft_clears_payments_and_restores_balance(self):
         client = Client(
