@@ -568,11 +568,17 @@ class Invoice(db.Model):
         db.session.add(payment)
         db.session.flush()
 
-        if self.pending_amount <= 0:
+        new_total_paid = round(float(self.paid_amount) + amount, 2)
+        if new_total_paid >= self.total_cost - 1e-9:
             self.status = 'Paid'
             self.paid_date = payment_date
-        elif self.status == 'Paid':
-            self.status = 'Sent'
+        else:
+            if self.status == 'Paid':
+                self.status = 'Sent'
+                self.paid_date = None
+            elif self.status != 'Draft':
+                self.status = 'Sent'
+                self.paid_date = None
 
         if payment_comments:
             self.payment_comments = payment_comments

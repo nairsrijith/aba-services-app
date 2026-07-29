@@ -12,6 +12,20 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def should_skip_reminder_for_low_balance(invoice: Invoice) -> bool:
+    """Skip reminders when the remaining balance is below the lower of 10% and $20."""
+    pending_balance = float(invoice.pending_amount or 0.0)
+    if pending_balance <= 0:
+        return True
+
+    total_cost = float(getattr(invoice, 'total_cost', 0) or 0.0)
+    if total_cost <= 0:
+        return pending_balance < 20.0
+
+    reminder_threshold = min(total_cost * 0.10, 20.0)
+    return pending_balance < reminder_threshold
+
+
 def should_send_first_reminder(invoice: Invoice, settings: AppSettings) -> bool:
     """Check if first reminder should be sent for an invoice.
     
@@ -22,7 +36,7 @@ def should_send_first_reminder(invoice: Invoice, settings: AppSettings) -> bool:
     
     Uses UTC timezone for consistent behavior across different server locations.
     """
-    if invoice.status == 'Paid':
+    if invoice.status == 'Paid' or should_skip_reminder_for_low_balance(invoice):
         return False
     
     # Use UTC date for timezone-independent comparison
@@ -52,7 +66,7 @@ def should_send_repeat_reminder(invoice: Invoice, settings: AppSettings) -> bool
     
     Uses UTC timezone for consistent behavior across different server locations.
     """
-    if invoice.status == 'Paid' or not settings.invoice_reminder_repeat_enabled:
+    if invoice.status == 'Paid' or should_skip_reminder_for_low_balance(invoice) or not settings.invoice_reminder_repeat_enabled:
         return False
     
     if not invoice.last_reminder_sent_date:
@@ -79,6 +93,10 @@ def send_invoice_reminder(invoice: Invoice, settings: AppSettings) -> bool:
         # Only send reminders for invoices that are in the 'Sent' state
         if getattr(invoice, 'status', None) != 'Sent':
             logger.info(f'Invoice {getattr(invoice, "invoice_number", "?")}: skipping reminder because status is not Sent')
+            return False
+
+        if should_skip_reminder_for_low_balance(invoice):
+            logger.info(f'Invoice {getattr(invoice, "invoice_number", "?")}: skipping reminder because remaining balance is below the reminder threshold')
             return False
 
         client = invoice.client
