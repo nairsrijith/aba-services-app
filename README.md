@@ -1,181 +1,158 @@
-
 # ABA Services Web Application
 
-This web application is designed to help ABA service providers manage their business operations, including client and employee records, session tracking, invoicing, and payroll. It is suitable for small businesses and organizations providing Applied Behavior Analysis (ABA) services to special needs clients.
+The ABA Services Web Application is a full-featured operations platform for ABA providers to manage clients, employees, sessions, invoices, payroll, mileage, reporting, and communications from a single system.
 
-## Features
+## Overview
 
-- **Employee Management**
-   - Add, update, activate/deactivate employees
-   - Assign designations and pay rates
-   - Cascade deactivation to supervised clients
-   - Group employees by active/inactive status
+This application supports the day-to-day operations of an ABA business with workflow tools for:
 
-- **Client Management**
-   - Onboard new clients with supervision and therapy rates
-   - Assign supervisors (Behavior Analysts)
-   - Activate/deactivate clients (with safety checks for unpaid invoices)
-   - Group clients by active/inactive status
+- client onboarding and parent/guardian management
+- employee onboarding and role-based access
+- session scheduling and documentation
+- invoice generation and payment tracking
+- payroll paystub creation
+- mileage tracking
+- reporting and administrative configuration
 
-- **Session Management**
-   - Add, update, delete therapy and supervision sessions
-   - Calendar view for visualizing and scheduling sessions
-   - File attachments for session documentation
-   - Future date scheduling capabilities
-   - Bulk upload and delete operations
-   - Role-based access control for session management
-   - Calendar view for scheduling and viewing sessions by client or employee
-   - Attach files to sessions (e.g., session notes, reports)
-   - Schedule sessions in advance (future dates allowed)
-   - Click on calendar dates to quickly add new sessions
-   - Bulk delete sessions with dependency checks
+## Core Features
 
-- **Invoicing**
-   - Generate invoices for clients based on session data and activity rates
-   - Download invoices as PDF
-   - Invoice status workflow: Draft, Sent, Paid
-   - Color-coded status badges and tooltips
-   - Mark invoices as sent/paid, with confirmation modals
-   - Prevent deletion of invoices unless in draft status
-   - Send email automatically upon marking the email as Sent or Paid
-   - Send ad-hoc email with invoice
+### User Authentication and Access Control
 
-- **Payroll & Paystubs**
-   - Generate paystubs based on sessions and rates
-   - Download paystubs as PDF
-   - Automatically send emails to employee when the paystub is created
-   - Send ad-hoc email with paystub to employee
+- Secure login and logout flow
+- User registration with activation support
+- Password reset flow
+- Optional two-factor authentication (TOTP)
+- Role-based access control for super users, admins, therapists, and supervisors
 
-- **Security & Access Control**
-   - User roles: super user, admin, therapist (previously called "user"), supervisor
-   - CSRF protection for all forms
-   - Login and registration with activation key
+### Employee Management
 
-- **Admin Tools**
-   - CLI script for bulk activation/deactivation (`scripts/manage_activation.py`)
-   - Designation and activity management
-   - Manage pay rates for employees
-   - User login management
-   - Organization settings management to update name, address, log etc
-   - Email OAuth settings to send outgoing emails using Gmail
-   - Setting app into email testing mode to prevent mails from been sent to actual client or employee 
+- Add, edit, activate, and deactivate employees
+- Assign roles, designations, and compensation rates
+- Manage supervisor relationships and staffing assignments
+- View active and inactive employees separately
 
-- **Data & Reporting**
-   - Persistent storage using SQLite (default) or Postgres
-   - Data grouped and filtered by active/inactive status
-   - Toggle to show/hide inactive records
-   - Calendar view for session visualization
-   - Dashboard with key statistics and metrics
+### Client Management
 
-## Setup & Deployment
+- Onboard new clients with demographic and contact details
+- Maintain parent/guardian contact information
+- Assign supervisors and therapy/supervision rates
+- Activate and deactivate clients safely
+- Prevent client deactivation when dependencies such as unpaid invoices exist
 
-### 1. Pull and Run the Docker Image
+### Intervention and Session Management
 
-The app is available as a pre-built Docker image:
-https://hub.docker.com/r/nairsrijith/abawebapp
+- Record therapy and supervision sessions
+- Schedule sessions in the future
+- Attach supporting files and notes to sessions
+- View sessions in calendar and list views
+- Bulk upload, bulk delete, and session filtering options
+- Assign sessions to specific employees based on role and supervision structure
 
-#### Steps:
+### Invoicing and Payments
 
-1. **Create a directory** for the app and persistent data:
-    ```sh
-    mkdir abawebapp && cd abawebapp
-    ```
-2. **Copy the `docker-compose.yml` file** into your directory.
-3. **Create an environment file** (optional, recommended):
-    - Create a file named `.env` in the same directory with the following variables:
-       ```env
-       # These will be used in invoices and branding.
-       ORG_NAME="Your Organization Name"
-       ORG_ADDRESS="123 Main St, City, State"
-       ORG_PHONE="555-123-4567"
-       ORG_EMAIL="info@yourorg.com"
-       PAYMENT_EMAIL="payments@yourorg.com"
-       
-       POSTGRES_USER="database_user"
-       POSTGRES_PASSWORD="supersecurepassword"
-       POSTGRES_DB="app_database"
-       POSTGRES_PORT="5432"
-       ```
-4. **Edit `docker-compose.yml`** as needed:
-    - Change the host port (left side of `1234:8080`) to your preferred port.
-    - Ensure the volume mapping (`./db_data:/var/lib/postgresql/data`, `./data:/myapp/app/data`, `./assets/logo.png:/myapp/app/static/images/logo.png`) points to a persistent location.
-5. **Start the app:**
-    ```sh
-    docker compose up -d
-    ```
+- Generate invoices from completed sessions
+- Preview invoices before finalizing them
+- Track invoice lifecycle with Draft, Sent, and Paid status
+- Support partial payments and payment history
+- Update invoice balances automatically after payments
+- Send invoice reminders based on due date and outstanding balance
+- Email invoice PDFs to clients and support ad-hoc invoice email delivery
+- Safe testing mode to prevent real outbound mail during development or testing
 
-### 2. Initial Login
+### Payroll and Paystubs
 
-After deployment, access the app in your browser at `http://localhost:1234` (or your chosen port).
+- Generate paystubs from sessions and configured pay rates
+- Export paystubs as PDF
+- Send paystubs to employees automatically or on demand
+- Manage pay rates and payroll-related configuration
 
-Default super user credentials:
+### Mileage Tracking
+
+- Record mileage entries linked to business activities
+- Manage mileage records through the web interface
+
+### Reporting and Dashboard
+
+- View dashboard statistics for sessions, invoicing, and payroll
+- Review monthly trends for invoices and paystub totals
+- Access reporting screens for operational insight
+
+### Organization and Admin Settings
+
+- Manage organization branding and contact details
+- Configure Gmail OAuth email delivery
+- Control reminder settings and testing email behavior
+- Manage user accounts and system settings from the admin area
+
+## Technology Stack
+
+- Flask for the web application
+- Flask-SQLAlchemy for data models and database access
+- Flask-Migrate for database migrations
+- Flask-Login for authentication
+- WTForms for form handling
+- Jinja2 templates for the UI
+- PostgreSQL or SQLite for persistence
+- Docker Compose for container-based deployment
+
+## Deployment Options
+
+### Docker Compose
+
+The project includes a Docker Compose setup for running the application and its database together.
+
+1. Copy the repository contents to your server or local environment.
+2. Create a .env file with the required environment variables.
+3. Start the stack with:
+
+```bash
+docker compose up -d
 ```
-username: admin@example.com
-password: Admin1!
+
+4. Open the app in your browser at the configured host port.
+
+### Local Development
+
+You can also run the app locally using the Python environment in the repository.
+
+```bash
+python -m pip install -r requirements.txt
+python app.py
 ```
-**Change the password immediately after first login.**
-**Create additional Admin user(/s)** 
 
-## User Roles & Permissions
+## Environment Variables
 
-- **Super**: Can create other accounts and perform full system maintenance.
-- **Admin**: Can manage employees, clients, sessions, invoices, paystubs and system configuration.
-- **Therapist**: Can manage their own sessions and view the parts of the app assigned to therapists. Default role for 'Therapist' and 'Senior Therapist'
-- **Supervisor**: Supervisors can add and manage sessions for their supervised clients and may assign those sessions to any employee. Default role for 'Behaviour Analyst'
-- Users/Employees with "Therapist" or "Senior Therapist" or "Behaviour Analyst" position can be promoted from their initial role to Admin and demoted back to default role.
+The application uses environment variables for organization information, database settings, and email safety.
 
-## Onboarding Workflow
+Example:
 
-1. **Add Employees**
-    - Go to Employees section, add new employee, assign designation and pay rate.
-    - Activate/deactivate employees as needed.
+```env
+ORG_NAME="Your Organization"
+ORG_ADDRESS="123 Main St"
+ORG_PHONE="555-123-4567"
+ORG_EMAIL="info@yourorg.com"
+PAYMENT_EMAIL="payments@yourorg.com"
 
-2. **Add Clients**
-    - Go to Clients section, onboard new client.
-    - You cannot add a client without a Behaviour Analyst (Supervisor) in Employee Record.
-    - Assign supervisor and set rates for supervision/therapy.
-    - Activate/deactivate clients as needed.
+POSTGRES_USER="aba_user"
+POSTGRES_PASSWORD="supersecurepassword"
+POSTGRES_DB="aba_database"
+POSTGRES_PORT="5432"
 
-3. **Add Sessions**
-   - Record sessions for clients, specifying activity type and duration.
-   - Use the calendar view to visualize existing sessions and click on dates to add new ones.
-   - Attach files (e.g., session notes) to sessions.
-   - Schedule sessions in advance for future dates.
-   - Admins can manage sessions for all; Therapists can manage sessions for themselves; Supervisors can create/manage sessions for clients they supervise and assign the delivering employee to any Therapist or Senior Therapist.
+NEVER_SEND_REAL_MAIL="true"
+TESTING_EMAIL="your-test-address@example.com"
+```
 
-4. **Generate Invoices**
-    - Select client and date range to generate invoice based on sessions.
-    - Review invoice, download PDF, and share with client.
-    - Mark invoice as sent/paid; status is shown with color-coded badges.
-    - Only draft invoices can be deleted.
-    - Emails are sent to the primary and secondary email for client.
-    - Invoice PDFs are sent automatically via email when the invoice status is updated to Sent or Paid.
-    - Emails can be sent on ad-hoc basis as well.
+## Default Access
 
-5. **Generate Paystubs**
-    - Go to Payroll section, select employee and date range.
-    - Generate paystub based on sessions and pay rates.
-    - Download paystub as PDF.
-    - Paystub PDF is sent to the employee as soon as it is generated.
-    - Ad-hoc emails can be sent for the Paystub as well.
+The application includes a default super-user setup for initial access.
 
-## Activation & Deactivation
+- Username: admin@example.com
+- Password: Admin1!
 
-- Employees and clients can be activated/deactivated from the list views.
-- Deactivation checks for dependencies (e.g., active clients, unpaid invoices).
+Change the password immediately after first login and create any additional admin users you need.
 
-## Data Persistence
+## Notes
 
-- All data is stored in SQLite by default, mapped to the `./data` directory (or your chosen volume).
-- Back up the data directory regularly for disaster recovery.
-
-## Security
-
-- All forms are protected with CSRF tokens.
-- User registration requires activation key (admin/super user only).
-- Passwords should be changed after initial setup.
-
-## Support & Customization
-
-- For advanced configuration, update environment variables in `.env` or `docker-compose.yml`.
-- To use a different database, modify the code and rebuild the Docker image.
+- SQLite is used by default for local development.
+- PostgreSQL is recommended for production-style deployments.
+- The email safety switch helps prevent accidental real-world email sending during testing or staging use.

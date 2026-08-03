@@ -11,3 +11,4 @@ app/static/images/logo.png
 .venv/
 .venv/*
 app/static/images/assets/*
+.env
