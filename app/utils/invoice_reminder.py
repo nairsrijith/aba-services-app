@@ -23,7 +23,7 @@ def should_skip_reminder_for_low_balance(invoice: Invoice) -> bool:
         return pending_balance < 20.0
 
     reminder_threshold = min(total_cost * 0.10, 20.0)
-    return pending_balance < reminder_threshold
+    return pending_balance <= reminder_threshold
 
 
 def should_send_first_reminder(invoice: Invoice, settings: AppSettings) -> bool:
@@ -45,9 +45,11 @@ def should_send_first_reminder(invoice: Invoice, settings: AppSettings) -> bool:
     
     logger.debug(f'Invoice {invoice.invoice_number}: UTC today={utc_today}, due={invoice.payby_date}, days_until={days_until_due}')
     
-    # Send if within reminder window (including due date) and no reminder sent yet
-    return (days_until_due <= settings.invoice_reminder_days and 
-            days_until_due >= 0 and 
+    # Send if the invoice is due today, upcoming within the reminder window,
+    # or already overdue by up to the configured reminder window, and no reminder
+    # has been sent yet.
+    return (days_until_due <= settings.invoice_reminder_days and
+            days_until_due >= -settings.invoice_reminder_days and
             invoice.reminder_count == 0)
 
 

@@ -22,6 +22,75 @@ ORG_NAME = os.environ.get('ORG_NAME', '')
 _active_email_threads = []
 _email_thread_lock = Lock()
 
+
+def _get_testing_delivery_settings() -> Tuple[bool, Optional[str]]:
+    """Resolve whether outbound mail should be redirected or suppressed in testing mode."""
+    testing_mode = False
+    testing_email = None
+
+    env_testing_mode = os.environ.get('TESTING_MODE', '').strip().lower()
+    env_never_send_real_mail = os.environ.get('NEVER_SEND_REAL_MAIL', '').strip().lower()
+    if env_testing_mode in {'1', 'true', 'yes', 'on'}:
+        testing_mode = True
+    if env_never_send_real_mail in {'1', 'true', 'yes', 'on'}:
+        testing_mode = True
+
+    try:
+        from flask import current_app
+        if getattr(current_app, 'testing', False) or bool(current_app.config.get('TESTING')):
+            testing_mode = True
+        if current_app.config.get('TESTING_MODE') is not None:
+            testing_mode = bool(current_app.config.get('TESTING_MODE'))
+        if current_app.config.get('TESTING_EMAIL'):
+            testing_email = current_app.config.get('TESTING_EMAIL')
+        if current_app.config.get('NEVER_SEND_REAL_MAIL') is not None:
+            testing_mode = bool(current_app.config.get('NEVER_SEND_REAL_MAIL'))
+    except Exception:
+        pass
+
+    if not testing_mode:
+        try:
+            from app.models import AppSettings
+            s = AppSettings.get()
+            if getattr(s, 'testing_mode', False):
+                testing_mode = True
+                testing_email = getattr(s, 'testing_email', None) or testing_email
+        except Exception:
+            pass
+
+    if not testing_email:
+        testing_email = os.environ.get('TESTING_EMAIL')
+
+    if testing_mode and not testing_email:
+        testing_email = 'no-reply@example.com'
+
+    return testing_mode, testing_email
+
+
+def _apply_testing_override(msg: EmailMessage) -> bool:
+    """Redirect mail to a safe testing address and suppress delivery in testing mode."""
+    testing_mode, testing_email = _get_testing_delivery_settings()
+    if not testing_mode:
+        return False
+
+    original_to = msg.get('X-Original-To') or msg.get('To')
+    if original_to:
+        msg['X-Original-To'] = original_to
+
+    target_address = testing_email or 'no-reply@example.com'
+    try:
+        msg.replace_header('To', target_address)
+    except Exception:
+        msg['To'] = target_address
+
+    try:
+        msg.__delitem__('Cc')
+    except Exception:
+        pass
+
+    return True
+
+
 # No Redis/RQ support in this deployment; always use threaded background send.
 def _build_message(subject: str, recipients, body_text: Optional[str] = None, body_html: Optional[str] = None, attachments: Optional[List[Tuple[str, bytes, str]]] = None, from_addr: Optional[str] = None) -> EmailMessage:
     if isinstance(recipients, str):
@@ -49,21 +118,8 @@ def _build_message(subject: str, recipients, body_text: Optional[str] = None, bo
     except Exception:
         pass
 
-    # If testing mode is enabled in AppSettings, rewrite recipients now
-    try:
-        from app.models import AppSettings
-        s_test = AppSettings.get()
-        if s_test and s_test.testing_mode and s_test.testing_email:
-            original_to = msg['To']
-            msg['X-Original-To'] = original_to
-            # replace_header will fail if header not present, but 'To' is set above
-            try:
-                msg.replace_header('To', s_test.testing_email)
-            except Exception:
-                msg['To'] = s_test.testing_email
-    except Exception:
-        # if AppSettings can't be read, continue without testing override
-        pass
+    # If testing mode is enabled, rewrite recipients and avoid sending to real clients.
+    _apply_testing_override(msg)
 
     if body_html and body_text:
         msg.set_content(body_text)
@@ -137,21 +193,17 @@ def _send_via_gmail_api(msg: EmailMessage, settings) -> bool:
 
 def _send_message(msg: EmailMessage) -> bool:
     try:
+        testing_mode_active = _apply_testing_override(msg)
+        if testing_mode_active:
+            logger.info('Email delivery suppressed because testing mode is enabled; original recipients=%s', msg.get('X-Original-To') or msg.get('To'))
+            return True
+
         # Allow AppSettings to override configuration and enable testing mode
         try:
             from app.models import AppSettings
             s = AppSettings.get()
         except Exception:
             s = None
-
-        # If testing mode is enabled, rewrite recipients to testing email and annotate
-        if s and s.testing_mode and s.testing_email:
-            original_to = msg['To']
-            msg['X-Original-To'] = original_to
-            try:
-                msg.replace_header('To', s.testing_email)
-            except Exception:
-                msg['To'] = s.testing_email
 
         # Use Gmail API for sending emails
         if not s or not s.gmail_client_id or not s.gmail_client_secret or not s.gmail_refresh_token:
